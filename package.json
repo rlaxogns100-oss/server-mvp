@@ -7,7 +7,7 @@
     "start": "node app.cjs"
   },
   "description": "PDF processing server MVP",
-  "keywords": [],
+  "keywords": ["pdf", "server", "mvp"],
   "author": "",
   "license": "ISC",
   "dependencies": {
