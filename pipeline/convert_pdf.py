@@ -178,3 +178,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+##레전드 변경사항
