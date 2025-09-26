@@ -346,6 +346,9 @@ const server = http.createServer((req, res) => {
 });
 
 const PORT = 3000;
-server.listen(PORT, () => {
-  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+//server.listen(PORT, () => {
+//  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+
+server.listen(process.env.PORT || 3000, '0.0.0.0', () => {
+    console.log('listening on 0.0.0.0:3000');
 });
