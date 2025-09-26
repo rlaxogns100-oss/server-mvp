@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node app.cjs"
   },
-  "description": "",
+  "description": "PDF processing server MVP",
   "keywords": [],
   "author": "",
   "license": "ISC",
