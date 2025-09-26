@@ -1,0 +1,19 @@
+{
+  "name": "server-mvp",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "main": "app.cjs",
+  "scripts": {
+    "start": "node app.cjs"
+  },
+  "description": "",
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.12.2",
+    "dotenv": "^17.2.2",
+    "form-data": "^4.0.4",
+    "multer": "^2.0.2"
+  }
+}
