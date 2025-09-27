@@ -962,43 +962,43 @@ def main():
     print("\n" + "=" * 80)
     print("처리 완료 - 결과 요약")
     print("=" * 80)
-    print(f"📊 통계 정보:")
-    print(f"   • 시작 줄: {len(start_lines)}개")
-    print(f"   • 종료 줄: {len(end_lines)}개")
-    print(f"   • 분할된 문제: {len(problems)}개")
+    print(f"[통계] 통계 정보:")
+    print(f"   - 시작 줄: {len(start_lines)}개")
+    print(f"   - 종료 줄: {len(end_lines)}개")
+    print(f"   - 분할된 문제: {len(problems)}개")
     
     # 시작 줄 상세 정보 출력
     if start_lines:
-        print(f"\n📝 시작 줄 상세 정보 ({len(start_lines)}개):")
+        print(f"\n[시작줄] 시작 줄 상세 정보 ({len(start_lines)}개):")
         for i, item in enumerate(start_lines, 1):
             print(f"   {i:2d}. 페이지 {item['page']:2d}, 줄 {item['line']:3d}: {item['content']}")
     else:
-        print("\n⚠️  시작 줄이 발견되지 않았습니다.")
+        print("\n[경고] 시작 줄이 발견되지 않았습니다.")
     
     # 종료 줄 상세 정보 출력
     if end_lines:
-        print(f"\n🏁 종료 줄 상세 정보 ({len(end_lines)}개):")
+        print(f"\n[종료줄] 종료 줄 상세 정보 ({len(end_lines)}개):")
         for i, item in enumerate(end_lines, 1):
             print(f"   {i:2d}. 페이지 {item['page']:2d}, 줄 {item['line']:3d} (신호: {item['signal_line']:3d}): {item['content']}")
     else:
-        print("\n⚠️  종료 줄이 발견되지 않았습니다.")
+        print("\n[경고] 종료 줄이 발견되지 않았습니다.")
     
     # 분할된 문제 상세 정보 출력
     if problems:
-        print(f"\n📚 분할된 문제 상세 정보 ({len(problems)}개):")
+        print(f"\n[문제] 분할된 문제 상세 정보 ({len(problems)}개):")
         for i, (start, end) in enumerate(problems, 1):
             print(f"   문제 {i:2d}: 줄 {start:3d}~{end:3d} (총 {end-start+1:2d}줄)")
     else:
-        print("\n⚠️  분할된 문제가 없습니다.")
+        print("\n[경고] 분할된 문제가 없습니다.")
     
     # 최종 상태 출력
     print("\n" + "=" * 80)
     if problems:
-        print("✅ 문제 분할이 성공적으로 완료되었습니다!")
+        print("[성공] 문제 분할이 성공적으로 완료되었습니다!")
         print(f"   결과 파일: output/problems.json")
         print(f"   총 {len(problems)}개의 문제가 분할되어 저장되었습니다.")
     else:
-        print("❌ 문제 분할에 실패했습니다.")
+        print("[실패] 문제 분할에 실패했습니다.")
         print("   시작 줄이나 종료 줄이 제대로 감지되지 않았을 수 있습니다.")
     print("=" * 80)
 
