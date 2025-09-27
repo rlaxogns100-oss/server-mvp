@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>딸깍 — UI 스켈레톤 미리보기</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <script>
+    window.MathJax = {
+      tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$', '$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+      },
+      options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+      }
+    };
+  </script>
+  <style>
+    .brand-primary { background-color: #2d5bff; }
+    .brand-primary:hover { background-color: #1c46e8; }
+    .shadow-soft { box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10); }
+    .card { border:1px solid #e6e8ef; }
+
+    /* Math and content styling */
+    .problem-content { line-height: 1.6; }
+    .problem-content table {
+      border-collapse: collapse;
+      margin: 10px 0;
+      border: 1px solid #ddd;
+    }
+    .problem-content th, .problem-content td {
+      border: 1px solid #ddd;
+      padding: 8px 12px;
+      text-align: center;
+    }
+    .problem-content th {
+      background-color: #f5f5f5;
+      font-weight: bold;
+    }
+    .problem-content img {
+      max-width: 100%;
+      height: auto;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .examples-list {
+      background-color: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      padding: 12px;
+      margin: 8px 0;
+    }
+    .examples-list ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .examples-list li {
+      margin: 4px 0;
+    }
+  </style>
+</head>
+<body class="bg-white text-slate-900">
+  <!-- Top Bar -->
+  <header class="sticky top-0 z-40 border-b border-slate-200 bg-white/90 backdrop-blur">
+    <div class="mx-auto flex max-w-6xl items-center justify-between px-6 py-3">
+      <div class="flex items-center gap-4">
+        <div class="flex items-center gap-2">
+          <div class="grid h-8 w-8 place-items-center rounded-lg brand-primary text-white text-sm">딸</div>
+          <span class="text-xl font-extrabold tracking-tight">딸깍</span>
+        </div>
+        <nav class="ml-8 flex gap-1">
+          <button id="tabBuilderBtn" class="rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white">시험지 제작</button>
+          <button id="tabFilesBtn" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">파일 관리</button>
+        </nav>
+      </div>
+    </div>
+  </header>
+
+  <!-- Builder -->
+  <main id="builder" class="mx-auto grid max-w-6xl grid-cols-12 gap-6 px-6 py-8">
+    <!-- Left -->
+    <section class="col-span-8">
+      <h1 class="mb-2 text-3xl font-extrabold">시험지 제작</h1>
+      <p class="mb-6 text-slate-600">문제를 선택하여 맞춤형 시험지를 만드세요</p>
+
+      <div class="rounded-3xl border border-slate-200 bg-white p-4">
+        <div class="mb-4 flex items-center justify-between px-2">
+          <h2 class="text-xl font-bold">문제 선택</h2>
+          <div class="flex items-center gap-3">
+            <div class="relative inline-block">
+              <select class="appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2 pr-9 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-400 focus:border-blue-500">
+                <option>전체</option><option>중학</option><option>고등</option>
+              </select>
+              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">▾</span>
+            </div>
+            <div class="relative inline-block">
+              <select class="appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2 pr-9 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-400 focus:border-blue-500">
+                <option>전체</option><option>방정식</option><option>함수</option><option>부등식</option>
+              </select>
+              <span class="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">▾</span>
+            </div>
+          </div>
+        </div>
+
+        <div id="problemList" class="flex flex-col gap-4"></div>
+      </div>
+    </section>
+
+    <!-- Right -->
+    <aside class="col-span-4">
+      <div class="sticky top-24 rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
+        <h3 class="text-xl font-extrabold">시험지 미리보기</h3>
+        <div class="mt-4">
+          <label class="mb-2 block text-sm font-semibold text-slate-700">시험지 제목</label>
+          <input id="paperTitle" value="새 시험지" class="h-10 w-full rounded-xl border border-slate-300 px-3 text-sm outline-none transition focus:border-blue-500" />
+        </div>
+        <div class="mt-5">
+          <div class="mb-2 text-sm text-slate-600">선택된 문제</div>
+          <div id="selectedCount" class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700">0개</div>
+        </div>
+        <div class="mt-8 flex flex-col gap-3">
+          <button class="inline-flex h-11 items-center justify-center gap-2 rounded-xl brand-primary px-5 text-sm font-semibold text-white shadow-soft">📄 시험지 생성</button>
+          <button class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-soft hover:bg-slate-50">👁️ 미리보기</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <!-- Files -->
+  <main id="files" class="mx-auto max-w-6xl px-6 py-8 hidden">
+    <h1 class="mb-2 text-3xl font-extrabold">파일 관리</h1>
+    <p class="mb-6 text-slate-600">수학 문제 파일을 업로드하고 정리하세요</p>
+
+    <!-- Upload Zone -->
+    <section class="rounded-3xl border border-dashed border-slate-300 bg-white p-6">
+      <div class="grid grid-cols-12 gap-8">
+        <div class="col-span-6 flex flex-col justify-center rounded-2xl border border-dashed border-slate-300 p-10">
+          <div class="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-slate-50 text-slate-500 text-2xl">⬆️</div>
+          <h2 class="mt-6 text-3xl font-extrabold">수학 문제 파일 업로드</h2>
+          <p class="mt-3 text-slate-600">PDF 형식의 수학 문제 파일을 업로드하면 AI가 자동으로 문제를 분석하고 분류합니다.</p>
+          <p class="mt-4 text-sm text-emerald-600">✓ 지원 형식: PDF (최대 50MB)</p>
+        </div>
+        <div class="col-span-6 rounded-2xl border border-dashed border-slate-300 p-10 text-center" id="dropZone">
+          <div class="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-slate-50 text-slate-500 text-2xl">📂</div>
+          <p class="mt-6 text-lg font-semibold text-slate-700">파일을 여기에 드롭하세요</p>
+          <div class="mt-5 grid place-items-center">
+            <input type="file" id="fileInput" accept=".pdf" style="display: none;">
+            <button id="fileSelectBtn" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl brand-primary px-5 text-sm font-semibold text-white shadow-soft">파일 선택</button>
+          </div>
+          <div id="uploadProgress" class="mt-4 hidden">
+            <div class="w-full bg-gray-200 rounded-full h-2">
+              <div id="progressBar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+            </div>
+            <p id="progressText" class="text-sm text-gray-600 mt-2">업로드 중...</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- My files -->
+    <section class="mt-8 rounded-3xl border border-slate-200 bg-white p-5">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-bold">내 파일</h3>
+        <div class="flex items-center gap-2 text-sm text-slate-600">
+          <div class="h-2 w-56 rounded-full bg-slate-100">
+            <div class="h-2 w-1/5 rounded-full bg-blue-500"></div>
+          </div>
+          <span>2.4GB / 15GB</span>
+        </div>
+      </div>
+
+      <div class="mt-4 flex items-center gap-2">
+        <button class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-soft hover:bg-slate-50">＋ 새 폴더</button>
+        <button class="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-semibold text-slate-700 shadow-soft hover:bg-slate-50">⬆️ 업로드</button>
+      </div>
+
+      <div class="mt-6 grid grid-cols-12 gap-4" id="folderGrid"></div>
+      <div class="mt-4 grid grid-cols-12 gap-4" id="docGrid"></div>
+    </section>
+  </main>
+
+  <!-- Chat bubble -->
+  <button class="fixed bottom-6 right-6 flex items-center gap-2 rounded-full bg-slate-900 px-4 py-3 text-sm font-semibold text-white shadow-lg">💬 Talk with Us</button>
+
+  <script>
+    // Tabs
+    const tabBuilderBtn = document.getElementById('tabBuilderBtn');
+    const tabFilesBtn = document.getElementById('tabFilesBtn');
+    const builder = document.getElementById('builder');
+    const files = document.getElementById('files');
+    tabBuilderBtn.addEventListener('click', () => {
+      builder.classList.remove('hidden'); files.classList.add('hidden');
+      tabBuilderBtn.classList.add('bg-slate-900','text-white');
+      tabFilesBtn.classList.remove('bg-slate-900','text-white'); tabFilesBtn.classList.add('text-slate-700');
+    });
+    tabFilesBtn.addEventListener('click', () => {
+      files.classList.remove('hidden'); builder.classList.add('hidden');
+      tabFilesBtn.classList.add('bg-slate-900','text-white');
+      tabBuilderBtn.classList.remove('bg-slate-900','text-white'); tabBuilderBtn.classList.add('text-slate-700');
+    });
+
+    // Problem data storage
+    let problems = [];
+    const folders = ['중학교 문제집','고등학교 문제집','기출문제'];
+    const docs = ['방정식 문제.pdf','함수 단원.pdf','기초 연산.pdf','기하 문제.pdf','확률과 통계.pdf','미적분 기초.pdf'];
+
+    const problemList = document.getElementById('problemList');
+    const selectedCount = document.getElementById('selectedCount');
+    const selected = new Set();
+
+    function badgeTone(tone){
+      if(tone==='emerald') return 'bg-emerald-50 text-emerald-700 ring-emerald-100';
+      if(tone==='amber') return 'bg-amber-50 text-amber-700 ring-amber-100';
+      if(tone==='rose') return 'bg-rose-50 text-rose-700 ring-rose-100';
+      return 'bg-slate-50 text-slate-700 ring-slate-200';
+    }
+
+    function renderProblems(){
+      problemList.innerHTML = '';
+      problems.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'group relative rounded-2xl card bg-white p-5 shadow-soft transition hover:shadow-md';
+        card.innerHTML = `
+          <div class="mb-3 flex items-center gap-2">
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset ${badgeTone(p.tone)}">${p.level}</span>
+            <span class="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ring-1 ring-inset bg-slate-50 text-slate-700 ring-slate-200">${p.topic}</span>
+            <div class="ml-auto">
+              <button data-id="${p.id}" class="grid h-6 w-6 place-items-center rounded-md border border-slate-300 bg-white transition hover:bg-slate-50">
+                <span class="text-slate-400">${selected.has(p.id) ? '☑' : '☐'}</span>
+              </button>
+            </div>
+          </div>
+          <div class="text-[15px] leading-7 text-slate-800">${p.text}</div>
+          <p class="mt-3 text-sm text-slate-500">출처: ${p.src}</p>
+        `;
+        problemList.appendChild(card);
+      });
+      document.querySelectorAll('[data-id]').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const id = Number(btn.getAttribute('data-id'));
+          if(selected.has(id)) selected.delete(id); else selected.add(id);
+          selectedCount.textContent = selected.size + '개';
+          renderProblems();
+        });
+      });
+
+      // Re-render MathJax after DOM updates
+      if (window.MathJax) {
+        MathJax.typesetPromise().then(() => {
+          console.log('MathJax re-rendered after checkbox update');
+        }).catch((err) => console.log('MathJax error: ' + err.message));
+      }
+    }
+    renderProblems();
+
+    // Load existing problems on page load
+    function loadExistingProblems() {
+      fetch('/api/problems')
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.problems && data.problems.length > 0) {
+            problems.length = 0; // Clear array
+            nextProblemId = 1;
+
+            data.problems.forEach(problem => {
+              const newProblem = {
+                id: nextProblemId++,
+                level: getRandomLevel(),
+                tone: getRandomTone(),
+                topic: extractTopic(problem),
+                text: extractProblemText(problem),
+                src: '업로드된 파일'
+              };
+              problems.push(newProblem);
+            });
+
+            renderProblems();
+
+            // Re-render MathJax
+            if (window.MathJax) {
+              MathJax.typesetPromise().then(() => {
+                console.log('MathJax rendering completed for loaded problems');
+              }).catch((err) => console.log('MathJax error: ' + err.message));
+            }
+          }
+        })
+        .catch(error => {
+          console.log('No existing problems found or error loading:', error);
+        });
+    }
+
+    // Initialize MathJax after initial render
+    document.addEventListener('DOMContentLoaded', function() {
+      // Tab functionality
+      const tabBuilderBtn = document.getElementById('tabBuilderBtn');
+      const tabFilesBtn = document.getElementById('tabFilesBtn');
+      const builderSection = document.getElementById('builder');
+      const filesSection = document.getElementById('files');
+
+      // Show builder tab by default
+      window.showBuilderTab = function() {
+        tabBuilderBtn.className = 'rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white';
+        tabFilesBtn.className = 'rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100';
+        builderSection.classList.remove('hidden');
+        filesSection.classList.add('hidden');
+      }
+
+      // Show files tab
+      window.showFilesTab = function() {
+        tabFilesBtn.className = 'rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white';
+        tabBuilderBtn.className = 'rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100';
+        filesSection.classList.remove('hidden');
+        builderSection.classList.add('hidden');
+      }
+
+      // Tab click events
+      tabBuilderBtn.addEventListener('click', window.showBuilderTab);
+      tabFilesBtn.addEventListener('click', window.showFilesTab);
+
+      console.log('Tab functionality initialized');
+      loadExistingProblems(); // Load existing problems first
+
+      if (window.MathJax) {
+        MathJax.typesetPromise().then(() => {
+          console.log('Initial MathJax rendering completed');
+        }).catch((err) => console.log('MathJax error: ' + err.message));
+      }
+    });
+
+    // Folder/doc grid
+    const folderGrid = document.getElementById('folderGrid');
+    folders.forEach(f => {
+      const el = document.createElement('div');
+      el.className = 'col-span-2';
+      el.innerHTML = '<div class="flex cursor-pointer items-center gap-3 rounded-2xl card bg-white p-4 shadow-soft transition hover:shadow-md"><span class="text-blue-600">📁</span><span class="text-sm font-semibold">'+f+'</span></div>';
+      folderGrid.appendChild(el);
+    });
+    const docGrid = document.getElementById('docGrid');
+    docs.forEach(d => {
+      const el = document.createElement('div');
+      el.className = 'col-span-2';
+      el.innerHTML = '<div class="flex cursor-pointer items-center gap-3 rounded-2xl card bg-white p-4 shadow-soft transition hover:shadow-md"><span class="text-rose-600">📄</span><span class="text-sm">'+d+'</span></div>';
+      docGrid.appendChild(el);
+    });
+
+    // File upload functionality
+    const fileInput = document.getElementById('fileInput');
+    const fileSelectBtn = document.getElementById('fileSelectBtn');
+    const dropZone = document.getElementById('dropZone');
+    const uploadProgress = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
+    let nextProblemId = problems.length + 1;
+
+    // Debug: Check if elements are found
+    console.log('fileInput:', fileInput);
+    console.log('fileSelectBtn:', fileSelectBtn);
+    console.log('dropZone:', dropZone);
+
+    if (!fileInput || !fileSelectBtn || !dropZone) {
+      console.error('Required DOM elements not found!');
+      return;
+    }
+
+    // File select button click
+    fileSelectBtn.addEventListener('click', () => {
+      console.log('File select button clicked!');
+      fileInput.click();
+    });
+
+    // Add backup click handler
+    fileSelectBtn.onclick = function() {
+      console.log('Backup file select button clicked!');
+      fileInput.click();
+    };
+
+    // File input change
+    fileInput.addEventListener('change', (e) => {
+      handleFiles(e.target.files);
+    });
+
+    // Drag and drop functionality
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-blue-500', 'bg-blue-50');
+    });
+
+    dropZone.addEventListener('dragleave', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-blue-500', 'bg-blue-50');
+      handleFiles(e.dataTransfer.files);
+    });
+
+    // Handle file upload
+    function handleFiles(files) {
+      const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
+      if (pdfFiles.length === 0) {
+        alert('PDF 파일만 업로드 가능합니다.');
+        return;
+      }
+
+      // Process only the first file at a time
+      if (pdfFiles.length > 0) {
+        uploadFile(pdfFiles[0]);
+        if (pdfFiles.length > 1) {
+          alert(`${pdfFiles.length}개의 파일이 선택되었지만, 첫 번째 파일만 처리됩니다.`);
+        }
+      }
+    }
+
+    // Upload file to server
+    function uploadFile(file) {
+      const formData = new FormData();
+      formData.append('pdf', file);
+
+      // Show progress
+      uploadProgress.classList.remove('hidden');
+      progressText.textContent = `${file.name} 업로드 중...`;
+      simulateProgress();
+
+      fetch('/upload', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => {
+        if (response.ok) {
+          progressText.textContent = `${file.name} 처리 완료! 문제 가져오는 중...`;
+          // Fetch the processed problems
+          return fetch('/api/problems');
+        } else {
+          throw new Error('업로드 실패');
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.problems) {
+          // Clear existing problems and add new ones
+          problems.length = 0; // Clear array
+          nextProblemId = 1;
+
+          data.problems.forEach(problem => {
+            const newProblem = {
+              id: nextProblemId++,
+              level: getRandomLevel(),
+              tone: getRandomTone(),
+              topic: extractTopic(problem),
+              text: extractProblemText(problem),
+              src: file.name
+            };
+            problems.push(newProblem);
+          });
+
+          renderProblems();
+          progressText.textContent = `완료! ${data.problems.length}개의 문제가 추가되었습니다.`;
+
+          // Re-render MathJax for newly added content
+          if (window.MathJax) {
+            MathJax.typesetPromise().then(() => {
+              console.log('MathJax rendering completed');
+            }).catch((err) => console.log('MathJax error: ' + err.message));
+          }
+
+          // Switch to builder tab after processing
+          setTimeout(() => {
+            uploadProgress.classList.add('hidden');
+            progressBar.style.width = '0%';
+            // Switch to builder tab
+            showBuilderTab();
+          }, 2000);
+        } else {
+          throw new Error('문제 데이터 로드 실패');
+        }
+      })
+      .catch(error => {
+        console.error('Upload error:', error);
+        alert('파일 업로드에 실패했습니다: ' + error.message);
+        uploadProgress.classList.add('hidden');
+        progressBar.style.width = '0%';
+      });
+    }
+
+
+    // Helper functions
+    function getRandomLevel() {
+      const levels = ['쉬움', '보통', '어려움'];
+      return levels[Math.floor(Math.random() * levels.length)];
+    }
+
+    function getRandomTone() {
+      const tones = ['emerald', 'amber', 'rose'];
+      return tones[Math.floor(Math.random() * tones.length)];
+    }
+
+    function extractTopic(problem) {
+      // Extract topic from problem content
+      const text = extractProblemText(problem);
+      if (text.includes('방정식') || text.includes('근')) return '방정식';
+      if (text.includes('함수') || text.includes('f(x)')) return '함수';
+      if (text.includes('다항식') || text.includes('인수')) return '다항식';
+      if (text.includes('복소수') || text.includes('i') || text.includes('허수')) return '복소수';
+      if (text.includes('삼각형') || text.includes('기하')) return '기하';
+      if (text.includes('확률') || text.includes('통계')) return '확률';
+      return '기타';
+    }
+
+    function extractProblemText(problem) {
+      if (problem.content_blocks) {
+        // Structured problem format
+        let html = '';
+        problem.content_blocks.forEach(block => {
+          if (block.type === 'text') {
+            html += `<div class="problem-content">${block.content}</div>`;
+          } else if (block.type === 'table') {
+            html += `<div class="problem-content">${convertMarkdownTable(block.content)}</div>`;
+          } else if (block.type === 'image') {
+            html += `<div class="problem-content"><img src="${block.content}" alt="문제 이미지" /></div>`;
+          } else if (block.type === 'examples') {
+            const examples = Array.isArray(block.content) ? block.content : [block.content];
+            html += `<div class="examples-list"><strong>보기:</strong><ul>`;
+            examples.forEach(example => {
+              html += `<li>${example}</li>`;
+            });
+            html += `</ul></div>`;
+          }
+        });
+        return html;
+      } else if (problem.content) {
+        // Original problem format
+        const content = Array.isArray(problem.content) ? problem.content.join(' ') : problem.content;
+        return `<div class="problem-content">${content}</div>`;
+      }
+      return '<div class="problem-content">문제 내용을 찾을 수 없습니다.</div>';
+    }
+
+    function convertMarkdownTable(markdown) {
+      if (!markdown || !markdown.includes('|')) return markdown;
+
+      const lines = markdown.trim().split('\n');
+      const rows = lines.filter(line => line.trim().startsWith('|') && line.trim().endsWith('|'));
+
+      if (rows.length < 2) return markdown;
+
+      let html = '<table>';
+
+      // Header row
+      const headerCells = rows[0].slice(1, -1).split('|').map(cell => cell.trim());
+      html += '<thead><tr>';
+      headerCells.forEach(cell => {
+        html += `<th>${cell}</th>`;
+      });
+      html += '</tr></thead>';
+
+      // Skip alignment row if present
+      let dataStartIndex = 1;
+      if (rows.length > 1 && (rows[1].includes('---') || rows[1].includes('==='))) {
+        dataStartIndex = 2;
+      }
+
+      // Data rows
+      if (dataStartIndex < rows.length) {
+        html += '<tbody>';
+        for (let i = dataStartIndex; i < rows.length; i++) {
+          const dataCells = rows[i].slice(1, -1).split('|').map(cell => cell.trim());
+          html += '<tr>';
+          dataCells.forEach(cell => {
+            html += `<td>${cell}</td>`;
+          });
+          html += '</tr>';
+        }
+        html += '</tbody>';
+      }
+
+      html += '</table>';
+      return html;
+    }
+
+    // Simulate progress
+    function simulateProgress() {
+      let progress = 0;
+      const interval = setInterval(() => {
+        progress += Math.random() * 15;
+        if (progress >= 90) {
+          progress = 90;
+          clearInterval(interval);
+        }
+        progressBar.style.width = progress + '%';
+      }, 300);
+
+      // Complete progress when upload finishes
+      setTimeout(() => {
+        progressBar.style.width = '100%';
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

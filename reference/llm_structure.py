@@ -136,6 +136,7 @@ JSON 형식:
         return None
 
 
+
 def structure_problems_parallel(problems: List[Dict], max_workers: int = 30) -> List[Dict]:
     """문제들을 병렬로 구조화합니다."""
     print(f"{len(problems)}개 문제를 {max_workers}개 스레드로 병렬 처리 중...")
