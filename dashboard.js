@@ -253,30 +253,119 @@ function setupUpload(){
   ['dragenter','dragover'].forEach(ev=>up.addEventListener(ev,e=>{e.preventDefault();up.classList.add('drag-over');}));
   ['dragleave','drop'].forEach(ev=>up.addEventListener(ev,e=>{e.preventDefault();up.classList.remove('drag-over');}));
   up.addEventListener('drop', e=>handleFiles(e.dataTransfer.files));
+
   function handleFiles(list){
     const pdfs=toArr(list).filter(f=>f.type==='application/pdf'||/\.pdf$/i.test(f.name));
     if(!pdfs.length) return alert('PDF 파일만 업로드 가능합니다.');
-    if(pc) pc.style.display='block';
-    let i=0; (function next(){
-      if(i>=pdfs.length){ setTimeout(()=>{ if(pc) pc.style.display='none'; }, 400); return; }
-      const f=pdfs[i++]; if(pt) pt.textContent=f.name+' 업로드 중...'; if(pf) pf.style.width='0%';
-      let p=0; const t=setInterval(()=>{
-        p+=12; if(pf) pf.style.width=p+'%';
-        if(p>=100){ clearInterval(t);
-          // 항상 '내 파일' 폴더에 업로드
-          const myFilesFolder = getNodeByPathKey('내 파일') || currentFolder();
-          const raw=f.name.replace(/\.pdf$/i,''); let name=raw, n=1;
-          while((myFilesFolder.children||[]).some(ch=>ch.name===name)) name=`${raw} (${n++})`;
-          const size=f.size||5*1024*1024; (myFilesFolder.children=myFilesFolder.children||[]).push({name,type:'file',size});
-          __USAGE__.used += size; renderDirectory(); next();
-        }
-      }, 100);
-    })();
+
+    // 실제 서버 업로드 처리
+    uploadToServer(pdfs[0]);
+  }
+}
+
+async function uploadToServer(file) {
+  const pc = $('#progressContainer');
+  const pf = $('#progressFill');
+  const pt = $('#progressText');
+
+  try {
+    if(pc) pc.style.display = 'block';
+
+    // 단계별 진행 상태 시뮬레이션
+    const steps = [
+      { progress: 10, text: '파일 업로드 중...' },
+      { progress: 30, text: 'PDF 변환 중...' },
+      { progress: 50, text: '텍스트 추출 중...' },
+      { progress: 70, text: '문제 분할 중...' },
+      { progress: 90, text: 'AI 구조화 중...' },
+      { progress: 95, text: '결과 저장 중...' }
+    ];
+
+    let stepIndex = 0;
+    const updateStep = () => {
+      if (stepIndex < steps.length) {
+        const step = steps[stepIndex];
+        if(pt) pt.textContent = step.text;
+        if(pf) pf.style.width = step.progress + '%';
+        stepIndex++;
+      }
+    };
+
+    // 초기 상태
+    updateStep();
+
+    // FormData로 파일 업로드
+    const formData = new FormData();
+    formData.append('pdf', file);
+
+    // 주기적으로 진행률 업데이트
+    const progressInterval = setInterval(updateStep, 2000);
+
+    const response = await fetch('/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    clearInterval(progressInterval);
+
+    if (!response.ok) {
+      throw new Error(`업로드 실패: ${response.status}`);
+    }
+
+    const result = await response.json();
+
+    if (result.success) {
+      if(pt) pt.textContent = '처리 완료!';
+      if(pf) pf.style.width = '100%';
+
+      // 새로운 문제 데이터를 PROBLEMS_DATA에 추가
+      const fileName = file.name.replace(/\.pdf$/i, '') + '_structured.json';
+      PROBLEMS_DATA[fileName] = result.problems;
+
+      // 파일 시스템에 새 파일 추가
+      const myFilesFolder = getNodeByPathKey('내 파일') || currentFolder();
+      const raw = file.name.replace(/\.pdf$/i, '');
+      let name = raw;
+      let n = 1;
+      while((myFilesFolder.children||[]).some(ch=>ch.name===name)) {
+        name = `${raw} (${n++})`;
+      }
+
+      const size = file.size || 5*1024*1024;
+      (myFilesFolder.children = myFilesFolder.children || []).push({
+        name: name,
+        type: 'file',
+        size: size,
+        dataSource: fileName
+      });
+
+      __USAGE__.used += size;
+      renderDirectory();
+
+      // 새 탭으로 자동 열기
+      setTimeout(() => {
+        createTab(fileName, name);
+      }, 500);
+
+      alert(`파일 처리 완료!\n${result.problems.length}개의 문제가 추출되었습니다.`);
+
+    } else {
+      throw new Error(result.error || '알 수 없는 오류');
+    }
+
+  } catch (error) {
+    console.error('업로드 오류:', error);
+    if(pt) pt.textContent = '업로드 실패';
+    alert(`업로드 오류: ${error.message}`);
+  } finally {
+    setTimeout(() => {
+      if(pc) pc.style.display = 'none';
+    }, 1500);
   }
 }
 
 /* ---- Problem Data ---- */
-const PROBLEMS_DATA = {
+let PROBLEMS_DATA = {
   'problems1_structured.json': [
     {
       "id": 1,
@@ -1480,19 +1569,19 @@ function initDashboard(){
   // 윈도우 리사이즈 시 핸들 위치 업데이트
   window.addEventListener('resize', updateResizeHandlePosition);
   
+  // 버튼 이벤트를 즉시 연결 (지연 없음)
+  const generateBtn = document.getElementById('generateExamBtn');
+  const downloadBtn = document.getElementById('downloadImagesBtn');
+  const clearBtn = document.getElementById('clearExam');
+
+  if (generateBtn) generateBtn.addEventListener('click', generateExamPDF);
+  if (downloadBtn) downloadBtn.addEventListener('click', downloadImages);
+  if (clearBtn) clearBtn.addEventListener('click', clearExam);
+
   // 초기 로드 시 sample1 데이터 표시
   setTimeout(() => {
     createTab('problems1_structured.json', 'sample1');
-    
-    // 버튼 이벤트 연결
-    const generateBtn = document.getElementById('generateExamBtn');
-    const downloadBtn = document.getElementById('downloadImagesBtn');
-    const clearBtn = document.getElementById('clearExam');
-    
-    if (generateBtn) generateBtn.addEventListener('click', generateExamPDF);
-    if (downloadBtn) downloadBtn.addEventListener('click', downloadImages);
-    if (clearBtn) clearBtn.addEventListener('click', clearExam);
-    
+
     // DOM이 완전히 로드된 후 핸들 위치 재설정
     setTimeout(() => {
       updateResizeHandlePosition();
@@ -1500,134 +1589,157 @@ function initDashboard(){
   }, 500);
 }
 
-/* ---- PDF 생성 (고속 최적화 버전) ---- */
+/* ---- PDF 생성 (Python 화면 캡쳐 버전) ---- */
 async function generateExamPDF() {
   if (examProblems.length === 0) {
     alert('시험지에 문항이 없습니다. 먼저 문항을 선택해주세요.');
     return;
   }
 
-  const generateBtn = document.getElementById('generateExamBtn');
-  const progressDiv = document.getElementById('pdfProgress');
-  const progressFill = document.getElementById('progressFill');
-  const progressText = document.getElementById('progressText');
-
-  // UI 상태 변경
-  generateBtn.disabled = true;
-  progressDiv.style.display = 'block';
+  // 즉시 모달 표시
+  showProgressOverlay();
+  updateModalProgress(0, '준비 중...', 'Python 화면 캡쳐를 준비하고 있습니다...');
 
   try {
-    updateProgress(10, 'PDF 생성을 시작합니다...');
+    // UI 업데이트 보장
+    await sleep(10);
 
-    const { jsPDF } = window.jspdf;
-    const pdf = new jsPDF('p', 'mm', 'a4');
-
-    // 각 exam-page를 개별적으로 캡처하여 PDF에 추가
-    const examPages = document.querySelectorAll('.exam-page');
-    if (examPages.length === 0) {
-      throw new Error('시험지 페이지를 찾을 수 없습니다.');
+    // A4 미리보기 영역 확인
+    const examContainer = document.getElementById('examProblems');
+    if (!examContainer) {
+      throw new Error('시험지 미리보기 영역을 찾을 수 없습니다.');
     }
 
-    updateProgress(20, `${examPages.length}개 페이지 처리 중...`);
+    updateModalProgress(10, '캡쳐 설정 중...', '현재 페이지 URL과 캡쳐 영역을 설정합니다...');
+    await sleep(100);
 
-    for (let i = 0; i < examPages.length; i++) {
-      const page = examPages[i];
-      const progress = 20 + Math.round((i / examPages.length) * 70);
-      updateProgress(progress, `페이지 ${i + 1}/${examPages.length} 처리 중...`);
-
-      // 페이지별 고속 캡처 (최적화된 설정)
-      const canvas = await html2canvas(page, {
-        scale: 1.5, // 화질과 속도의 균형
-        backgroundColor: '#ffffff',
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        removeContainer: false,
-        foreignObjectRendering: false, // 속도 향상
-        imageTimeout: 1000, // 이미지 로딩 타임아웃 단축
-        onclone: (clonedDoc) => {
-          // 클론된 문서에서 불필요한 요소 제거
-          const clonedPage = clonedDoc.querySelector('.exam-page');
-          if (clonedPage) {
-            clonedPage.style.boxShadow = 'none';
-            clonedPage.style.transform = 'none';
-          }
+    // Python 캡쳐를 위한 설정 데이터
+    const captureData = {
+      url: window.location.href,
+      areas: [
+        {
+          selector: '#examProblems',
+          name: 'exam_content'
         }
-      });
+      ]
+    };
 
-      // A4 크기로 정확한 비율 계산
-      const A4_WIDTH_MM = 210;
-      const A4_HEIGHT_MM = 297;
+    updateModalProgress(25, 'Python 서버로 전송', '화면 캡쳐 요청을 서버로 전송합니다...');
+    await sleep(200);
 
-      // 캔버스 크기에 맞춰 비율 조정
-      const canvasRatio = canvas.width / canvas.height;
-      const a4Ratio = A4_WIDTH_MM / A4_HEIGHT_MM;
+    // Python 화면 캡쳐 API 호출
+    const response = await fetch('/api/capture-pdf', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(captureData)
+    });
 
-      let pdfWidth = A4_WIDTH_MM;
-      let pdfHeight = A4_HEIGHT_MM;
+    updateModalProgress(50, 'Python 화면 캡쳐 중...', 'Selenium으로 브라우저 화면을 캡쳐하고 있습니다...');
+    await sleep(500);
 
-      if (canvasRatio > a4Ratio) {
-        // 가로가 더 긴 경우
-        pdfHeight = A4_WIDTH_MM / canvasRatio;
-      } else {
-        // 세로가 더 긴 경우
-        pdfWidth = A4_HEIGHT_MM * canvasRatio;
-      }
-
-      // 첫 페이지가 아니면 새 페이지 추가
-      if (i > 0) {
-        pdf.addPage();
-      }
-
-      // 고품질 JPEG로 변환 (압축률 조정으로 속도 향상)
-      const imgData = canvas.toDataURL('image/jpeg', 0.85);
-
-      // PDF에 이미지 추가 (중앙 정렬)
-      const xOffset = (A4_WIDTH_MM - pdfWidth) / 2;
-      const yOffset = (A4_HEIGHT_MM - pdfHeight) / 2;
-      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, pdfWidth, pdfHeight);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `서버 오류: ${response.status}`);
     }
 
-    updateProgress(95, '파일 저장 중...');
+    updateModalProgress(80, '결과 수신 중...', 'PDF 파일을 다운로드하고 있습니다...');
+    await sleep(200);
 
-    // 파일명 생성 및 저장
-    const fileName = `수학시험지_${new Date().toISOString().slice(0, 10)}_${new Date().getHours()}시${new Date().getMinutes()}분.pdf`;
-    pdf.save(fileName);
+    const result = await response.json();
 
-    updateProgress(100, '✅ PDF 생성 완료!');
+    if (!result.success) {
+      throw new Error(result.error || '화면 캡쳐 PDF 생성에 실패했습니다');
+    }
+
+    updateModalProgress(95, '파일 저장 중...', 'PDF 파일을 브라우저에 저장 중...');
+    await sleep(300);
+
+    // Base64 데이터를 Blob으로 변환하여 다운로드
+    const pdfData = result.pdfData;
+    const binaryString = atob(pdfData);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+
+    // 다운로드 링크 생성
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+
+    // 파일명 생성
+    const now = new Date();
+    const fileName = `수학시험지_캡쳐_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.pdf`;
+
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    updateModalProgress(100, '완료!', `${fileName} 다운로드가 완료되었습니다.`);
+    await sleep(1500);
 
   } catch (error) {
     console.error('PDF 생성 중 오류:', error);
-    progressText.textContent = '❌ PDF 생성 중 오류가 발생했습니다.';
-    alert('PDF 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
+    updateModalProgress(0, '오류 발생', error.message || 'PDF 생성 중 문제가 발생했습니다.');
+    await sleep(2000);
+    alert('PDF 생성 중 오류가 발생했습니다: ' + error.message);
   } finally {
-    // UI 복원
-    generateBtn.disabled = false;
-    setTimeout(() => {
-      progressDiv.style.display = 'none';
-      resetProgress();
-    }, 1500);
+    hideProgressOverlay();
   }
 }
 
-// 진행사항 업데이트 함수 (간단 버전)
-function updateProgress(percentage, message) {
-  // 진행바 업데이트
-  const progressFill = document.getElementById('progressFill');
-  progressFill.style.width = `${percentage}%`;
-  
-  // 메시지 업데이트
-  const progressText = document.getElementById('progressText');
-  progressText.textContent = message;
+/* ---- 모달 진행사항 관리 함수들 ---- */
+function showProgressOverlay() {
+  const overlay = document.getElementById('pdfOverlay');
+  if (overlay) {
+    overlay.style.display = 'flex';
+    // 애니메이션을 위한 지연
+    setTimeout(() => overlay.classList.add('show'), 10);
+  }
 }
 
-// 진행사항 초기화 함수
+function hideProgressOverlay() {
+  const overlay = document.getElementById('pdfOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.style.display = 'none', 300);
+  }
+}
+
+function updateModalProgress(percentage, title, details = '') {
+  const progressFill = document.getElementById('progressFillModal');
+  const progressPercentage = document.getElementById('progressPercentage');
+  const progressTitle = document.getElementById('progressTitle');
+  const progressText = document.getElementById('progressTextModal');
+  const progressDetails = document.getElementById('progressDetails');
+
+  if (progressFill) progressFill.style.width = `${percentage}%`;
+  if (progressPercentage) progressPercentage.textContent = `${percentage}%`;
+  if (progressTitle) progressTitle.textContent = title;
+  if (progressText) progressText.textContent = title;
+  if (progressDetails) progressDetails.textContent = details;
+}
+
+// 기존 호환성 함수들 (작은 진행바용)
+function updateProgress(percentage, message) {
+  const progressFill = document.getElementById('progressFill');
+  if (progressFill) progressFill.style.width = `${percentage}%`;
+
+  const progressText = document.getElementById('progressText');
+  if (progressText) progressText.textContent = `${percentage}% ${message}`;
+}
+
 function resetProgress() {
   const progressFill = document.getElementById('progressFill');
-  progressFill.style.width = '0%';
-  
+  if (progressFill) progressFill.style.width = '0%';
+
   const progressText = document.getElementById('progressText');
-  progressText.textContent = '잠시만 기다려주세요...';
+  if (progressText) progressText.textContent = '잠시만 기다려주세요...';
 }
 
 // 지연 함수
@@ -1635,34 +1747,34 @@ function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-/* ---- 이미지 다운로드 기능 (고속 최적화 버전) ---- */
+/* ---- 이미지 다운로드 기능 (모달 + 병렬 처리 버전) ---- */
 async function downloadImages() {
   if (examProblems.length === 0) {
     alert('시험지에 문항이 없습니다. 먼저 문항을 선택해주세요.');
     return;
   }
 
-  const downloadBtn = document.getElementById('downloadImagesBtn');
-  const progressDiv = document.getElementById('pdfProgress');
-  const progressFill = document.getElementById('progressFill');
-  const progressText = document.getElementById('progressText');
-
-  // UI 상태 변경
-  downloadBtn.disabled = true;
-  progressDiv.style.display = 'block';
+  // 즉시 모달 표시
+  showProgressOverlay();
+  updateModalProgress(0, '이미지 다운로드 준비 중...', '시험지 페이지를 분석하고 있습니다...');
 
   try {
+    // UI 업데이트 보장
+    await sleep(10);
+
     const examPages = document.querySelectorAll('.exam-page');
 
     if (examPages.length === 0) {
       throw new Error('시험지 페이지를 찾을 수 없습니다.');
     }
 
-    updateProgress(10, '이미지 생성을 시작합니다...');
+    updateModalProgress(5, '페이지 분석 완료', `총 ${examPages.length}개 페이지를 이미지로 변환합니다`);
+    await sleep(100);
 
-    // 병렬 처리를 위한 Promise 배열
+    updateModalProgress(10, '이미지 생성 중...', '모든 페이지를 고화질로 변환하고 있습니다...');
+
+    // 병렬 처리로 모든 페이지를 이미지로 변환
     const downloadPromises = Array.from(examPages).map(async (page, i) => {
-      // 고속 캡처 설정
       const canvas = await html2canvas(page, {
         scale: 2, // 고화질 유지
         backgroundColor: '#ffffff',
@@ -1693,9 +1805,9 @@ async function downloadImages() {
       link.click();
       document.body.removeChild(link);
 
-      // 진행률 업데이트
+      // 개별 페이지 완료 시 진행률 업데이트
       const progress = 10 + Math.round(((i + 1) / examPages.length) * 85);
-      updateProgress(progress, `페이지 ${i + 1}/${examPages.length} 완료`);
+      updateModalProgress(progress, '이미지 생성 중...', `페이지 ${i + 1}/${examPages.length} 다운로드 완료`);
 
       return `페이지 ${i + 1}`;
     });
@@ -1703,19 +1815,16 @@ async function downloadImages() {
     // 모든 다운로드 완료 대기
     await Promise.all(downloadPromises);
 
-    updateProgress(100, `✅ ${examPages.length}개 페이지 이미지 다운로드 완료!`);
+    updateModalProgress(100, '다운로드 완료!', `${examPages.length}개 이미지 파일이 다운로드되었습니다.`);
+    await sleep(1000);
 
   } catch (error) {
     console.error('이미지 다운로드 중 오류:', error);
-    progressText.textContent = '❌ 이미지 다운로드 중 오류가 발생했습니다.';
+    updateModalProgress(0, '오류 발생', error.message || '이미지 다운로드 중 문제가 발생했습니다.');
+    await sleep(2000);
     alert('이미지 다운로드 중 오류가 발생했습니다. 다시 시도해주세요.');
   } finally {
-    // UI 복원
-    downloadBtn.disabled = false;
-    setTimeout(() => {
-      progressDiv.style.display = 'none';
-      resetProgress();
-    }, 1500);
+    hideProgressOverlay();
   }
 }
 

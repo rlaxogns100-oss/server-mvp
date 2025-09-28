@@ -348,6 +348,140 @@ async function runPythonLLMStructure() {
   });
 }
 
+async function runPythonPDFGenerator(examData) {
+  return new Promise((resolve, reject) => {
+    console.log('Python PDF 생성 스크립트 실행 중...');
+
+    // 임시 파일에 시험지 데이터 저장
+    const tempFilePath = 'temp_exam_data.json';
+    try {
+      fs.writeFileSync(tempFilePath, JSON.stringify(examData, null, 2), 'utf8');
+    } catch (error) {
+      reject(new Error(`임시 파일 생성 실패: ${error.message}`));
+      return;
+    }
+
+    const pythonProcess = spawn('python', ['pipeline/generate_pdf.py'], {
+      cwd: process.cwd(),
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+      console.log('Python PDF stdout:', data.toString().trim());
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+      console.error('Python PDF stderr:', data.toString().trim());
+    });
+
+    pythonProcess.on('close', (code) => {
+      // 임시 파일 정리
+      if (fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (e) {
+          console.warn('임시 파일 삭제 실패:', e.message);
+        }
+      }
+
+      if (code === 0) {
+        console.log('Python PDF 생성 완료');
+        resolve(stdout);
+      } else {
+        console.error(`Python PDF 생성 스크립트 실행 실패: 종료 코드 ${code}`);
+        reject(new Error(`PDF 생성 스크립트 실행 실패: ${stderr}`));
+      }
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Python PDF 생성 프로세스 오류:', error.message);
+
+      // 임시 파일 정리
+      if (fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (e) {
+          console.warn('임시 파일 삭제 실패:', e.message);
+        }
+      }
+
+      reject(new Error(`Python PDF 생성 실행 오류: ${error.message}`));
+    });
+  });
+}
+
+async function runPythonScreenCapture(captureConfig) {
+  return new Promise((resolve, reject) => {
+    console.log('Python 화면 캡쳐 스크립트 실행 중...');
+
+    // 임시 파일에 캡쳐 설정 저장
+    const tempFilePath = 'temp_capture_config.json';
+    try {
+      fs.writeFileSync(tempFilePath, JSON.stringify(captureConfig, null, 2), 'utf8');
+    } catch (error) {
+      reject(new Error(`임시 파일 생성 실패: ${error.message}`));
+      return;
+    }
+
+    const pythonProcess = spawn('python', ['pipeline/capture_pdf.py'], {
+      cwd: process.cwd(),
+      stdio: ['pipe', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+      console.log('Python Capture stdout:', data.toString().trim());
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+      console.error('Python Capture stderr:', data.toString().trim());
+    });
+
+    pythonProcess.on('close', (code) => {
+      // 임시 파일 정리
+      if (fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (e) {
+          console.warn('임시 파일 삭제 실패:', e.message);
+        }
+      }
+
+      if (code === 0) {
+        console.log('Python 화면 캡쳐 완료');
+        resolve(stdout);
+      } else {
+        console.error(`Python 화면 캡쳐 스크립트 실행 실패: 종료 코드 ${code}`);
+        reject(new Error(`화면 캡쳐 스크립트 실행 실패: ${stderr}`));
+      }
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Python 화면 캡쳐 프로세스 오류:', error.message);
+
+      // 임시 파일 정리
+      if (fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (e) {
+          console.warn('임시 파일 삭제 실패:', e.message);
+        }
+      }
+
+      reject(new Error(`Python 화면 캡쳐 실행 오류: ${error.message}`));
+    });
+  });
+}
+
 const server = http.createServer((req, res) => {
   // 이미지 파일 서빙
   if (req.method === 'GET' && req.url.startsWith('/images/')) {
@@ -565,6 +699,126 @@ const server = http.createServer((req, res) => {
       </body>
       </html>
     `);
+  } else if (req.method === 'GET' && (req.url.endsWith('.js') || req.url.endsWith('.css'))) {
+    // 정적 파일 서빙 (JS, CSS)
+    const filePath = path.join(__dirname, req.url);
+    if (fs.existsSync(filePath)) {
+      const ext = path.extname(filePath);
+      const mimeTypes = {
+        '.js': 'application/javascript',
+        '.css': 'text/css'
+      };
+      const contentType = mimeTypes[ext] || 'text/plain';
+
+      res.writeHead(200, { 'Content-Type': contentType + '; charset=utf-8' });
+      fs.createReadStream(filePath).pipe(res);
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('File not found');
+    }
+  } else if (req.method === 'POST' && req.url === '/api/capture-pdf') {
+    // 화면 캡쳐 PDF 생성 API
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const captureData = JSON.parse(body);
+
+        console.log('📸 화면 캡쳐 PDF 생성 요청 수신');
+
+        // 캡쳐 설정 구성
+        const captureConfig = {
+          url: captureData.url || 'http://localhost:3000',
+          areas: captureData.areas || [
+            {
+              selector: '#examProblems',
+              name: 'exam_content'
+            }
+          ]
+        };
+
+        // Python 화면 캡쳐 호출
+        const result = await runPythonScreenCapture(captureConfig);
+
+        // 생성된 PDF 파일 확인
+        const pdfPath = 'output/captured_exam.pdf';
+        if (fs.existsSync(pdfPath)) {
+          // PDF 파일을 base64로 인코딩하여 반환
+          const pdfBuffer = fs.readFileSync(pdfPath);
+          const pdfBase64 = pdfBuffer.toString('base64');
+
+          res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8'
+          });
+          res.end(JSON.stringify({
+            success: true,
+            message: '화면 캡쳐 PDF 생성 완료',
+            pdfData: pdfBase64,
+            filename: 'captured_exam.pdf'
+          }));
+        } else {
+          throw new Error('PDF 파일이 생성되지 않았습니다');
+        }
+
+      } catch (error) {
+        console.error('화면 캡쳐 PDF 생성 API 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message,
+          message: '화면 캡쳐 PDF 생성 중 오류가 발생했습니다'
+        }));
+      }
+    });
+  } else if (req.method === 'POST' && req.url === '/api/generate-pdf') {
+    // 텍스트 기반 PDF 생성 API (백업용)
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const examData = JSON.parse(body);
+
+        console.log('🔧 텍스트 PDF 생성 요청 수신:', examData.problems?.length || 0, '개 문제');
+
+        // Python PDF 생성기 호출
+        const result = await runPythonPDFGenerator(examData);
+
+        // 생성된 PDF 파일 확인
+        const pdfPath = 'output/generated_exam.pdf';
+        if (fs.existsSync(pdfPath)) {
+          // PDF 파일을 base64로 인코딩하여 반환
+          const pdfBuffer = fs.readFileSync(pdfPath);
+          const pdfBase64 = pdfBuffer.toString('base64');
+
+          res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8'
+          });
+          res.end(JSON.stringify({
+            success: true,
+            message: 'PDF 생성 완료',
+            pdfData: pdfBase64,
+            filename: 'generated_exam.pdf'
+          }));
+        } else {
+          throw new Error('PDF 파일이 생성되지 않았습니다');
+        }
+
+      } catch (error) {
+        console.error('PDF 생성 API 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message,
+          message: 'PDF 생성 중 오류가 발생했습니다'
+        }));
+      }
+    });
   } else if (req.method === 'POST' && req.url === '/upload') {
     const uploadSingle = upload.single('pdf');
     uploadSingle(req, res, async (err) => {

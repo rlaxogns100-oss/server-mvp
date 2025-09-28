@@ -183,24 +183,61 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   cursor:pointer;transition:all 0.2s ease;position:relative;word-break:break-word;
 }
 
-/* PDF 생성 진행사항 표시 (간단 버전) */
+/* PDF 생성 모달 오버레이 */
+.pdf-overlay{
+  position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);
+  z-index:10000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity 0.3s ease;
+}
+.pdf-overlay.show{opacity:1}
+
+.pdf-progress-modal{
+  background:#fff;padding:40px;border-radius:20px;box-shadow:0 25px 80px rgba(0,0,0,0.3);
+  min-width:400px;max-width:500px;text-align:center;transform:scale(0.9);transition:transform 0.3s ease;
+}
+.pdf-overlay.show .pdf-progress-modal{transform:scale(1)}
+
+.progress-spinner{margin-bottom:20px}
+.spinner{
+  width:48px;height:48px;border:4px solid #e5e7eb;border-top:4px solid #3b82f6;border-radius:50%;
+  animation:spin 1s linear infinite;margin:0 auto;
+}
+@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}
+
+.progress-title{font-size:20px;font-weight:700;color:#1e40af;margin-bottom:24px}
+
+.progress-bar-container{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.progress-bar-modal{
+  flex:1;height:12px;background:#e5e7eb;border-radius:6px;overflow:hidden;position:relative;
+}
+.progress-fill-modal{
+  height:100%;background:linear-gradient(90deg,#3b82f6,#1e40af);border-radius:6px;
+  transition:width 0.4s ease;width:0%;position:relative;overflow:hidden;
+}
+.progress-fill-modal::after{
+  content:'';position:absolute;top:0;left:0;right:0;bottom:0;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent);
+  animation:shimmer 1.5s infinite;
+}
+@keyframes shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+
+.progress-percentage{font-size:18px;font-weight:800;color:#1e40af;min-width:60px}
+
+.progress-text-modal{font-size:16px;color:#64748b;font-weight:500;margin-bottom:12px}
+.progress-details{font-size:14px;color:#94a3b8;min-height:20px}
+
+/* 기존 작은 진행바 (호환성 유지) */
 .pdf-progress{
-  background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #0ea5e9;border-radius:12px;padding:16px;margin:12px 0;
-  box-shadow:0 4px 12px rgba(14,165,233,0.1);
+  background:linear-gradient(135deg,#f0f9ff,#e0f2fe);border:1px solid #0ea5e9;border-radius:6px;padding:8px;margin:6px 0;
+  box-shadow:0 1px 4px rgba(14,165,233,0.1);
 }
-.progress-header{
-  display:flex;align-items:center;gap:8px;margin-bottom:12px;
-}
-.progress-icon{font-size:20px}
-.progress-title{font-weight:700;color:#0c4a6e;font-size:14px}
 .progress-bar{
-  width:100%;height:8px;background:#e0f2fe;border-radius:4px;overflow:hidden;margin-bottom:8px;
+  width:100%;height:4px;background:#e0f2fe;border-radius:2px;overflow:hidden;margin-bottom:4px;
 }
 .progress-fill{
-  height:100%;background:linear-gradient(90deg,#0ea5e9,#0284c7);border-radius:4px;transition:width 0.3s ease;width:0%;
+  height:100%;background:linear-gradient(90deg,#0ea5e9,#0284c7);border-radius:2px;transition:width 0.15s ease;width:0%;
 }
 .progress-text{
-  font-size:12px;color:#0c4a6e;text-align:center;font-weight:500;
+  font-size:11px;color:#0c4a6e;text-align:center;font-weight:600;
 }
 .exam-problem:hover{border-color:#3b82f6;background:#f1f5f9;transform:translateY(-1px);box-shadow:0 4px 8px rgba(0,0,0,0.12)}
 .exam-problem::before{
