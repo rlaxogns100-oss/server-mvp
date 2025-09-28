@@ -1483,10 +1483,240 @@ function initDashboard(){
   // 초기 로드 시 sample1 데이터 표시
   setTimeout(() => {
     createTab('problems1_structured.json', 'sample1');
+    
+    // 버튼 이벤트 연결
+    const generateBtn = document.getElementById('generateExamBtn');
+    const downloadBtn = document.getElementById('downloadImagesBtn');
+    const clearBtn = document.getElementById('clearExam');
+    
+    if (generateBtn) generateBtn.addEventListener('click', generateExamPDF);
+    if (downloadBtn) downloadBtn.addEventListener('click', downloadImages);
+    if (clearBtn) clearBtn.addEventListener('click', clearExam);
+    
     // DOM이 완전히 로드된 후 핸들 위치 재설정
     setTimeout(() => {
       updateResizeHandlePosition();
     }, 100);
   }, 500);
 }
+
+/* ---- PDF 생성 (고속 최적화 버전) ---- */
+async function generateExamPDF() {
+  if (examProblems.length === 0) {
+    alert('시험지에 문항이 없습니다. 먼저 문항을 선택해주세요.');
+    return;
+  }
+
+  const generateBtn = document.getElementById('generateExamBtn');
+  const progressDiv = document.getElementById('pdfProgress');
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+
+  // UI 상태 변경
+  generateBtn.disabled = true;
+  progressDiv.style.display = 'block';
+
+  try {
+    updateProgress(10, 'PDF 생성을 시작합니다...');
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+
+    // 각 exam-page를 개별적으로 캡처하여 PDF에 추가
+    const examPages = document.querySelectorAll('.exam-page');
+    if (examPages.length === 0) {
+      throw new Error('시험지 페이지를 찾을 수 없습니다.');
+    }
+
+    updateProgress(20, `${examPages.length}개 페이지 처리 중...`);
+
+    for (let i = 0; i < examPages.length; i++) {
+      const page = examPages[i];
+      const progress = 20 + Math.round((i / examPages.length) * 70);
+      updateProgress(progress, `페이지 ${i + 1}/${examPages.length} 처리 중...`);
+
+      // 페이지별 고속 캡처 (최적화된 설정)
+      const canvas = await html2canvas(page, {
+        scale: 1.5, // 화질과 속도의 균형
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        removeContainer: false,
+        foreignObjectRendering: false, // 속도 향상
+        imageTimeout: 1000, // 이미지 로딩 타임아웃 단축
+        onclone: (clonedDoc) => {
+          // 클론된 문서에서 불필요한 요소 제거
+          const clonedPage = clonedDoc.querySelector('.exam-page');
+          if (clonedPage) {
+            clonedPage.style.boxShadow = 'none';
+            clonedPage.style.transform = 'none';
+          }
+        }
+      });
+
+      // A4 크기로 정확한 비율 계산
+      const A4_WIDTH_MM = 210;
+      const A4_HEIGHT_MM = 297;
+
+      // 캔버스 크기에 맞춰 비율 조정
+      const canvasRatio = canvas.width / canvas.height;
+      const a4Ratio = A4_WIDTH_MM / A4_HEIGHT_MM;
+
+      let pdfWidth = A4_WIDTH_MM;
+      let pdfHeight = A4_HEIGHT_MM;
+
+      if (canvasRatio > a4Ratio) {
+        // 가로가 더 긴 경우
+        pdfHeight = A4_WIDTH_MM / canvasRatio;
+      } else {
+        // 세로가 더 긴 경우
+        pdfWidth = A4_HEIGHT_MM * canvasRatio;
+      }
+
+      // 첫 페이지가 아니면 새 페이지 추가
+      if (i > 0) {
+        pdf.addPage();
+      }
+
+      // 고품질 JPEG로 변환 (압축률 조정으로 속도 향상)
+      const imgData = canvas.toDataURL('image/jpeg', 0.85);
+
+      // PDF에 이미지 추가 (중앙 정렬)
+      const xOffset = (A4_WIDTH_MM - pdfWidth) / 2;
+      const yOffset = (A4_HEIGHT_MM - pdfHeight) / 2;
+      pdf.addImage(imgData, 'JPEG', xOffset, yOffset, pdfWidth, pdfHeight);
+    }
+
+    updateProgress(95, '파일 저장 중...');
+
+    // 파일명 생성 및 저장
+    const fileName = `수학시험지_${new Date().toISOString().slice(0, 10)}_${new Date().getHours()}시${new Date().getMinutes()}분.pdf`;
+    pdf.save(fileName);
+
+    updateProgress(100, '✅ PDF 생성 완료!');
+
+  } catch (error) {
+    console.error('PDF 생성 중 오류:', error);
+    progressText.textContent = '❌ PDF 생성 중 오류가 발생했습니다.';
+    alert('PDF 생성 중 오류가 발생했습니다. 다시 시도해주세요.');
+  } finally {
+    // UI 복원
+    generateBtn.disabled = false;
+    setTimeout(() => {
+      progressDiv.style.display = 'none';
+      resetProgress();
+    }, 1500);
+  }
+}
+
+// 진행사항 업데이트 함수 (간단 버전)
+function updateProgress(percentage, message) {
+  // 진행바 업데이트
+  const progressFill = document.getElementById('progressFill');
+  progressFill.style.width = `${percentage}%`;
+  
+  // 메시지 업데이트
+  const progressText = document.getElementById('progressText');
+  progressText.textContent = message;
+}
+
+// 진행사항 초기화 함수
+function resetProgress() {
+  const progressFill = document.getElementById('progressFill');
+  progressFill.style.width = '0%';
+  
+  const progressText = document.getElementById('progressText');
+  progressText.textContent = '잠시만 기다려주세요...';
+}
+
+// 지연 함수
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/* ---- 이미지 다운로드 기능 (고속 최적화 버전) ---- */
+async function downloadImages() {
+  if (examProblems.length === 0) {
+    alert('시험지에 문항이 없습니다. 먼저 문항을 선택해주세요.');
+    return;
+  }
+
+  const downloadBtn = document.getElementById('downloadImagesBtn');
+  const progressDiv = document.getElementById('pdfProgress');
+  const progressFill = document.getElementById('progressFill');
+  const progressText = document.getElementById('progressText');
+
+  // UI 상태 변경
+  downloadBtn.disabled = true;
+  progressDiv.style.display = 'block';
+
+  try {
+    const examPages = document.querySelectorAll('.exam-page');
+
+    if (examPages.length === 0) {
+      throw new Error('시험지 페이지를 찾을 수 없습니다.');
+    }
+
+    updateProgress(10, '이미지 생성을 시작합니다...');
+
+    // 병렬 처리를 위한 Promise 배열
+    const downloadPromises = Array.from(examPages).map(async (page, i) => {
+      // 고속 캡처 설정
+      const canvas = await html2canvas(page, {
+        scale: 2, // 고화질 유지
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        removeContainer: false,
+        foreignObjectRendering: false,
+        imageTimeout: 500,
+        onclone: (clonedDoc) => {
+          const clonedPage = clonedDoc.querySelector('.exam-page');
+          if (clonedPage) {
+            clonedPage.style.boxShadow = 'none';
+            clonedPage.style.transform = 'none';
+          }
+        }
+      });
+
+      // 고품질 PNG로 변환
+      const dataUrl = canvas.toDataURL('image/png', 1.0);
+
+      // 다운로드 링크 생성 및 실행
+      const link = document.createElement('a');
+      const timestamp = new Date().toISOString().slice(0, 10);
+      link.download = `시험지_${timestamp}_페이지_${i + 1}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // 진행률 업데이트
+      const progress = 10 + Math.round(((i + 1) / examPages.length) * 85);
+      updateProgress(progress, `페이지 ${i + 1}/${examPages.length} 완료`);
+
+      return `페이지 ${i + 1}`;
+    });
+
+    // 모든 다운로드 완료 대기
+    await Promise.all(downloadPromises);
+
+    updateProgress(100, `✅ ${examPages.length}개 페이지 이미지 다운로드 완료!`);
+
+  } catch (error) {
+    console.error('이미지 다운로드 중 오류:', error);
+    progressText.textContent = '❌ 이미지 다운로드 중 오류가 발생했습니다.';
+    alert('이미지 다운로드 중 오류가 발생했습니다. 다시 시도해주세요.');
+  } finally {
+    // UI 복원
+    downloadBtn.disabled = false;
+    setTimeout(() => {
+      progressDiv.style.display = 'none';
+      resetProgress();
+    }, 1500);
+  }
+}
+
 document.addEventListener('DOMContentLoaded', initDashboard);
