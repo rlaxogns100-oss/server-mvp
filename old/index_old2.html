@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>제로타이핑 · 시험지 제작 및 파일 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+  window.MathJax = {
+    tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true,processEnvironments:true},
+    options:{skipHtmlTags:['script','noscript','style','textarea','pre']}
+  };
+</script>
+<style>
+:root{
+  --bg:#f7f9fc;--surface:#fff;--muted:#6b7280;--ink:#0f172a;--line:#e5e7eb;
+  --brand:#2563eb;--brand-2:#10b981;--accent:#f59e0b;--danger:#ef4444;
+  --radius:14px;--shadow:0 10px 30px rgba(2,6,23,.08);--shadow-sm:0 4px 14px rgba(2,6,23,.06)
+}
+*{box-sizing:border-box}html,body{height:100%}
+body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 100%);color:var(--ink);font-family:Pretendard,system-ui,-apple-system,Segoe UI,Roboto,'Noto Sans KR',sans-serif}
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{backdrop-filter:blur(8px) saturate(1.1);background:linear-gradient(180deg,#f3f7ffcc,#f9fbffcc);border-right:1px solid #e6edf7;padding:18px 16px}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2396ff,#2563eb);color:#fff;display:grid;place-items:center;font-weight:900;box-shadow:var(--shadow-sm)}
+.brand .t1{font-weight:900}.brand .t2{font-size:12px;color:#475569}
+.nav{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#0b2447;cursor:pointer}
+.nav a:hover{background:#eff6ff}.nav a.active{background:#dbeafe;color:#0b2447;font-weight:800}
+.main{display:grid;grid-template-rows:auto 1fr;gap:16px;padding:18px 22px}
+.topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center}
+.search{display:flex;gap:8px;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow-sm)}
+.search input{flex:1;border:0;outline:none;font:inherit}
+.kbd{padding:4px 8px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#334155}
+.user{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:6px 10px;box-shadow:var(--shadow-sm)}
+.avatar{width:28px;height:28px;border-radius:999px;background:#c7d2fe;display:grid;place-items:center;font-weight:800}
+.badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#ecfeff;color:#0ea5e9;border:1px solid #bae6fd}
+
+.btn{appearance:none;border:1px solid transparent;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer;background:#eef2ff;color:#1e40af;transition:.2s}
+.btn.primary{background:linear-gradient(135deg,#4f9aff,#2563eb);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;border-color:#e5e7eb;color:#0f172a}
+.btn.danger{background:#fee2e2;color:#991b1b}.btn.small{padding:6px 10px;border-radius:10px;font-size:12px}
+.btn:hover{transform:translateY(-1px);box-shadow:var(--shadow)}.btn:active{transform:translateY(1px)}
+
+.file-management-content{display:flex;flex-direction:column;gap:16px}
+.toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+h2{margin:0;font-size:20px;font-weight:900}.counter{color:var(--muted);font-weight:700}
+.grid{display:grid;gap:14px}
+.upload-row{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;margin-bottom:20px}
+.files-grid{display:grid;gap:14px;grid-template-columns:repeat(3,1fr)}
+.tile{display:flex;gap:12px;align-items:center;background:var(--surface);border:1px solid #e6edf6;border-radius:14px;padding:14px;box-shadow:var(--shadow-sm);transition:transform .05s,box-shadow .2s,background .2s,border-color .2s}
+.tile:not(.selected):hover{transform:translateY(-1px);box-shadow:var(--shadow)}
+.tile.selected{background:#e0f2fe !important;border:0 !important;outline:none !important;box-shadow:0 0 0 2px rgba(37,99,235,.25) !important;transform:translateY(-1px) !important}
+.icon{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;color:#fff;font-weight:900;background:linear-gradient(135deg,#a78bfa,#6366f1)}
+.icon.folder{background:linear-gradient(135deg,#34d399,#10b981)}
+.meta{margin-left:auto;display:flex;gap:8px;align-items:center;color:var(--muted);font-size:12px}
+.name{font-weight:800}.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{padding:4px 8px;border-radius:999px;font-size:12px;background:#f1f5f9;border:1px solid #e5e7eb;color:#334155}
+.actions{margin-left:auto;display:flex;gap:8px}
+
+.upload-tile{position:relative;border:2px dashed #f59e0b !important;background:linear-gradient(135deg,#fffbeb,#fef3c7) !important;transition:.2s;width:400px;height:100px;border-radius:16px !important;display:flex !important;justify-content:center !important;align-items:center !important;gap:12px !important;padding:16px !important;cursor:pointer}
+.upload-tile:hover{border-color:#d97706 !important;background:linear-gradient(135deg,#fef3c7,#fde68a) !important}
+.upload-tile.drag-over{border-color:#92400e !important;background:linear-gradient(135deg,#fde68a,#fcd34d) !important}
+.upload-icon{font-size:28px;color:#d97706;line-height:1}.upload-title{font-size:16px;font-weight:900;color:#92400e;line-height:1}
+
+.small-tile{padding:8px 12px !important;height:60px !important;align-items:center !important;cursor:pointer;user-select:none;position:relative}
+.small-tile:not(.selected):hover{background:#f8fafc !important;border-color:#3b82f6 !important}
+.small-tile.dragging{opacity:.6;transform:rotate(3deg)}
+.small-tile .icon{width:24px !important;height:24px !important;font-size:12px !important}
+.small-tile .name{font-size:14px !important;font-weight:800}
+
+.drag-ghost{position:fixed;pointer-events:none;z-index:1000;opacity:.9;transform:rotate(2deg);background:var(--surface);border:2px solid #3b82f6;border-radius:12px;padding:6px 10px;display:flex;gap:8px;align-items:center;box-shadow:var(--shadow)}
+.drop-zone{position:relative}
+.drop-zone.drag-over{background:#dbeafe !important;border-color:#2563eb !important}
+.drop-indicator{position:absolute;inset:0;border:2px dashed #3b82f6;border-radius:12px;background:rgba(59,130,246,.08);display:none}
+
+.empty{grid-column:1/-1;text-align:center;color:#64748b;padding:40px 0;background:linear-gradient(180deg,#fff,#f8fbff);border:1px dashed #dbeafe;border-radius:14px}
+
+.workspace{display:grid;grid-template-columns:320px 1fr 340px;gap:16px;height:calc(100vh - 120px)}
+.explorer{background:var(--surface);border:1px solid #e6edf6;border-radius:16px;padding:12px;box-shadow:var(--shadow-sm);overflow:hidden;display:flex;flex-direction:column}
+.ex-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ex-head h3{margin:0;font-size:16px;font-weight:900}
+.ex-search{display:flex;gap:8px;align-items:center;background:#fbfdff;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.ex-search input{flex:1;border:0;outline:none;font:inherit}
+.tree{margin-top:8px;display:flex;flex-direction:column;gap:6px;overflow-y:auto;flex:1}
+details.folder{background:#f8fafc;border:1px solid #e6edf6;border-radius:12px;padding:8px}
+details.folder[open]{background:#f3f8ff}
+summary{list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+.ficon{width:22px;height:22px;border-radius:6px;background:#34d399;display:grid;place-items:center;color:#fff;font-weight:900;font-size:12px}
+.fname{font-weight:800}.count{margin-left:auto;font-size:12px;color:#64748b}
+.files{margin-top:8px;padding-left:26px;display:flex;flex-direction:column;gap:6px}
+.file{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e6edf6;border-radius:10px;padding:8px 10px;cursor:pointer;transition:.2s}
+.file:hover{background:#f8fafc;border-color:#2563eb}
+.file .ico{width:20px;height:20px;border-radius:6px;background:#a78bfa;display:grid;place-items:center;color:#fff;font-weight:900;font-size:10px}
+.file .file-meta{margin-left:auto;color:#64748b;font-size:12px}
+.file .open{margin-left:6px;padding:4px 8px;border-radius:8px;border:1px solid #dbeafe;background:#eef2ff;color:#1e40af;font-weight:800;font-size:10px}
+
+.editor{display:grid;grid-template-rows:auto 1fr auto;gap:12px;overflow:hidden}
+.editor-toolbar{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center}
+.tabstrip{display:flex;gap:8px;flex-wrap:wrap}
+.tab{display:flex;gap:8px;align-items:center;background:#eaf4ff;border:1px solid #cfe6ff;color:#0b3a55;border-radius:999px;padding:6px 12px;font-weight:800;cursor:pointer;transition:.2s}
+.tab.active{background:#cfeaff}.tab:hover{background:#dbeafe}
+.tab .tab-count{font-size:12px;opacity:.8}
+.chkall{display:flex;align-items:center;gap:8px}
+
+.preview{background:#fff;border:1px solid #e6edf6;border-radius:16px;padding:16px;box-shadow:var(--shadow-sm);overflow-y:auto}
+.problem{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #eef2f7;border-radius:12px;margin-bottom:10px}
+.pnum{font-weight:900;margin-right:6px}.pbody{line-height:1.65;flex:1}
+.preview .table{border:1px solid #111;border-collapse:collapse;margin:8px 0;width:100%}
+.preview .table td{border:1px solid #111;padding:6px 8px}.cta{display:flex;gap:8px;justify-content:flex-end}
+
+.inspect{display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.card{background:#fff;border:1px solid #e6edf6;border-radius:16px;padding:14px;box-shadow:var(--shadow-sm)}
+.card h4{margin:0 0 6px 0;font-size:14px;font-weight:900}
+.badge2{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#ecfdf5;border:1px solid #bbf7d0;color:#047857}
+.badge3{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3}
+.log{font:12px/1.5 ui-monospace,SFMono-Regular,Menlo,Consolas,'Courier New',monospace;color:#334155;max-height:220px;overflow:auto}
+.k{color:#059669}.e{color:#dc2626}
+.help{color:#475569;line-height:1.6;margin:6px 0 0 18px}
+
+.progress-container{margin-top:16px;display:none}
+.progress-bar{width:100%;height:8px;background:#e5e7eb;border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#34d399,#10b981);border-radius:4px;width:0%;transition:width .3s}
+.progress-text{margin-top:8px;font-size:12px;color:#64748b;text-align:center}
+.note{color:#64748b;margin-top:8px}
+
+/* Breadcrumb row (업로드 박스 아래 한 줄 전체 차지) */
+.breadcrumb-row{ grid-column:1/-1; }
+.breadcrumb{
+  display:flex; align-items:center; gap:8px; padding:6px 10px;
+  background:#fff; border:1px solid #e6edf6; border-radius:12px; box-shadow:var(--shadow-sm);
+}
+.breadcrumb .crumb{
+  display:inline-flex; align-items:center; gap:6px;
+  padding:6px 10px; border-radius:999px; font-weight:800; cursor:pointer;
+  background:#f8fafc; border:1px solid #e5e7eb; color:#0f172a;
+}
+.breadcrumb .sep{ opacity:.5; }
+
+/* Storage usage (라이브러리 옆) */
+.usage{ display:flex; align-items:center; gap:8px }
+.usage-bar{
+  width:160px; height:8px; border-radius:999px; background:#e5e7eb; overflow:hidden;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,.05);
+}
+.usage-fill{
+  height:100%; width:0%; border-radius:999px;
+  background:linear-gradient(90deg,#60a5fa,#2563eb);
+  transition: width .25s ease;
+}
+.usage-text{ font-size:12px; color:#475569; font-weight:800 }
+
+/* Up tile (상위 폴더로) */
+.up-tile .icon{ background:linear-gradient(135deg,#94a3b8,#64748b) }
+
+@media (max-width:1100px){
+  .grid{grid-template-columns:repeat(2,1fr)}
+  .app{grid-template-columns:1fr}
+  .sidebar{position:sticky;top:0;z-index:2}
+  .workspace{grid-template-columns:1fr;grid-template-rows:auto auto auto;height:auto}
+}
+</style>
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">Z</div>
+        <div><div class="t1">제로타이핑</div><div class="t2">클릭만으로 만드는 학습지</div></div>
+      </div>
+      <nav class="nav">
+        <a href="#" id="navFiles" class="active">📁 내 파일 관리</a>
+        <a href="#" id="navBuilder">📝 시험지 제작</a>
+        <a href="#" id="navClass">📚 수업</a>
+        <a href="#" id="navAccount">👤 계정</a>
+      </nav>
+    </aside>
+
+    <main class="main">
+      <div class="topbar">
+        <div class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#64748b" stroke-width="2" stroke-linecap="round"/></svg>
+          <input id="globalSearch" placeholder="학습지명, 태그, 출제자로 검색" />
+          <span class="kbd">/</span>
+        </div>
+        <span class="badge" id="statusBadge">파일 관리</span>
+        <div class="user"><div class="avatar">김</div>김태훈 선생님</div>
+      </div>
+
+      <!-- 파일 관리 -->
+      <section id="fileManagementTab" class="file-management-content">
+        <div>
+          <div class="toolbar">
+            <h2>라이브러리</h2>
+            <div id="usage" class="usage" style="margin-left:10px;">
+              <div class="usage-bar">
+                <div id="usageFill" class="usage-fill"></div>
+              </div>
+              <span id="usageText" class="usage-text">2.4GB / 15GB</span>
+            </div>
+            <span class="counter" id="selectionCounter">선택 0개</span>
+            <div style="flex:1"></div>
+            <button class="btn" id="renameBtn">이름 변경</button>
+            <button class="btn danger" id="deleteBtn">삭제</button>
+            <button class="btn primary" id="newFolderBtn">새 폴더</button>
+          </div>
+
+          <div class="grid" id="filesGrid">
+            <div class="upload-row">
+              <div></div>
+              <div class="tile upload-tile" id="uploadTile">
+                <div class="upload-icon">↑</div>
+                <div class="upload-title">새 파일 업로드</div>
+                <input type="file" id="fileInput" accept=".pdf" multiple style="display:none;">
+                <div class="progress-container" id="progressContainer" style="position:absolute;bottom:8px;left:16px;right:16px;display:none;">
+                  <div class="progress-bar" style="height:3px;"><div class="progress-fill" id="progressFill"></div></div>
+                  <div class="progress-text" id="progressText" style="font-size:9px;margin-top:2px;text-align:center;">업로드 중...</div>
+                </div>
+              </div>
+              <div></div>
+            </div>
+
+            <div class="breadcrumb-row">
+              <div id="breadcrumb" class="breadcrumb"></div>
+            </div>
+
+            <!-- 폴더/파일 그리드: 렌더러가 채움 -->
+            <div class="files-grid" id="fileGridBody"></div>
+          </div>
+        </div>
+        <div class="note">※ 업로드하면 라이브러리에 추가됩니다. 시험지 제작 탭에서 골라 보세요.</div>
+      </section>
+
+      <!-- 시험지 제작 -->
+      <section id="examBuilderTab" class="workspace" style="display:none;">
+        <aside class="explorer">
+          <div class="ex-head"><h3>내 파일 탐색기</h3></div>
+          <div class="ex-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4-4M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg>
+            <input placeholder="폴더/파일 검색" id="explorerSearch" />
+          </div>
+
+          <div class="tree">
+            <details class="folder" open>
+              <summary><div class="ficon">📂</div><span class="fname">폴더_테스트</span><span class="count">3개 파일</span></summary>
+              <div class="files">
+                <div class="file" data-file="sample1"><div class="ico">📄</div><div class="name">sample1</div><div class="file-meta">문항 12개</div><button class="open">열기</button></div>
+                <div class="file" data-file="gaon"><div class="ico">📄</div><div class="name">가온고 중간고사</div><div class="file-meta">문항 6개</div><button class="open">열기</button></div>
+                <div class="file" data-file="bojeong"><div class="ico">📄</div><div class="name">보정고 중간고사</div><div class="file-meta">문항 6개</div><button class="open">열기</button></div>
+              </div>
+            </details>
+
+            <details class="folder">
+              <summary><div class="ficon">📂</div><span class="fname">새 폴더</span><span class="count">0개 파일</span></summary>
+            </details>
+
+            <h4 style="margin:6px 0 0 2px;font-size:12px;color:#94a3b8;font-weight:900;letter-spacing:.02em">미분류</h4>
+            <div class="file" style="margin-top:6px" data-file="english"><div class="ico">📄</div><div class="name">영어 모의 1회</div><div class="file-meta">문항 2개</div><button class="open">열기</button></div>
+          </div>
+        </aside>
+
+        <section class="editor">
+          <div class="editor-toolbar">
+            <div class="tabstrip" id="tabstrip">
+              <div class="tab active" data-file="sample1">📄 sample1 <span class="tab-count">· 3 선택</span></div>
+              <div class="tab" data-file="gaon">📄 가온고 중간고사 <span class="tab-count">· 6 선택</span></div>
+            </div>
+            <label class="chkall"><input type="checkbox" id="selectAllProblems" /> 모두 선택</label>
+            <div style="display:flex;gap:8px">
+              <button class="btn ghost">PDF 다운로드</button>
+              <button class="btn primary" id="createExamBtn">선택한 문제로 시험지 제작</button>
+            </div>
+          </div>
+
+          <div class="preview" id="problemsPreview">
+            <div class="problem"><input type="checkbox" class="problem-checkbox" data-problem="1" /><div class="pnum">1.</div><div class="pbody">다음 표에서 가로, 세로, 대각선의 합이 모두 <b>3x² − 6x + 9</b> 가 되도록 (가) 자리에 알맞은 다항식 <b>f(x)</b> 를 쓴다. 이때 <b>f(2)</b> 의 값은?</div></div>
+            <table class="table"><tr><td>4x³+5x²+2x+7</td><td>(가)</td></tr><tr><td>3x³+4x²+x+6</td><td>x³+2x²−x+4</td></tr></table>
+            <div class="problem"><input type="checkbox" class="problem-checkbox" data-problem="2" /><div class="pnum">2.</div><div class="pbody">$$x+y+z=3, \\frac{1}{x}+\\frac{1}{y}+\\frac{1}{z}=\\frac{2}{3}$$ 일 때, $$x^3+y^3+z^3+3xyz$$ 의 값은?</div></div>
+            <div class="problem"><input type="checkbox" class="problem-checkbox" data-problem="3" /><div class="pnum">3.</div><div class="pbody">다항식 $$x^4−2x^3+ax^2+bx+c$$ 가 $$(x−1)^3$$ 으로 나누어떨어진다. 상수 $$a,b,c$$ 에 대하여 $$a+2b+3c$$ 의 값은?</div></div>
+          </div>
+
+          <div class="cta"><button class="btn ghost">초기화</button><button class="btn primary">선택한 문제로 시험지 제작</button></div>
+        </section>
+
+        <aside class="inspect">
+          <div class="card"><h4>선택 요약</h4><div style="color:#334155" id="selectionSummary">총 <b>0</b>문항 · 0개 파일</div><div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap" id="selectionBadges"></div></div>
+          <div class="card"><h4>제작 로그</h4><div class="log" style="margin-top:4px" id="buildLog"><div class="k">[14:33:43] ✅ 제작 완료 (4.5s)</div><div class="k">[14:28:29] 업로드 완료: 보정고 중간고사.pdf</div><div class="e">[14:24:14] (예시) 오류: 파싱 실패…</div></div></div>
+          <div class="card"><h4>도움말</h4><ul class="help"><li>좌측 탐색기에서 폴더를 열고 파일을 선택합니다.</li><li>중앙 미리보기에서 문항 체크 → 상단 버튼으로 제작.</li><li>오른쪽 패널에서 선택 개수와 로그를 확인하세요.</li></ul></div>
+        </aside>
+      </section>
+
+      <div class="note" id="footerNote">※ 업로드하면 라이브러리에 추가됩니다. 시험지 제작 탭에서 골라 보세요.</div>
+    </main>
+  </div>
+
+<script>
+  let problems=[],selectedProblems=[],currentTab='files';
+  const selectedFiles=new Set();
+
+  document.addEventListener('DOMContentLoaded',()=>{
+    initializeNavigation();
+    initializeFileManagement();
+    initializeExamBuilder();
+    if(window.MathJax) renderMathJax();
+  });
+
+  /* ---------- NAV ---------- */
+  function initializeNavigation(){
+    document.getElementById('navFiles').addEventListener('click',()=>switchTab('files'));
+    document.getElementById('navBuilder').addEventListener('click',()=>switchTab('builder'));
+    document.getElementById('navClass').addEventListener('click',()=>alert('수업 탭은 준비 중입니다.'));
+    document.getElementById('navAccount').addEventListener('click',()=>alert('계정 탭은 준비 중입니다.'));
+  }
+  function switchTab(tab){
+    currentTab=tab;
+    const fileTab=document.getElementById('fileManagementTab');
+    const builderTab=document.getElementById('examBuilderTab');
+    const statusBadge=document.getElementById('statusBadge');
+    const footerNote=document.getElementById('footerNote');
+    document.querySelectorAll('.nav a').forEach(a=>a.classList.remove('active'));
+    if(tab==='files'){
+      document.getElementById('navFiles').classList.add('active');
+      fileTab.style.display='flex'; builderTab.style.display='none';
+      statusBadge.textContent='파일 관리';
+      footerNote.textContent='※ 업로드하면 라이브러리에 추가됩니다. 시험지 제작 탭에서 골라 보세요.';
+    }else{
+      document.getElementById('navBuilder').classList.add('active');
+      fileTab.style.display='none'; builderTab.style.display='grid';
+      statusBadge.textContent='제작 모드';
+      footerNote.textContent='※ 디자인 시안입니다. 기능 연결 전이라 상호작용은 일부만 구현됩니다.';
+      renderMathJax();
+    }
+  }
+
+  /* ---------- FILES: VFS 시스템 ---------- */
+  // 가상 파일시스템
+  window.__FS__ = {
+    name:'root', type:'folder', children:[
+      {name:'가온고 중간고사', type:'folder', children:[
+        {name:'sample1', type:'file'},
+        {name:'가온고 1-1 중간고사', type:'file'}
+      ]},
+      {name:'보정고 기말', type:'folder', children:[]},
+      {name:'영어 모의고사', type:'file'},
+      {name:'수학 문제집', type:'file'}
+    ]
+  };
+  // 현재 경로(폴더들의 배열). 루트부터.
+  window.__PATH__ = [__FS__];
+  // 선택 집합: path 문자열 키(고유)
+  window.__SEL__ = new Set();
+
+  // 가상 사용량(용량 바) 초기값
+  const GB = 1024*1024*1024;
+  window.__USAGE__ = { used: 2.4*GB, capacity: 15*GB }; // 초기 표기: 2.4GB / 15GB
+
+  function initializeFileManagement(){
+    // 업로드/툴바/렌더 초기화
+    setupUploadV2();
+    bindToolbarActions();
+    renderDirectory();
+    // Dblclick/Select/Drag 등 바인딩은 렌더 시마다 재적용
+  }
+
+  /* ---------- 유틸: 경로 문자열, 노드 탐색 ---------- */
+  function pathOf(node){
+    // 루트 기준 고유 경로 문자열 생성
+    const names = [];
+    let cur = node;
+    while (cur && cur.__parent) { names.push(cur.name); cur = cur.__parent; }
+    return names.reverse().join('/');
+  }
+  function attachParents(node, parent=null){
+    node.__parent = parent;
+    if(node.type==='folder' && Array.isArray(node.children)){
+      node.children.forEach(ch => attachParents(ch, node));
+    }
+  }
+  function currentFolder(){
+    return __PATH__[__PATH__.length-1];
+  }
+  function isDescendant(folderNode, maybeChild){
+    let cur = maybeChild;
+    while (cur && cur.__parent){
+      if(cur.__parent === folderNode) return true;
+      cur = cur.__parent;
+    }
+    return false;
+  }
+
+  /* ---------- 렌더링 ---------- */
+  function renderDirectory(){
+    attachParents(__FS__, null);
+    const body = document.getElementById('fileGridBody');
+    body.innerHTML = '';
+
+    const folder = currentFolder();
+
+    /* (신규) 상위 폴더로 타일 */
+    if(__PATH__.length > 1){
+      const up = document.createElement('div');
+      up.className = 'tile small-tile up-tile drop-zone';
+      up.dataset.type = 'up';
+      up.draggable = false;
+      up.innerHTML = `
+        <div class="icon">⬆️</div>
+        <div><div class="name">상위 폴더로</div></div>
+        <div class="drop-indicator"></div>
+      `;
+      body.appendChild(up);
+    }
+
+    const children = (folder.children||[]).slice().sort((a,b)=>{
+      if(a.type!==b.type) return a.type==='folder' ? -1 : 1;
+      return a.name.localeCompare(b.name,'ko');
+    });
+
+    if(children.length===0){
+      const empty = document.createElement('div');
+      empty.className='empty';
+      empty.innerHTML = '이 폴더가 비어 있습니다. 상단의 <b>새 파일 업로드</b> 또는 <b>새 폴더</b>를 사용하세요.';
+      body.appendChild(empty);
+    }
+
+    children.forEach(item=>{
+      const tile = document.createElement('div');
+      tile.className = `tile small-tile${item.type==='folder' ? ' drop-zone' : ''}`;
+      tile.dataset.type = item.type;
+      tile.draggable = true;
+      tile.innerHTML = `
+        <div class="icon ${item.type==='folder'?'folder':''}">${item.type==='folder'?'📂':'📄'}</div>
+        <div><div class="name">${item.name}</div></div>
+        ${item.type==='folder' ? '<div class="drop-indicator"></div>' : ''}
+      `;
+      if(__SEL__.has(pathOf(item))) tile.classList.add('selected');
+      body.appendChild(tile);
+    });
+
+    renderBreadcrumb();
+    bindSelectionAndDblClick();
+    bindDragAndDrop();    // ← up-tile에도 드롭 바인딩됨
+    renderUsage();        // ← 용량 바 갱신
+    updateSelectionCounter();
+  }
+
+  /* ---------- 브레드크럼 ---------- */
+  function renderBreadcrumb(){
+    const bc = document.getElementById('breadcrumb'); // 위치 변경된 컨테이너
+    if(!bc) return;
+    bc.innerHTML = '';
+    __PATH__.forEach((node, idx)=>{
+      const span = document.createElement('span');
+      span.className = 'crumb';
+      span.textContent = (idx===0?'홈':node.name);
+      span.addEventListener('click', ()=>{
+        __PATH__ = __PATH__.slice(0, idx+1);
+        renderDirectory();
+      });
+      bc.appendChild(span);
+      if(idx<__PATH__.length-1){
+        const sep = document.createElement('span');
+        sep.className='sep'; sep.textContent='›'; bc.appendChild(sep);
+      }
+    });
+  }
+
+  /* ---------- 선택/더블클릭 ---------- */
+  function bindSelectionAndDblClick(){
+    const grid = document.getElementById('fileGridBody');
+
+    // 클릭(토글) + Ctrl/Cmd 멀티 + Shift 범위
+    grid.onmousedown = (e)=>{
+      const tile = e.target.closest('.small-tile');
+      if(!tile) return;
+      e.preventDefault(); // 텍스트 선택 방지
+
+      const tiles = [...grid.querySelectorAll('.small-tile')];
+      const idx = tiles.indexOf(tile);
+      const multi = e.ctrlKey || e.metaKey;
+      const range = e.shiftKey;
+
+      // 항목 찾기
+      const name = tile.querySelector('.name').textContent;
+      const item = findChildByName(currentFolder(), name);
+      const key  = pathOf(item);
+
+      const selectedTiles = tiles.filter(t=>t.classList.contains('selected'));
+      const onlyThis = (selectedTiles.length===1 && selectedTiles[0]===tile);
+
+      // 다시 클릭 → 해제
+      if(!multi && !range && onlyThis){
+        tile.classList.remove('selected'); __SEL__.delete(key); updateSelectionCounter(); return;
+      }
+
+      if(range){
+        // 첫 선택 인덱스 찾기(없으면 자기 자신)
+        let last = tiles.findIndex(t=>t.classList.contains('selected'));
+        if(last<0) last = idx;
+        const [a,b] = [Math.min(last,idx), Math.max(last,idx)];
+        for(let i=a;i<=b;i++){
+          const t = tiles[i];
+          const nm = t.querySelector('.name').textContent;
+          const it = findChildByName(currentFolder(), nm);
+          const ky = pathOf(it);
+          t.classList.add('selected'); __SEL__.add(ky);
+        }
+      }else if(multi){
+        tile.classList.toggle('selected');
+        if(tile.classList.contains('selected')) __SEL__.add(key); else __SEL__.delete(key);
+      }else{
+        // 단일
+        tiles.forEach(t=>t.classList.remove('selected')); __SEL__.clear();
+        tile.classList.add('selected'); __SEL__.add(key);
+      }
+      updateSelectionCounter();
+    };
+
+    // 더블클릭: 폴더 → 진입, 파일 → 제작 탭으로
+    grid.ondblclick = (e)=>{
+      const tile = e.target.closest('.small-tile');
+      if(!tile) return;
+
+      // (신규) 상위 폴더로
+      if(tile.classList.contains('up-tile')){
+        __PATH__.pop();
+        renderDirectory();
+        return;
+      }
+
+      const name = tile.querySelector('.name').textContent;
+      const item = findChildByName(currentFolder(), name);
+      if(item.type==='folder'){
+        __PATH__.push(item);
+        renderDirectory();
+      }else{
+        switchTab('builder');
+        updateBuildLog(`파일 열기: ${item.name}`);
+      }
+    };
+  }
+
+  function findChildByName(folder, name){
+    return (folder.children||[]).find(x=>x.name===name);
+  }
+
+  /* ---------- 드래그 & 드롭(파일/폴더 모두) ---------- */
+  function bindDragAndDrop(){
+    const grid = document.getElementById('fileGridBody');
+
+    grid.addEventListener('dragstart', (e)=>{
+      const tile = e.target.closest('.small-tile');
+      if(!tile) return;
+
+      const name = tile.querySelector('.name').textContent;
+      const item = findChildByName(currentFolder(), name);
+      const key  = pathOf(item);
+
+      // 선택 안된 항목 드래그 → 그 항목만 선택
+      if(!__SEL__.has(key)){
+        [...grid.querySelectorAll('.small-tile.selected')].forEach(t=>t.classList.remove('selected'));
+        __SEL__.clear();
+        tile.classList.add('selected'); __SEL__.add(key);
+        updateSelectionCounter();
+      }
+
+      const payload = JSON.stringify([...__SEL__]);
+      e.dataTransfer.setData('application/json', payload);
+      e.dataTransfer.effectAllowed = 'move';
+
+      // 드래그 고스트
+      const ghost = document.createElement('div');
+      ghost.className='drag-ghost';
+      ghost.innerHTML = `📁 ${__SEL__.size}개 항목`;
+      document.body.appendChild(ghost);
+      const move=(ev)=>{ ghost.style.left=(ev.pageX+12)+'px'; ghost.style.top=(ev.pageY+12)+'px'; };
+      document.addEventListener('dragover',move);
+      e.target.addEventListener('dragend',()=>{ document.removeEventListener('dragover',move); ghost.remove(); },{once:true});
+    });
+
+    // 폴더 타일을 드롭 타겟으로
+    grid.querySelectorAll('.small-tile[data-type="folder"]').forEach(folderTile=>{
+      ['dragenter','dragover'].forEach(ev=>folderTile.addEventListener(ev, e=>{
+        e.preventDefault(); folderTile.classList.add('drag-over');
+      }));
+      ['dragleave','drop'].forEach(ev=>folderTile.addEventListener(ev, e=>{
+        e.preventDefault(); folderTile.classList.remove('drag-over');
+      }));
+      folderTile.addEventListener('drop', e=>{
+        const targetName = folderTile.querySelector('.name').textContent;
+        const targetFolder = findChildByName(currentFolder(), targetName);
+        const keys = JSON.parse(e.dataTransfer.getData('application/json')||'[]');
+        if(!keys.length) return;
+        moveEntries(keys, targetFolder);
+      });
+    });
+
+    /* (신규) 상위 폴더로 드롭 타겟 */
+    const up = grid.querySelector('.up-tile');
+    if(up){
+      ['dragenter','dragover'].forEach(ev=>up.addEventListener(ev, e=>{
+        e.preventDefault(); up.classList.add('drag-over');
+      }));
+      ['dragleave','drop'].forEach(ev=>up.addEventListener(ev, e=>{
+        e.preventDefault(); up.classList.remove('drag-over');
+      }));
+      up.addEventListener('drop', e=>{
+        const keys = JSON.parse(e.dataTransfer.getData('application/json')||'[]');
+        if(!keys.length) return;
+        const parentFolder = __PATH__[__PATH__.length-2]; // 상위
+        moveEntries(keys, parentFolder);
+      });
+    }
+  }
+
+  /* 이동 로직: 파일/폴더 공통, 자기 자신/하위로 이동 방지 */
+  function moveEntries(pathKeys, targetFolder){
+    if(targetFolder.type!=='folder') return;
+
+    // 안전 검사 및 이동
+    const toMove = [];
+    pathKeys.forEach(k=>{
+      const node = getNodeByPathKey(k);
+      if(!node) return;
+      // 폴더를 자기 자신/자손 폴더로 이동 금지
+      if(node.type==='folder' && (node===targetFolder || isDescendant(node, targetFolder))){
+        return alert(`폴더 "${node.name}"을(를) 자신의 하위로 이동할 수 없습니다.`);
+      }
+      toMove.push(node);
+    });
+
+    if(!toMove.length) return;
+
+    // 이름 충돌 처리: 뒤에 (1), (2) 붙임
+    toMove.forEach(node=>{
+      // 원 부모에서 제거
+      const parent = node.__parent;
+      parent.children = parent.children.filter(x=>x!==node);
+
+      // 타겟에서 이름 유니크 보장
+      let newName = node.name, i=1;
+      while( (targetFolder.children||[]).some(ch=>ch.name===newName) ){
+        const base = node.name.replace(/\(\d+\)$/,'');
+        newName = `${base}(${i++})`;
+      }
+      node.name = newName;
+
+      // 붙이기
+      targetFolder.children = targetFolder.children || [];
+      targetFolder.children.push(node);
+      node.__parent = targetFolder;
+
+      // 선택 집합 업데이트
+      __SEL__.delete(pathOf(node)); // 옛 키
+      __SEL__.add(pathOf(node));    // 새 키
+    });
+
+    renderDirectory();
+    alert(`항목 ${toMove.length}개를 "${targetFolder.name}"으로 이동했습니다.`);
+  }
+
+  /* 경로키→노드 */
+  function getNodeByPathKey(key){
+    const parts = key.split('/').filter(Boolean);
+    let cur = __FS__;
+    for(const p of parts){
+      if(!cur.children) return null;
+      cur = cur.children.find(x=>x.name===p);
+      if(!cur) return null;
+    }
+    return cur;
+  }
+
+  /* ---------- 툴바: 이름변경/삭제/새폴더 ---------- */
+  function bindToolbarActions(){
+    document.getElementById('renameBtn').onclick = ()=>{
+      if(__SEL__.size!==1) return alert('이름 변경은 1개만 선택했을 때 가능합니다.');
+      const key = [...__SEL__][0];
+      const node = getNodeByPathKey(key);
+      const parent = node.__parent;
+      const newName = prompt('새 이름을 입력하세요', node.name);
+      if(!newName || newName===node.name) return;
+
+      // 동일 폴더 내 이름 충돌 체크
+      if((parent.children||[]).some(ch=>ch!==node && ch.name===newName)){
+        return alert('같은 폴더에 동일한 이름이 이미 있습니다.');
+      }
+      node.name = newName;
+      __SEL__.delete(key); __SEL__.add(pathOf(node));
+      renderDirectory();
+    };
+
+    document.getElementById('deleteBtn').onclick = ()=>{
+      if(__SEL__.size===0) return alert('삭제할 항목을 선택하세요.');
+      if(!confirm(`선택한 ${__SEL__.size}개 항목을 삭제할까요?`)) return;
+      const keys = [...__SEL__];
+      keys.forEach(k=>{
+        const node = getNodeByPathKey(k);
+        if(!node || !node.__parent) return;
+
+        // 사용량 차감(파일만, 사이즈 없으면 5MB 가정)
+        if(node.type==='file'){
+          __USAGE__.used = Math.max(0, __USAGE__.used - (node.size || 5*1024*1024));
+        }else if(node.type==='folder'){
+          // 폴더면 하위 파일들의 추정 용량 차감
+          const sum = sumFolderSize(node);
+          __USAGE__.used = Math.max(0, __USAGE__.used - sum);
+        }
+
+        node.__parent.children = node.__parent.children.filter(x=>x!==node);
+        __SEL__.delete(k);
+      });
+      renderDirectory();
+    };
+
+    document.getElementById('newFolderBtn').onclick = ()=>{
+      const folder = currentFolder();
+      let base = '새 폴더', name = base, i=1;
+      while( (folder.children||[]).some(ch=>ch.name===name) ){
+        name = `${base} (${i++})`;
+      }
+      const node = { name, type:'folder', children:[] };
+      folder.children = folder.children || [];
+      folder.children.push(node);
+      renderDirectory();
+    };
+  }
+
+  /* ---------- 업로드: 현재 폴더에 파일 추가 ---------- */
+  function setupUploadV2(){
+    const uploadTile=document.getElementById('uploadTile');
+    const fileInput=document.getElementById('fileInput');
+    const progressContainer=document.getElementById('progressContainer');
+    const progressFill=document.getElementById('progressFill');
+    const progressText=document.getElementById('progressText');
+
+    uploadTile.addEventListener('click',()=>fileInput.click());
+    fileInput.addEventListener('change',e=>handleFiles(e.target.files));
+
+    ['dragenter','dragover'].forEach(ev=>uploadTile.addEventListener(ev,e=>{
+      e.preventDefault(); uploadTile.classList.add('drag-over');
+    }));
+    ['dragleave','drop'].forEach(ev=>uploadTile.addEventListener(ev,e=>{
+      e.preventDefault(); uploadTile.classList.remove('drag-over');
+    }));
+    uploadTile.addEventListener('drop',e=>handleFiles(e.dataTransfer.files));
+
+    function handleFiles(fileList){
+      const pdfs=[...fileList].filter(f=>f.type==='application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
+      if(!pdfs.length){ alert('PDF 파일만 업로드 가능합니다.'); return; }
+
+      progressContainer.style.display='block';
+      let i=0;
+      (function next(){
+        if(i>=pdfs.length){ setTimeout(()=>progressContainer.style.display='none',500); return; }
+        const f=pdfs[i++];
+        progressText.textContent=`${f.name} 업로드 중...`; progressFill.style.width='0%';
+
+        // 데모 진행바 (실서버 연동 시 fetch 사용)
+        let p=0; const t=setInterval(()=>{
+          p+=12; progressFill.style.width=p+'%';
+          if(p>=100){
+            clearInterval(t);
+            // 현재 폴더에 파일 생성(확장자 제거)
+            const name = f.name.replace(/\.pdf$/i,'');
+            const folder = currentFolder();
+            // 이름 충돌 회피
+            let newName = name, n=1;
+            while( (folder.children||[]).some(ch=>ch.name===newName) ){
+              newName = `${name} (${n++})`;
+            }
+            folder.children = folder.children || [];
+            folder.children.push({ name:newName, type:'file', size: f.size || (5*1024*1024) });
+
+            // 용량 업데이트
+            __USAGE__.used += (f.size || (5*1024*1024));
+
+            renderDirectory();
+            next();
+          }
+        },100);
+      })();
+    }
+  }
+
+  /* ---------- UI 보조 ---------- */
+  function updateSelectionCounter(){
+    const counter=document.getElementById('selectionCounter');
+    counter.textContent=`선택 ${__SEL__.size}개`;
+  }
+
+  function renderUsage(){
+    const used = __USAGE__.used || 0;
+    const cap  = __USAGE__.capacity || (15*GB);
+    const pct  = Math.max(0, Math.min(100, Math.round(used/cap*100)));
+    const fill = document.getElementById('usageFill');
+    const text = document.getElementById('usageText');
+    if(fill) fill.style.width = pct + '%';
+
+    function fmt(bytes){
+      const gb = bytes/GB;
+      return (gb>=1? gb.toFixed(1): (bytes/1024/1024).toFixed(0)+'MB') + (gb>=1?'GB':'');
+    }
+    if(text) text.textContent = `${fmt(used)} / ${fmt(cap)}`;
+  }
+
+  function sumFolderSize(folder){
+    let total = 0;
+    (folder.children||[]).forEach(ch=>{
+      if(ch.type==='file') total += (ch.size || 5*1024*1024);
+      else total += sumFolderSize(ch);
+    });
+    return total;
+  }
+
+  /* ---------- BUILDER ---------- */
+  function initializeExamBuilder(){
+    document.querySelectorAll('.file .open').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        e.stopPropagation();
+        updateBuildLog('파일 열기: '+btn.parentElement.dataset.file);
+      });
+    });
+    document.getElementById('selectAllProblems').addEventListener('change',toggleAllProblems);
+    document.querySelectorAll('.problem-checkbox').forEach(cb=>cb.addEventListener('change',updateProblemSelection));
+    document.getElementById('createExamBtn').addEventListener('click',createExam);
+  }
+  function toggleAllProblems(){
+    const checked=document.getElementById('selectAllProblems').checked;
+    document.querySelectorAll('.problem-checkbox').forEach(cb=>cb.checked=checked);
+    updateProblemSelection(); setTimeout(renderMathJax,100);
+  }
+  function updateProblemSelection(){
+    const n=document.querySelectorAll('.problem-checkbox:checked').length;
+    document.getElementById('selectionSummary').innerHTML=`총 <b>${n}</b>문항 · ${n?2:0}개 파일`;
+    const tabs=document.querySelectorAll('.tab .tab-count'); tabs.forEach(t=>t.textContent=`· ${Math.floor(n/2)} 선택`);
+    setTimeout(renderMathJax,100);
+  }
+  function createExam(){
+    const n=document.querySelectorAll('.problem-checkbox:checked').length;
+    if(!n){alert('시험지를 제작하려면 최소 1개 이상의 문제를 선택해주세요.');return;}
+    updateBuildLog(`시험지 제작 시작: ${n}개 문항`);
+    setTimeout(()=>{updateBuildLog(`✅ 시험지 제작 완료 (${n}개 문항)`);alert(`시험지가 제작되었습니다! (${n}개 문항)`);},1500);
+  }
+  function updateBuildLog(msg){
+    const log=document.getElementById('buildLog'); const time=new Date().toLocaleTimeString('ko-KR',{hour12:false});
+    const div=document.createElement('div'); div.className='k'; div.textContent=`[${time}] ${msg}`; log.insertBefore(div,log.firstChild);
+  }
+
+  /* ---------- MathJax ---------- */
+  function renderMathJax(){ if(window.MathJax?.typesetPromise){ MathJax.typesetPromise(); } }
+
+  // 검색
+  document.getElementById('globalSearch').addEventListener('input',e=>{
+    if(currentTab!=='files') return;
+    const q=e.target.value.toLowerCase();
+    document.querySelectorAll('.files-grid .tile:not(.empty)').forEach(t=>{
+      const name=t.querySelector('.name')?.textContent.toLowerCase()||'';
+      t.style.display=name.includes(q)?'flex':'none';
+    });
+  });
+  document.getElementById('explorerSearch').addEventListener('input',e=>{
+    const q=e.target.value.toLowerCase();
+    document.querySelectorAll('.file').forEach(f=>{
+      const name=f.querySelector('.name').textContent.toLowerCase();
+      f.style.display=name.includes(q)?'flex':'none';
+    });
+  });
+
+  // 단축키: /
+  document.addEventListener('keydown',e=>{
+    if(e.key==='/' && !e.target.matches('input')){e.preventDefault();document.getElementById('globalSearch').focus();}
+  });
+</script>
+</body>
+</html>

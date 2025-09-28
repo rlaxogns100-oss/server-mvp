@@ -46,7 +46,7 @@ if META_FILE.exists():
 IMAGE_SIZE_LIMITS = {
     "min_width": 1.0,
     "min_height": 0.5,
-    "max_width": 4.0,
+    "max_width": 3.5,
     "max_height": 3.0,
 }
 
@@ -153,14 +153,140 @@ def clean_text_content(text: str) -> str:
     # Markdown 이미지를 LaTeX로 변환: ![](URL) -> \\includegraphics
     text = re.sub(r'!\\[\\]\\(([^)]+)\\)', convert_markdown_image_to_latex, text)
 
+    # 수식 환경을 올바르게 복원
+    # aligned 환경을 array 환경으로 변경하되 & 문제 해결
+    def fix_aligned_env(match):
+        content = match.group(0)
+        # & 기호를 \\\\ 로 변경하여 줄바꿈으로 처리
+        content = content.replace(' & ', ' \\\\\\\\ ')
+        content = content.replace('begin{aligned}', 'begin{array}{c}')
+        content = content.replace('end{aligned}', 'end{array}')
+        return content
+
+    text = re.sub(r'\[\s*begin\{aligned\}.*?end\{aligned\}\s*\]', fix_aligned_env, text, flags=re.DOTALL)
+    text = re.sub(r'begin\{aligned\}.*?end\{aligned\}', fix_aligned_env, text, flags=re.DOTALL)
+
+    # cases 환경 복원 - & 기호를 올바른 형식으로 변경
+    def fix_cases_env(match):
+        content = match.group(0)
+        # cases 환경에서는 & 를 \\quad 로 변경
+        content = content.replace(' & ', ' \\\\quad ')
+        content = content.replace('begin{cases}', 'begin{cases}')
+        content = content.replace('end{cases}', 'end{cases}')
+        return content
+
+    text = re.sub(r'\[\s*f\(x\)=\s*begin\{cases\}.*?end\{cases\}\s*\]', fix_cases_env, text, flags=re.DOTALL)
+    text = re.sub(r'begin\{cases\}.*?end\{cases\}', fix_cases_env, text, flags=re.DOTALL)
+
+    # array 환경 복원
+    def fix_array_env(match):
+        content = match.group(0)
+        # array에서 & 를 \\\\ 로 변경
+        content = content.replace(' & ', ' \\\\\\\\ ')
+        return content
+
+    text = re.sub(r'\[\s*begin\{array\}.*?end\{array\}\s*\]', fix_array_env, text, flags=re.DOTALL)
+    text = re.sub(r'begin\{array\}.*?end\{array\}', fix_array_env, text, flags=re.DOTALL)
+
+    # 수식 명령어들 복원 (더 포괄적으로)
+    math_commands = [
+        'frac', 'sqrt', 'text', 'overline', 'mathrm', 'mathrmA', 'mathrmB', 'mathrmC', 'mathrmD', 'mathrmE', 'mathrmF',
+        'mathrmO', 'mathrmP', 'mathrmQ', 'mathrmH', 'mathrmL',
+        'cdots', 'leq', 'geq', 'neq', 'mid', 'pm', 'times', 'cdot', 'cap', 'cup', 'subset', 'varnothing',
+        'pi', 'theta', 'alpha', 'beta', 'gamma', 'delta', 'epsilon',
+        'sin', 'cos', 'tan', 'log', 'ln', 'exp',
+        'left', 'right', 'begin', 'end'
+    ]
+
+    for cmd in math_commands:
+        # 백슬래시가 없는 명령어들을 찾아서 복원
+        text = re.sub(f'(?<!\\\\){cmd}{{', f'\\\\{cmd}{{', text)
+        text = re.sub(f'(?<!\\\\){cmd}\\b(?![a-zA-Z])', f'\\\\{cmd}', text)
+
+    # 특별한 케이스들 처리
+    # 잘못된 수식 모드 수정
+    text = re.sub(r'\$([^$]*)\$\s*\'\s*\$([^$]*)\$', r'$\1\2$', text)  # $y=m$ ' $x+n$ -> $y=mx+n$
+
+    # 파이프 문자 문제 해결
+    text = text.replace(' \\| ', ' ')  # 불필요한 파이프 제거
+    text = text.replace('\\|', '')     # 단독 파이프 제거
+
+    # mathrm 명령어들을 더 정확하게 처리
+    text = re.sub(r'(?<!\\)mathrm\{([A-Z])\}', r'\\mathrm{\1}', text)
+
+    # 수식 모드에서 연속된 mathrm 처리 수정
+    def fix_mathrm_in_math(match):
+        content = match.group(1)
+        content = re.sub(r'(?<!\\)mathrm\{([A-Z])\}', r'\\mathrm{\1}', content)
+        return f'${content}$'
+
+    text = re.sub(r'\$([^$]+)\$', fix_mathrm_in_math, text)
+
+    # 분수 표현 수정
+    text = re.sub(r'(?<!\\)frac\{([^}]+)\}\{([^}]+)\}', r'\\frac{\1}{\2}', text)
+
+    # overline 표현 수정
+    text = re.sub(r'(?<!\\)overline\{([^}]+)\}', r'\\overline{\1}', text)
+
+    # sqrt와 기타 수학 명령어들 수정
+    text = re.sub(r'(?<!\\)sqrt\{([^}]+)\}', r'\\sqrt{\1}', text)
+    text = re.sub(r'(?<!\\)(qrt)\{', r'\\s\1{', text)  # qrt -> sqrt
+
+    # 추가 수학 기호들
+    text = re.sub(r'(?<!\\)(quad)\b', r'\\\1', text)
+    text = re.sub(r'(?<!\\)(varnothing)\b', r'\\\1', text)
+
+    # 수식 환경이 아닌 곳의 & 문자만 이스케이프
+    # 먼저 수식 환경을 임시로 표시
+    import uuid
+
+    # 수식 환경을 임시 문자열로 교체
+    math_envs = []
+    temp_id = str(uuid.uuid4()).replace('-', '')
+
+    # \[ ... \] 환경 보호
+    def protect_display_math(match):
+        idx = len(math_envs)
+        math_envs.append(match.group(0))
+        return f"MATHENV{temp_id}{idx}MATHENV"
+
+    text = re.sub(r'\\\[.*?\\\]', protect_display_math, text, flags=re.DOTALL)
+
+    # $ ... $ 환경 보호
+    def protect_inline_math(match):
+        idx = len(math_envs)
+        math_envs.append(match.group(0))
+        return f"MATHENV{temp_id}{idx}MATHENV"
+
+    text = re.sub(r'\$[^$]+\$', protect_inline_math, text)
+
+    # 이제 수식 환경이 아닌 곳의 & 만 이스케이프
+    text = text.replace(' & ', ' \\& ')
+    text = text.replace('& ', '\\& ')
+    text = text.replace(' &', ' \\&')
+
+    # 수식 환경 복원
+    for i, math_env in enumerate(math_envs):
+        text = text.replace(f"MATHENV{temp_id}{i}MATHENV", math_env)
+
+    # 보기 라벨 박스 처리는 examples 블록에서만 적용
+
+    # 문제가 되는 특수 문자와 구문 제거 (수식 관련 제외)
+    problematic_patterns = [
+        r'<<[^>]*>>',  # <<sample7>> 같은 패턴
+        r'정답률[^가-힣]*\[[^\]]*\]',  # 정답률 관련 구문
+    ]
+
+    for pattern in problematic_patterns:
+        text = re.sub(pattern, '', text)
+
     # 불필요한 라벨 제거
     unwanted_patterns = [
         r'\\section\\*\\{\\[보기\\]\\}',
         r'\\section\\*\\{<보기>\\}',
-        r'\\[\\s*보\\s*기\\s*\\]',
-        r'\\(\\s*보\\s*기\\s*\\)',
         r'\\[\\d+\\.?\\d*점\\]',  # 배점 정보
         r'\\[\\d+\\.?\\d*점,\\s*부분점수\\s*있음\\]',
+        r'ection\\*\\{[^}]*\\}',  # 잘못된 section 구문
     ]
 
     for pattern in unwanted_patterns:
@@ -214,16 +340,17 @@ def process_table_block(content) -> str:
     if isinstance(content, str):
         # LaTeX 테이블을 center 환경으로 감싸기
         if "\\begin{tabular}" in content:
-            return f"\\begin{{center}}\\n{content}\\n\\end{{center}}"
+            return f"\\begin{{center}}\n{content}\n\\end{{center}}"
         return content
 
     return str(content)
 
 
 def process_examples_block(content) -> str:
-    """보기 블록 처리"""
+    """보기 블록 처리 - 네모 박스로 감싸기"""
     if isinstance(content, list):
-        result = "\\textbf{[보기]}\\\\\n"
+        result = "\\begin{center}\n\\fbox{\\begin{minipage}{0.9\\linewidth}\n"
+        result += "\\textbf{[보기]}\\\\\n"
         korean_letters = ['가', '나', '다', '라', '마']
 
         for i, item in enumerate(content):
@@ -233,9 +360,11 @@ def process_examples_block(content) -> str:
                 letter = str(i+1)
             result += f"\\noindent ({letter}) {item}\\\\\n"
 
+        result += "\\end{minipage}}\n\\end{center}"
         return result
 
-    return f"\\textbf{{[보기]}} {str(content)}"
+    # 단일 보기 내용인 경우에도 박스로 감싸기
+    return f"\\begin{{center}}\n\\fbox{{\\begin{{minipage}}{{0.9\\linewidth}}\n\\textbf{{[보기]}} {str(content)}\n\\end{{minipage}}}}\n\\end{{center}}"
 
 
 def process_content_blocks(blocks: list) -> str:
@@ -259,7 +388,7 @@ def process_content_blocks(blocks: list) -> str:
         if processed_content and processed_content.strip():
             result_parts.append(processed_content)
 
-    return "\\n\\n".join(result_parts)
+    return "\n\n".join(result_parts)
 
 
 # ==================== 선택지 처리 ====================
@@ -295,7 +424,7 @@ def process_options(options: list) -> str:
 
     latex_lines.append("\\end{enumerate}")
 
-    return "\\n".join(latex_lines)
+    return "\n".join(latex_lines)
 
 
 # ==================== LaTeX 문서 생성 ====================
@@ -347,7 +476,7 @@ def generate_document_header() -> str:
         "\\begin{enumerate}[label={\\textbf{\\arabic*.}}, leftmargin=*, itemsep=0.5em]"
     ])
 
-    return "\\n".join(header_parts)
+    return "\n".join(header_parts)
 
 
 def generate_single_problem(problem_data: dict) -> str:
@@ -369,15 +498,15 @@ def generate_single_problem(problem_data: dict) -> str:
 
     # minipage로 문제 블록화 (페이지/컬럼에서 끊기지 않게)
     if problem_parts:
-        content = "\\n\\n".join(problem_parts)
-        return f"\\item \\leavevmode\\begin{{minipage}}[t]{{\\linewidth}}{content}\\end{{minipage}}\\n\\n"
+        content = "\n\n".join(problem_parts)
+        return f"\\item \\leavevmode\\begin{{minipage}}[t]{{\\linewidth}}{content}\\end{{minipage}}\n\n"
 
     return ""
 
 
 def generate_document_footer() -> str:
     """문서 마무리"""
-    return "\\end{enumerate}\\n\\end{multicols}\\n\\end{document}\\n"
+    return "\\end{enumerate}\n\\end{multicols}\n\\end{document}\n"
 
 
 # ==================== PDF 컴파일 ====================
@@ -399,18 +528,23 @@ def compile_latex_to_pdf(tex_file_path: Path) -> None:
         ])
 
     if not available_commands:
-        raise SystemExit("❌ LaTeX 엔진(tectonic 또는 xelatex)이 필요합니다.")
+        raise SystemExit("LaTeX 엔진(tectonic 또는 xelatex)이 필요합니다.")
 
     # 컴파일 시도
     for command in available_commands:
         print(f"[실행] {' '.join(command)}")
         result = subprocess.run(command)
 
-        if result.returncode == 0 and (OUTPUT_DIR / "exam2.pdf").exists():
-            print(f"✅ PDF 생성 완료: {OUTPUT_DIR / 'exam2.pdf'}")
+        pdf_path = OUTPUT_DIR / "exam2.pdf"
+        if result.returncode == 0 and pdf_path.exists():
+            print(f"PDF 생성 완료: {pdf_path}")
+            return
+        elif pdf_path.exists():
+            # PDF가 생성되었지만 경고가 있는 경우
+            print(f"PDF 생성 완료 (경고 있음): {pdf_path}")
             return
 
-    raise SystemExit("❌ PDF 생성에 실패했습니다.")
+    raise SystemExit("PDF 생성에 실패했습니다.")
 
 
 # ==================== 메인 실행 ====================
@@ -423,19 +557,19 @@ def main() -> None:
 
     # 1. 입력 파일 확인
     if not INPUT_FILE.exists():
-        raise SystemExit(f"❌ 입력 파일을 찾을 수 없습니다: {INPUT_FILE}")
+        raise SystemExit(f"입력 파일을 찾을 수 없습니다: {INPUT_FILE}")
 
     # 2. 출력 디렉토리 준비
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 
     # 3. 데이터 로드
-    print(f"📄 데이터 로드: {INPUT_FILE}")
+    print(f"데이터 로드: {INPUT_FILE}")
     problem_data = json.loads(INPUT_FILE.read_text(encoding="utf-8"))
-    print(f"✅ {len(problem_data)}개 문제 로드 완료")
+    print(f"{len(problem_data)}개 문제 로드 완료")
 
     # 4. LaTeX 문서 생성
-    print("\\n🔄 LaTeX 문서 생성 중...")
+    print("\nLaTeX 문서 생성 중...")
 
     document_parts = [
         generate_document_preamble(),
@@ -452,18 +586,18 @@ def main() -> None:
 
     # 5. LaTeX 파일 저장
     tex_file = OUTPUT_DIR / "exam2.tex"
-    full_document = "\\n".join(document_parts)
+    full_document = "\n".join(document_parts)
     tex_file.write_text(full_document, encoding="utf-8")
-    print(f"✅ LaTeX 파일 생성: {tex_file}")
+    print(f"LaTeX 파일 생성: {tex_file}")
 
     # 6. PDF 컴파일
-    print("\\n🔄 PDF 컴파일 중...")
+    print("\nPDF 컴파일 중...")
     compile_latex_to_pdf(tex_file)
 
     # 7. 완료 메시지
-    print("\\n" + "=" * 60)
-    print("🎉 시험지 생성 완료!")
-    print(f"📁 출력 파일: {OUTPUT_DIR / 'exam2.pdf'}")
+    print("\n" + "=" * 60)
+    print("시험지 생성 완료!")
+    print(f"출력 파일: {OUTPUT_DIR / 'exam2.pdf'}")
     print("=" * 60)
 
 

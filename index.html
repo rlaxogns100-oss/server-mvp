@@ -1,497 +1,216 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>딸깍 — UI 스켈레톤 미리보기</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-  <script>
-    window.MathJax = {
-      tex: {
-        inlineMath: [['$', '$'], ['\\(', '\\)']],
-        displayMath: [['$$', '$$'], ['\\[', '\\]']],
-        processEscapes: true,
-        processEnvironments: true
-      },
-      options: {
-        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
-      }
-    };
-  </script>
-  <style>
-    .brand-primary { background-color: #2d5bff; }
-    .brand-primary:hover { background-color: #1c46e8; }
-    .shadow-soft { box-shadow: 0 1px 2px rgba(16,24,40,.06), 0 1px 3px rgba(16,24,40,.10); }
-    .card { border:1px solid #e6e8ef; }
-
-    /* Math and content styling */
-    .problem-content { line-height: 1.6; }
-    .problem-content table, .problem-text table {
-      border-collapse: collapse;
-      margin: 10px 0;
-      border: 1px solid #ddd;
-      width: 100%;
-    }
-    .problem-content th, .problem-content td, .problem-text th, .problem-text td {
-      border: 1px solid #ddd;
-      padding: 8px 12px;
-      text-align: center;
-    }
-    .problem-content th, .problem-text th {
-      background-color: #f5f5f5;
-      font-weight: bold;
-    }
-    .problem-content img, .problem-text img {
-      max-width: 100%;
-      height: auto;
-      margin: 10px 0;
-      border-radius: 4px;
-      border: 1px solid #ddd;
-    }
-    .problem-text .my-3 {
-      margin: 12px 0;
-    }
-    .problem-text .bg-blue-50 {
-      background-color: #eff6ff;
-      border-left: 4px solid #3b82f6;
-    }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>제로타이핑 · One Page Builder</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+  window.MathJax = {
+    tex:{inlineMath:[['$','$'],['\\(','\\)']],displayMath:[['$$','$$'],['\\[','\\]']],processEscapes:true,processEnvironments:true},
+    options:{skipHtmlTags:['script','noscript','style','textarea','pre']}
+  };
+</script>
+<link rel="stylesheet" href="main.css">
 </head>
-<body class="bg-slate-50">
-  <!-- Header -->
-  <header class="border-b border-slate-200 bg-white">
-    <div class="mx-auto max-w-6xl px-6 py-4">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <div class="grid h-8 w-8 place-items-center rounded-lg bg-slate-900 text-sm font-bold text-white">딸</div>
-          <div class="text-lg font-bold">딸깍</div>
-        </div>
-        <nav class="ml-8 flex gap-1">
-          <button id="tabBuilderBtn" class="rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white">시험지 제작</button>
-          <button id="tabFilesBtn" class="rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">파일 관리</button>
-        </nav>
+<body>
+  <div class="app">
+    <!-- Top -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">Z</div>
+        <div><div class="t1">제로타이핑</div><div class="t2">클릭만으로 만드는 학습지</div></div>
       </div>
-    </div>
-  </header>
-
-  <!-- Builder Tab -->
-  <main id="builder" class="mx-auto grid max-w-6xl grid-cols-12 gap-6 px-6 py-8">
-    <!-- Left -->
-    <section class="col-span-8">
-      <h1 class="mb-2 text-3xl font-extrabold">시험지 제작</h1>
-      <p class="mb-6 text-slate-600">문제를 선택하여 맞춤형 시험지를 만드세요</p>
-
-      <div class="rounded-3xl border border-slate-200 bg-white p-4">
-        <div class="mb-4 flex items-center justify-between px-2">
-          <h2 class="text-xl font-bold">문제 선택</h2>
-          <div class="flex items-center gap-3">
-            <div class="relative inline-block">
-              <select class="appearance-none rounded-xl border border-slate-300 bg-white px-4 py-2 pr-9 text-sm text-slate-700 shadow-sm outline-none transition hover:border-slate-400 focus:border-blue-500">
-                <option>전체</option><option>중학</option><option>고등</option>
-              </select>
-              <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-500">▼</div>
-            </div>
-            <span class="text-sm text-slate-600" id="problemCount">총 0개 문제</span>
-          </div>
-        </div>
-
-        <!-- Problems List -->
-        <div id="problemsList" class="space-y-4 max-h-[600px] overflow-y-auto">
-          <div class="text-center py-8 text-slate-500">
-            <p>파일 관리 탭에서 PDF 파일을 업로드하면 문제가 여기에 표시됩니다.</p>
-          </div>
-        </div>
+      <div class="search">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#64748b" stroke-width="2" stroke-linecap="round"/></svg>
+        <input id="globalSearch" placeholder="학습지명, 태그, 출제자로 검색" />
+        <span class="kbd">/</span>
       </div>
-    </section>
+      <div class="user"><div class="avatar">김</div>김태훈 선생님</div>
+    </header>
 
-    <!-- Right -->
-    <section class="col-span-4">
-      <h2 class="mb-4 text-xl font-bold">선택된 문제</h2>
-      <div class="rounded-3xl border border-slate-200 bg-white p-4">
-        <div id="selectedProblems" class="space-y-2">
-          <p class="text-sm text-slate-500">선택된 문제가 없습니다.</p>
-        </div>
-        <button class="mt-4 w-full rounded-xl brand-primary py-3 text-sm font-semibold text-white shadow-soft">시험지 생성</button>
-      </div>
-    </section>
-  </main>
-
-  <!-- Files Tab -->
-  <main id="files" class="mx-auto max-w-6xl px-6 py-8 hidden">
-    <h1 class="mb-2 text-3xl font-extrabold">파일 관리</h1>
-    <p class="mb-6 text-slate-600">수학 문제 파일을 업로드하고 정리하세요</p>
-
-    <section class="rounded-3xl border border-dashed border-slate-300 bg-white p-6">
-      <div class="grid grid-cols-12 gap-8">
-        <div class="col-span-6 flex flex-col justify-center rounded-2xl border border-dashed border-slate-300 p-10">
-          <div class="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-slate-50 text-slate-500 text-2xl">⬆️</div>
-          <h2 class="mt-6 text-3xl font-extrabold">수학 문제 파일 업로드</h2>
-          <p class="mt-3 text-slate-600">PDF 형식의 수학 문제 파일을 업로드하면 AI가 자동으로 문제를 분석하고 분류합니다.</p>
-          <p class="mt-4 text-sm text-emerald-600">✓ 지원 형식: PDF (최대 50MB)</p>
-        </div>
-        <div class="col-span-6 rounded-2xl border border-dashed border-slate-300 p-10 text-center" id="dropZone">
-          <div class="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-slate-50 text-slate-500 text-2xl">📂</div>
-          <p class="mt-6 text-lg font-semibold text-slate-700">파일을 여기에 드롭하세요</p>
-          <div class="mt-5 grid place-items-center">
-            <input type="file" id="fileInput" accept=".pdf" style="display: none;">
-            <button id="fileSelectBtn" class="inline-flex h-11 items-center justify-center gap-2 rounded-xl brand-primary px-5 text-sm font-semibold text-white shadow-soft">파일 선택</button>
-          </div>
-          <div id="uploadProgress" class="mt-4 hidden">
-            <div class="w-full bg-gray-200 rounded-full h-2">
-              <div id="progressBar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
-            </div>
-            <p id="progressText" class="text-sm text-gray-600 mt-2">업로드 중...</p>
-          </div>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <script>
-    // Global variables
-    let problems = [];
-    let selectedProblems = [];
-
-    // Initialize when page loads
-    document.addEventListener('DOMContentLoaded', function() {
-      console.log('Page loaded, initializing...');
-
-      // Tab functionality
-      const tabBuilderBtn = document.getElementById('tabBuilderBtn');
-      const tabFilesBtn = document.getElementById('tabFilesBtn');
-      const builderSection = document.getElementById('builder');
-      const filesSection = document.getElementById('files');
-
-      function showBuilderTab() {
-        tabBuilderBtn.className = 'rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white';
-        tabFilesBtn.className = 'rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100';
-        builderSection.classList.remove('hidden');
-        filesSection.classList.add('hidden');
-      }
-
-      function showFilesTab() {
-        tabFilesBtn.className = 'rounded-xl px-4 py-2 text-sm font-semibold bg-slate-900 text-white';
-        tabBuilderBtn.className = 'rounded-xl px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100';
-        filesSection.classList.remove('hidden');
-        builderSection.classList.add('hidden');
-      }
-
-      tabBuilderBtn.addEventListener('click', showBuilderTab);
-      tabFilesBtn.addEventListener('click', showFilesTab);
-
-      // File upload functionality
-      const fileInput = document.getElementById('fileInput');
-      const fileSelectBtn = document.getElementById('fileSelectBtn');
-      const dropZone = document.getElementById('dropZone');
-      const uploadProgress = document.getElementById('uploadProgress');
-      const progressBar = document.getElementById('progressBar');
-      const progressText = document.getElementById('progressText');
-
-      // File select button
-      fileSelectBtn.addEventListener('click', function() {
-        console.log('File select button clicked');
-        fileInput.click();
-      });
-
-      // File input change
-      fileInput.addEventListener('change', function(e) {
-        console.log('File selected:', e.target.files);
-        handleFiles(e.target.files);
-      });
-
-      // Drag and drop
-      dropZone.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        dropZone.classList.add('border-blue-500', 'bg-blue-50');
-      });
-
-      dropZone.addEventListener('dragleave', function(e) {
-        e.preventDefault();
-        dropZone.classList.remove('border-blue-500', 'bg-blue-50');
-      });
-
-      dropZone.addEventListener('drop', function(e) {
-        e.preventDefault();
-        dropZone.classList.remove('border-blue-500', 'bg-blue-50');
-        handleFiles(e.dataTransfer.files);
-      });
-
-      // Handle file upload
-      function handleFiles(files) {
-        const pdfFiles = Array.from(files).filter(file => file.type === 'application/pdf');
-        if (pdfFiles.length === 0) {
-          alert('PDF 파일만 업로드 가능합니다.');
-          return;
-        }
-
-        if (pdfFiles.length > 0) {
-          uploadFile(pdfFiles[0]);
-        }
-      }
-
-      // Upload file to server
-      function uploadFile(file) {
-        const formData = new FormData();
-        formData.append('pdf', file);
-
-        uploadProgress.classList.remove('hidden');
-        progressText.textContent = `${file.name} 업로드 중...`;
-        progressBar.style.width = '0%';
-
-        // Show detailed progress stages
-        const stages = [
-          { text: `${file.name} 업로드 중...`, progress: 10 },
-          { text: 'PDF 텍스트 변환 중...', progress: 30 },
-          { text: '페이지 필터링 중...', progress: 50 },
-          { text: '문제 분할 중...', progress: 70 },
-          { text: 'AI 구조화 중...', progress: 90 },
-          { text: '처리 완료!', progress: 100 }
-        ];
-
-        let currentStage = 0;
-        const progressInterval = setInterval(() => {
-          if (currentStage < stages.length - 1) {
-            progressText.textContent = stages[currentStage].text;
-            progressBar.style.width = stages[currentStage].progress + '%';
-            currentStage++;
-          }
-        }, 1500);
-
-        fetch('/upload', {
-          method: 'POST',
-          body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-          clearInterval(progressInterval);
-          progressBar.style.width = '100%';
-
-          console.log('Upload response:', data);
-
-          if (data.success && data.problems) {
-            problems = data.problems;
-            renderProblems();
-
-            progressText.textContent = `완료! ${data.problems.length}개의 문제가 추가되었습니다.`;
-
-            // Switch to builder tab after 2 seconds
-            setTimeout(() => {
-              uploadProgress.classList.add('hidden');
-              showBuilderTab();
-            }, 2000);
-          } else {
-            throw new Error(data.message || '문제 데이터 로드 실패');
-          }
-        })
-        .catch(error => {
-          console.error('Upload error:', error);
-          clearInterval(progressInterval);
-          alert('파일 업로드에 실패했습니다: ' + error.message);
-          uploadProgress.classList.add('hidden');
-        });
-      }
-
-      // Render problems list
-      function renderProblems() {
-        const problemsList = document.getElementById('problemsList');
-        const problemCount = document.getElementById('problemCount');
-
-        problemCount.textContent = `총 ${problems.length}개 문제`;
-
-        if (problems.length === 0) {
-          problemsList.innerHTML = `
-            <div class="text-center py-8 text-slate-500">
-              <p>파일 관리 탭에서 PDF 파일을 업로드하면 문제가 여기에 표시됩니다.</p>
-            </div>
-          `;
-          return;
-        }
-
-        problemsList.innerHTML = problems.map((problem, index) => {
-          const problemText = extractProblemText(problem);
-
-          return `
-            <div class="problem-content border border-slate-200 rounded-lg p-6 hover:shadow-sm transition-shadow">
-              <div class="flex items-start gap-4">
-                <input type="checkbox" id="problem-${index}" class="mt-1 w-4 h-4" onchange="toggleProblem(${index})">
-                <div class="flex-1">
-                  <div class="flex items-center gap-2 mb-3">
-                    <label for="problem-${index}" class="font-semibold text-slate-700 cursor-pointer text-base">
-                      문제 ${problem.id || index + 1}
-                    </label>
-                    ${problem.page ? `<span class="text-xs bg-slate-100 px-2 py-1 rounded">페이지 ${problem.page}</span>` : ''}
-                  </div>
-                  <div class="text-slate-600 text-sm leading-relaxed problem-text">
-                    ${problemText}
-                  </div>
-                  ${renderProblemOptions(problem)}
-                </div>
+    <!-- Main split -->
+    <main class="main">
+      <!-- Left: Explorer -->
+      <section class="explorer">
+        <div class="ex-card ex-dashboard" id="dashboard">
+          <!-- 업로드 -->
+          <div class="ex-upload" style="padding:12px 12px 8px">
+            <div class="upload-tile" id="uploadTile">
+              <div class="upload-icon">↑</div>
+              <div class="upload-title">새 파일 업로드</div>
+              <input type="file" id="fileInput" accept=".pdf" multiple style="display:none;">
+              <div class="progress-container" id="progressContainer">
+                <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+                <div class="progress-text" id="progressText">업로드 중...</div>
               </div>
             </div>
-          `;
-        }).join('');
-
-        // Re-render MathJax
-        if (window.MathJax) {
-          MathJax.typesetPromise().then(() => {
-            console.log('MathJax rendering completed');
-          }).catch((err) => console.log('MathJax error: ' + err.message));
-        }
-      }
-
-      // Extract and render full problem content
-      function extractProblemText(problem) {
-        if (problem.content_blocks) {
-          // Structured problem - render all blocks
-          return problem.content_blocks.map(block => {
-            if (block.type === 'text') {
-              return renderContent(block.content);
-            } else if (block.type === 'image') {
-              return `<div class="my-3"><img src="${block.content}" alt="문제 이미지" class="max-w-full h-auto rounded border"></div>`;
-            } else if (block.type === 'table') {
-              return `<div class="my-3">${renderContent(block.content)}</div>`;
-            } else if (block.type === 'examples') {
-              return `<div class="my-3 p-3 bg-blue-50 rounded border-l-4 border-blue-400">
-                        <strong>보기:</strong><br>
-                        ${renderContent(block.content)}
-                      </div>`;
-            }
-            return renderContent(block.content);
-          }).join('');
-        } else if (problem.content) {
-          // Original format
-          const content = Array.isArray(problem.content) ? problem.content.join('\n') : problem.content;
-          return renderContent(content);
-        }
-        return '내용 없음';
-      }
-
-      // Render content with proper HTML formatting
-      function renderContent(content) {
-        if (!content) return '';
-
-        let processed = content.toString();
-
-        // Convert markdown tables to HTML
-        processed = renderMarkdownTable(processed);
-
-        // Process images
-        processed = processImagePaths(processed);
-
-        // Keep LaTeX as-is for MathJax
-        return processed;
-      }
-
-      // Convert markdown tables to HTML
-      function renderMarkdownTable(text) {
-        const tableRegex = /(?:^|\n)((?:\|[^\n]*\|(?:\n|$))+)/g;
-
-        return text.replace(tableRegex, (match, tableBlock) => {
-          const rows = tableBlock.trim().split('\n').map(row => row.trim()).filter(row => row.startsWith('|') && row.endsWith('|'));
-
-          if (rows.length < 2) return match;
-
-          let html = '<table class="border-collapse border border-gray-300 my-3">';
-
-          // Header row
-          const headerCells = rows[0].slice(1, -1).split('|').map(cell => cell.trim());
-          html += '<thead><tr>';
-          headerCells.forEach(cell => {
-            html += `<th class="border border-gray-300 px-3 py-2 bg-gray-100 font-semibold">${cell}</th>`;
-          });
-          html += '</tr></thead>';
-
-          // Skip separator line if exists
-          let dataStartIndex = 1;
-          if (rows.length > 1 && (rows[1].includes('---') || rows[1].includes('==='))) {
-            dataStartIndex = 2;
-          }
-
-          // Data rows
-          if (dataStartIndex < rows.length) {
-            html += '<tbody>';
-            for (let i = dataStartIndex; i < rows.length; i++) {
-              const dataCells = rows[i].slice(1, -1).split('|').map(cell => cell.trim());
-              html += '<tr>';
-              dataCells.forEach(cell => {
-                html += `<td class="border border-gray-300 px-3 py-2">${cell}</td>`;
-              });
-              html += '</tr>';
-            }
-            html += '</tbody>';
-          }
-
-          html += '</table>';
-          return html;
-        });
-      }
-
-      // Process image paths
-      function processImagePaths(text) {
-        return text.replace(/!\[([^\]]*)\]\(([^)]+)\)/g, (match, alt, src) => {
-          if (!src.startsWith('http') && !src.startsWith('/')) {
-            src = `/images/${src}`;
-          }
-          return `<div class="my-3"><img src="${src}" alt="${alt}" class="max-w-full h-auto rounded border"></div>`;
-        });
-      }
-
-      // Render problem options (선택지)
-      function renderProblemOptions(problem) {
-        if (problem.options && problem.options.length > 0) {
-          return `
-            <div class="mt-4 p-3 bg-gray-50 rounded border">
-              <strong class="text-gray-700">선택지:</strong>
-              <div class="mt-2 space-y-1">
-                ${problem.options.map((option, idx) => `
-                  <div class="text-sm">${renderContent(option)}</div>
-                `).join('')}
-              </div>
-            </div>
-          `;
-        }
-        return '';
-      }
-
-      // Load existing problems on page load
-      fetch('/api/problems')
-        .then(response => response.json())
-        .then(data => {
-          if (data.success && data.problems && data.problems.length > 0) {
-            problems = data.problems;
-            renderProblems();
-            console.log('Existing problems loaded:', problems.length);
-          }
-        })
-        .catch(error => {
-          console.log('No existing problems found');
-        });
-    });
-
-    // Toggle problem selection
-    function toggleProblem(index) {
-      const checkbox = document.getElementById(`problem-${index}`);
-      const selectedContainer = document.getElementById('selectedProblems');
-
-      if (checkbox.checked) {
-        selectedProblems.push(problems[index]);
-      } else {
-        selectedProblems = selectedProblems.filter(p => p !== problems[index]);
-      }
-
-      // Update selected problems display
-      if (selectedProblems.length === 0) {
-        selectedContainer.innerHTML = '<p class="text-sm text-slate-500">선택된 문제가 없습니다.</p>';
-      } else {
-        selectedContainer.innerHTML = selectedProblems.map((problem, idx) => `
-          <div class="text-sm p-2 bg-slate-50 rounded">
-            문제 ${problem.id || idx + 1}
           </div>
-        `).join('');
-      }
-    }
-  </script>
+
+          <!-- 용량바 -->
+          <div class="ex-usage" style="padding:10px 12px 8px">
+            <div class="usage-bar"><div class="usage-fill" id="usageFill"></div></div>
+            <span class="usage-text" id="usageText">0GB / 0GB</span>
+          </div>
+
+          <!-- 경로 -->
+          <div class="ex-breadcrumb" style="padding:8px 12px">
+            <div id="breadcrumb" class="breadcrumb"></div>
+          </div>
+
+          <!-- 파일/폴더 리스트 -->
+          <div class="grid" style="border-top:1px solid #eef2f7; padding-top:8px">
+            <div class="files-grid" id="fileGridBody"></div>
+          </div>
+
+          <!-- 툴바 -->
+          <div class="ex-toolbar" style="border-top:1px solid #eef2f7">
+            <span class="counter" id="selectionCounter">선택 0개</span>
+            <div style="flex:1"></div>
+            <button class="btn" id="renameBtn">이름 변경</button>
+            <button class="btn danger" id="deleteBtn">삭제</button>
+            <button class="btn primary" id="newFolderBtn">새 폴더</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Middle: Preview -->
+      <section class="preview-wrap">
+        <div class="preview-toolbar">
+          <div class="preview-header">
+            <h2 class="preview-title">문항 선택하기</h2>
+          </div>
+          <div class="tabs-container">
+            <div class="tabs" id="problemTabs">
+              <!-- 탭들이 여기에 동적으로 추가됩니다 -->
+            </div>
+            <div class="tab-controls">
+              <!-- 모두 선택 기능 제거됨 -->
+            </div>
+          </div>
+        </div>
+
+        <div class="preview" id="problemsPreview">
+          <div class="preview-column" id="column1">
+            <!-- Sample problems loaded from JSON -->
+            <div class="problem" data-problem="2">
+              <div class="pnum">20.</div>
+              <div class="pbody">최고차항의 계수가 3인 이차함수 $f_1(x)$와 최고차항의 계수가 음수인 이차함수 $f_2(x)$에 대하여 실수 전체에서 정의된 함수 $f(x)$가
+              $$f(x)=\begin{cases}f_1(x) & (x \leq -4) \\ -\frac{1}{2}x & (-4 < x < 2) \\ f_2(x) & (x \geq 2)\end{cases}$$
+              이고 조건을 만족한다. 이차방정식 $x^2-2f(t)x+2f(t)=0$가 중근을 갖게 하는 서로 다른 실수 $t$의 개수를 $p$, $f(-5)+f(6)$의 값을 $q$라 할 때, $p+q$의 값은?</div>
+            </div>
+
+            <div class="problem" data-problem="9">
+              <div class="pnum">9.</div>
+              <div class="pbody">이차방정식 $ax^2+bx+c=0$에 대하여, 다음 보기 중 옳은 것의 개수는? (단, $a,b,c$가 복소수이고 $a \neq 0$)
+              <br><br>(ㄱ) 두 근은 $\frac{-b \pm \sqrt{b^2-4ac}}{2a}$이다.
+              <br>(ㄴ) 두 근의 합은 $-\frac{b}{a}$이다.
+              <br>(ㄷ) $D=b^2-4ac=0$이면 중근을 갖는다.
+              <br>(ㄹ) $b^2-4ac>0$이면 서로 다른 두 실근을 갖는다.
+              <br>(ㅁ) 한 근이 $m+ni(m,n$는 실수, $n \neq 0)$이면 나머지 한 근은 $m-ni$이다.</div>
+            </div>
+
+            <div class="problem" data-problem="11">
+              <div class="pnum">11.</div>
+              <div class="pbody">$\sqrt{41800 \times 41818+81}=k$라 할 때, 자연수 $k$의 모든 자리수의 합은?</div>
+            </div>
+
+            <div class="problem" data-problem="18">
+              <div class="pnum">18.</div>
+              <div class="pbody">$y=x^2+3x+a^2$과 직선 $y=x+3$이 서로 다른 두 점에서 만나도록 하는 정수 $a$의 개수는?</div>
+            </div>
+
+            <div class="problem" data-problem="21">
+              <div class="pnum">21.</div>
+              <div class="pbody">다항식 $f(x)$를 $x-4$로 나누었을 때의 나머지가 7이고, $x-2$로 나누었을 때의 몫은 $Q(x)$, 나머지가 1이다. 이때 $Q(x)$를 $x-4$로 나누었을 때의 나머지는?</div>
+            </div>
+
+            <div class="problem" data-problem="25">
+              <div class="pnum">25.</div>
+              <div class="pbody">다항식 $2x^3+4x^2+5x-10$을 $2x-1$로 나누었을 때의 몫을 $Q_1(x)$, 나머지를 $R_1$이라 하고, $x-\frac{1}{2}$로 나누었을 때의 몫을 $Q_2(x)$, 나머지를 $R_2$라 할 때, $\frac{Q_2(x)}{Q_1(x)}+\frac{R_2}{R_1}$의 값은? (단, $Q_1(x) \neq 0$)</div>
+            </div>
+          </div>
+
+          <div class="preview-column" id="column2">
+            <div class="problem" data-problem="8">
+              <div class="pnum">8.</div>
+              <div class="pbody">$a+b=1, a^3+b^3=4$일 때, $a^5b+ab^5$의 값은?</div>
+            </div>
+
+            <div class="problem" data-problem="10">
+              <div class="pnum">10.</div>
+              <div class="pbody">복소수 $z$에 대하여 보기 중 옳은 것의 개수는? (단, $\bar{z}$는 $z$의 켤레복소수)
+              <br><br>(ㄱ) $z-\bar{z}$는 순허수이다.
+              <br>(ㄴ) $z$의 실수부분이 $a$이면 $\frac{1}{z}$의 실수부분은 $\frac{1}{a}$이다.
+              <br>(ㄷ) 계수가 실수인 다항식 $f(x)$에 대하여 $f(z)=0$이면 $f(\bar{z})=0$이다.
+              <br>(ㄹ) 순허수가 아닌 허수 $z$에 대하여 $(z^2-z)i$가 순허수이면 $z\bar{z}>\frac{1}{4}$이다.</div>
+            </div>
+
+            <div class="problem" data-problem="12">
+              <div class="pnum">12.</div>
+              <div class="pbody">두 다항식 $f_1(x), f_2(x)$를 $x^2-x+1$로 나눈 나머지를 각각 $R_1(x), R_2(x)$라 하자. 다항식 $f_1(x)+f_2(x)$를 $x^2-x+1$로 나눈 나머지가 $2x+5$이고, 다항식 $f_1(x)f_2(x)$를 $x^2-x+1$로 나눈 나머지가 $4x+9$일 때, $R_1(-4)+R_2(4)$의 값은? (단, $R_1(x), R_2(x)$은 계수가 정수인 일차다항식이고, $R_1(8)<0$이다.)</div>
+            </div>
+
+            <div class="problem" data-problem="19">
+              <div class="pnum">19.</div>
+              <div class="pbody">이차방정식 $x^2-8x+a=0$의 한 근이 $b+i$일 때, 실수 $a,b$에 대하여 $a+b$의 값은? (단, $i=\sqrt{-1}$)</div>
+            </div>
+
+            <div class="problem" data-problem="23">
+              <div class="pnum">23.</div>
+              <div class="pbody">복소수 $z$와 그 켤레복소수 $\bar{z}$에 대하여 등식 $(2+3i)z-(1-5i)\bar{z}=3-2i$가 성립할 때, $z\bar{z}$의 값은?</div>
+            </div>
+
+            <div class="problem" data-problem="27">
+              <div class="pnum">27.</div>
+              <div class="pbody">이차방정식 $x^2-6x-2=0$의 두 근 $\alpha, \beta$라 할 때, $\left(\sqrt{\frac{\beta}{\alpha}}+\sqrt{\frac{\alpha}{\beta}}\right)^2$의 값은?</div>
+            </div>
+          </div>
+        </div>
+        <div class="note">※ 업로드하면 왼쪽 탐색기 현재 폴더에 추가됩니다.</div>
+      </section>
+
+      <!-- Resize Handle -->
+      <div class="resize-handle" id="resizeHandle"></div>
+
+      <!-- Right: Exam Preview -->
+      <section class="exam-preview">
+        <div class="exam-header">
+          <h2>시험지 미리보기</h2>
+          <div class="exam-controls">
+            <button class="btn primary" id="generateExamBtn">시험지 생성</button>
+            <button class="btn ghost" id="clearExam">초기화</button>
+          </div>
+        </div>
+        <div class="exam-content">
+          <div class="exam-stats">
+            <div class="stat-item">
+              <span class="stat-label">총 문항 수</span>
+              <span class="stat-value" id="totalProblems">0</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">예상 시간</span>
+              <span class="stat-value" id="estimatedTime">0분</span>
+            </div>
+          </div>
+          <div class="exam-problems" id="examProblems">
+            <div class="empty-state">
+              <div class="empty-icon">📝</div>
+              <p>왼쪽에서 문항을 선택하면 여기에 표시됩니다</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="dashboard.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
