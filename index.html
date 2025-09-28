@@ -187,12 +187,8 @@
             <button class="btn ghost" id="clearExam">초기화</button>
           </div>
           
-          <!-- PDF 생성 진행사항 표시 (간단 버전) -->
+          <!-- PDF 생성 진행사항 표시 (기존 - 제거 예정) -->
           <div class="pdf-progress" id="pdfProgress" style="display: none;">
-            <div class="progress-header">
-              <div class="progress-icon">📄</div>
-              <div class="progress-title">PDF 생성 중...</div>
-            </div>
             <div class="progress-bar">
               <div class="progress-fill" id="progressFill"></div>
             </div>
@@ -219,6 +215,24 @@
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- PDF 생성 모달 오버레이 -->
+  <div class="pdf-overlay" id="pdfOverlay" style="display: none;">
+    <div class="pdf-progress-modal">
+      <div class="progress-spinner">
+        <div class="spinner"></div>
+      </div>
+      <div class="progress-title" id="progressTitle">PDF 생성 중...</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar-modal">
+          <div class="progress-fill-modal" id="progressFillModal"></div>
+        </div>
+        <div class="progress-percentage" id="progressPercentage">0%</div>
+      </div>
+      <div class="progress-text-modal" id="progressTextModal">준비 중...</div>
+      <div class="progress-details" id="progressDetails"></div>
+    </div>
   </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
