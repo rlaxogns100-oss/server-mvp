@@ -183,7 +183,20 @@
           <h2>시험지 미리보기</h2>
           <div class="exam-controls">
             <button class="btn primary" id="generateExamBtn">시험지 생성</button>
+            <button class="btn secondary" id="downloadImagesBtn">이미지 다운로드</button>
             <button class="btn ghost" id="clearExam">초기화</button>
+          </div>
+          
+          <!-- PDF 생성 진행사항 표시 (간단 버전) -->
+          <div class="pdf-progress" id="pdfProgress" style="display: none;">
+            <div class="progress-header">
+              <div class="progress-icon">📄</div>
+              <div class="progress-title">PDF 생성 중...</div>
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="progressFill"></div>
+            </div>
+            <div class="progress-text" id="progressText">잠시만 기다려주세요...</div>
           </div>
         </div>
         <div class="exam-content">
