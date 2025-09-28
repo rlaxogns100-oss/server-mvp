@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>제로타이핑 · 시험지 제작 (VSCode 레이아웃)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f7f9fc; --panel:#ffffff; --ink:#0f172a; --muted:#64748b; --line:#e5e7eb;
+  --brand:#2563eb; --brand-2:#0ea5e9; --ok:#10b981; --warn:#f59e0b; --danger:#ef4444;
+  --radius:14px; --shadow:0 10px 30px rgba(2,6,23,.08); --shadow-sm:0 6px 16px rgba(2,6,23,.06);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 100%);color:var(--ink);font-family:Pretendard, system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans KR', sans-serif}
+
+/* ===== Global shell (라이브러리 탭과 동일 톤) ===== */
+.app{display:grid;grid-template-columns:260px 1fr;min-height:100vh}
+.sidebar{
+  backdrop-filter: blur(8px) saturate(1.1);
+  background:linear-gradient(180deg,#f3f7ffcc,#f9fbffcc);
+  border-right:1px solid #e6edf7; padding:18px 16px;
+}
+.brand{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+.logo{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2396ff,#2563eb);color:#fff;display:grid;place-items:center;font-weight:900;box-shadow:var(--shadow-sm)}
+.brand .t1{font-weight:900}
+.brand .t2{font-size:12px;color:#475569}
+.nav{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.nav a{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;text-decoration:none;color:#0b2447}
+.nav a:hover{background:#eff6ff}
+.nav a.active{background:#dbeafe;color:#0b2447;font-weight:800}
+
+.main{display:grid;grid-template-rows:auto 1fr;gap:12px;padding:18px 22px}
+
+/* ===== Topbar ===== */
+.topbar{display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center}
+.search{
+  display:flex;gap:8px;align-items:center;background:var(--panel);
+  border:1px solid var(--line);border-radius:999px;padding:10px 14px;box-shadow:var(--shadow-sm)
+}
+.search input{flex:1;border:0;outline:none;font:inherit}
+.kbd{padding:4px 8px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:8px;font-size:12px;color:#334155}
+.badge{padding:4px 8px;border-radius:999px;font-size:12px;background:#ecfeff;color:#0284c7;border:1px solid #bae6fd}
+.user{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #e6edf6;border-radius:999px;padding:6px 10px;box-shadow:var(--shadow-sm)}
+.avatar{width:28px;height:28px;border-radius:999px;background:#c7d2fe;display:grid;place-items:center;font-weight:900}
+
+/* ===== Workspace: VS Code 스타일 (탐색기 + 에디터 + 인스펙터) ===== */
+.work{display:grid;grid-template-columns:320px 1fr 340px;gap:16px}
+
+/* Explorer (좌측) */
+.explorer{
+  background:var(--panel);border:1px solid #e6edf6;border-radius:16px;padding:12px;box-shadow:var(--shadow-sm)
+}
+.ex-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.ex-head h2{margin:0;font-size:16px;font-weight:900}
+.ex-search{display:flex;gap:8px;align-items:center;background:#fbfdff;border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+.ex-search input{flex:1;border:0;outline:none;font:inherit}
+.tree{margin-top:8px;display:flex;flex-direction:column;gap:6px}
+details.folder{background:#f8fafc;border:1px solid #e6edf6;border-radius:12px;padding:8px}
+details.folder[open]{background:#f3f8ff}
+.folder > summary{list-style:none;display:flex;align-items:center;gap:8px;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+.ficon{width:22px;height:22px;border-radius:6px;background:#34d399;display:grid;place-items:center;color:#fff;font-weight:900}
+.fname{font-weight:800}
+.count{margin-left:auto;font-size:12px;color:#64748b}
+.files{margin-top:8px;padding-left:26px;display:flex;flex-direction:column;gap:6px}
+.file{
+  display:flex;align-items:center;gap:8px;background:#fff;border:1px solid #e6edf6;border-radius:10px;padding:8px 10px
+}
+.file .ico{width:20px;height:20px;border-radius:6px;background:#a78bfa;display:grid;place-items:center;color:#fff;font-weight:900}
+.file .meta{margin-left:auto;color:#64748b;font-size:12px}
+.file .open{margin-left:6px;padding:6px 10px;border-radius:8px;border:1px solid #dbeafe;background:#eef2ff;color:#1e40af;font-weight:800}
+
+/* Editor (우측 중앙) */
+.editor{display:grid;grid-template-rows:auto 1fr auto;gap:12px}
+.toolbar{
+  display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center
+}
+.tabstrip{display:flex;gap:8px;flex-wrap:wrap}
+.tab{
+  display:flex;gap:8px;align-items:center;background:#eaf4ff;border:1px solid #cfe6ff;color:#0b3a55;border-radius:999px;padding:6px 12px;font-weight:800
+}
+.tab.active{background:#cfeaff}
+.tab .count{font-size:12px;opacity:.8}
+.btn{
+  appearance:none;border:0;border-radius:12px;padding:10px 14px;font-weight:800;cursor:pointer
+}
+.btn.primary{background:linear-gradient(135deg,#4f9aff,#2563eb);color:#fff;box-shadow:var(--shadow)}
+.btn.ghost{background:#fff;border:1px solid #e6edf6}
+.chkall{display:flex;align-items:center;gap:8px}
+
+.preview{
+  background:#fff;border:1px solid #e6edf6;border-radius:16px;padding:16px;min-height:560px;box-shadow:var(--shadow-sm)
+}
+.problem{display:flex;gap:10px;align-items:flex-start;padding:12px;border:1px solid #eef2f7;border-radius:12px;margin-bottom:10px}
+.pnum{font-weight:900;margin-right:6px}
+.pbody{line-height:1.65}
+.preview .table{border:1px solid #111;border-collapse:collapse;margin:8px 0;width:100%}
+.preview .table td{border:1px solid #111;padding:6px 8px}
+
+.cta{display:flex;gap:8px;justify-content:flex-end}
+
+/* Inspector (우측 패널) */
+.inspect{
+  display:flex;flex-direction:column;gap:10px
+}
+.card{background:#fff;border:1px solid #e6edf6;border-radius:16px;padding:14px;box-shadow:var(--shadow-sm)}
+.card h3{margin:0 0 6px 0;font-size:14px;font-weight:900}
+.badge2{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#ecfdf5;border:1px solid #bbf7d0;color:#047857}
+.badge3{display:inline-block;padding:4px 8px;border-radius:999px;font-size:12px;background:#eef2ff;border:1px solid #c7d2fe;color:#3730a3}
+.log{font:12px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace;color:#334155;max-height:220px;overflow:auto}
+.k{color:#059669}.e{color:#dc2626}
+.help{color:#475569;line-height:1.6}
+
+/* Footnote */
+.note{color:#64748b;margin-top:8px}
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- Global sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">Z</div>
+        <div>
+          <div class="t1">제로타이핑</div>
+          <div class="t2">클릭만으로 만드는 학습지</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#">내 파일 관리</a>
+        <a href="#" class="active">시험지 제작</a>
+        <a href="#">수업</a>
+        <a href="#">계정</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="topbar">
+        <div class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#64748b" stroke-width="2" stroke-linecap="round"/></svg>
+          <input placeholder="검색: 학습지명 / 폴더" />
+          <span class="kbd">/</span>
+        </div>
+        <span class="badge">제작 모드</span>
+        <div class="user"><div class="avatar">김</div>김태훈 선생님</div>
+      </div>
+
+      <section class="work">
+        <!-- Explorer -->
+        <aside class="explorer">
+          <div class="ex-head">
+            <h2>내 파일 탐색기</h2>
+          </div>
+          <div class="ex-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4-4M11 18a7 7 0 1 1 0-14 7 7 0 0 1 0 14z" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"/></svg>
+            <input placeholder="폴더/파일 검색" />
+          </div>
+
+          <div class="tree">
+            <details class="folder" open>
+              <summary>
+                <div class="ficon">📂</div>
+                <span class="fname">폴더_테스트</span>
+                <span class="count">3개 파일</span>
+              </summary>
+              <div class="files">
+                <div class="file">
+                  <div class="ico">📄</div><div class="name">sample1</div>
+                  <div class="meta">문항 12개</div><button class="open">열기</button>
+                </div>
+                <div class="file">
+                  <div class="ico">📄</div><div class="name">가온고 중간고사</div>
+                  <div class="meta">문항 6개</div><button class="open">열기</button>
+                </div>
+                <div class="file">
+                  <div class="ico">📄</div><div class="name">보정고 중간고사</div>
+                  <div class="meta">문항 6개</div><button class="open">열기</button>
+                </div>
+              </div>
+            </details>
+
+            <details class="folder">
+              <summary>
+                <div class="ficon">📂</div>
+                <span class="fname">새 폴더</span>
+                <span class="count">0개 파일</span>
+              </summary>
+            </details>
+
+            <h3 style="margin:6px 0 0 2px;font-size:12px;color:#94a3b8;font-weight:900;letter-spacing:.02em">미분류</h3>
+            <div class="file" style="margin-top:6px">
+              <div class="ico">📄</div><div class="name">영어 모의 1회</div>
+              <div class="meta">문항 2개</div><button class="open">열기</button>
+            </div>
+          </div>
+        </aside>
+
+        <!-- Editor -->
+        <section class="editor">
+          <div class="toolbar">
+            <div class="tabstrip">
+              <div class="tab active">📄 sample1 <span class="count">· 3 선택</span></div>
+              <div class="tab">📄 가온고 중간고사 <span class="count">· 6 선택</span></div>
+            </div>
+            <label class="chkall"><input type="checkbox" /> 모두 선택</label>
+            <div style="display:flex;gap:8px">
+              <button class="btn ghost">PDF 다운로드</button>
+              <button class="btn primary">선택한 문제로 시험지 제작</button>
+            </div>
+          </div>
+
+          <div class="preview">
+            <div class="problem">
+              <input type="checkbox" />
+              <div class="pnum">1.</div>
+              <div class="pbody">다음 표에서 가로, 세로, 대각선의 합이 모두 <b>3x² − 6x + 9</b> 가 되도록 (가) 자리에 알맞은 다항식 <b>f(x)</b> 를 쓴다. 이때 <b>f(2)</b> 의 값은?</div>
+            </div>
+            <table class="table">
+              <tr><td>4x³+5x²+2x+7</td><td>(가)</td></tr>
+              <tr><td>3x³+4x²+x+6</td><td>x³+2x²−x+4</td></tr>
+            </table>
+
+            <div class="problem">
+              <input type="checkbox" />
+              <div class="pnum">2.</div>
+              <div class="pbody">x+y+z=3, 1/x+1/y+1/z=2/3 일 때, x³+y³+z³+3xyz 의 값은?</div>
+            </div>
+
+            <div class="problem">
+              <input type="checkbox" />
+              <div class="pnum">3.</div>
+              <div class="pbody">다항식 x⁴−2x³+a x²+bx+c 가 (x−1)³ 으로 나누어떨어진다. 상수 a,b,c 에 대하여 a+2b+3c 의 값은?</div>
+            </div>
+          </div>
+
+          <div class="cta">
+            <button class="btn ghost">초기화</button>
+            <button class="btn primary">선택한 문제로 시험지 제작</button>
+          </div>
+        </section>
+
+        <!-- Inspector -->
+        <aside class="inspect">
+          <div class="card">
+            <h3>선택 요약</h3>
+            <div style="color:#334155">총 <b>9</b>문항 · 2개 파일</div>
+            <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap">
+              <span class="badge2">sample1 · 3</span>
+              <span class="badge3">가온고 · 6</span>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>제작 로그</h3>
+            <div class="log" style="margin-top:4px">
+              <div class="k">[14:33:43] ✅ 제작 완료 (4.5s)</div>
+              <div class="k">[14:28:29] 업로드 완료: 보정고 중간고사.pdf</div>
+              <div class="e">[14:24:14] (예시) 오류: 파싱 실패…</div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h3>도움말</h3>
+            <ul class="help" style="margin:6px 0 0 18px">
+              <li>좌측 탐색기에서 폴더를 열고 파일을 선택합니다.</li>
+              <li>중앙 미리보기에서 문항 체크 → 상단 버튼으로 제작.</li>
+              <li>오른쪽 패널에서 선택 개수와 로그를 확인하세요.</li>
+            </ul>
+          </div>
+        </aside>
+      </section>
+
+      <div class="note">※ 디자인 시안입니다. 기능 연결 전이라 상호작용은 구현되어 있지 않습니다.</div>
+    </main>
+  </div>
+</body>
+</html>

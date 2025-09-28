@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>제로타이핑 · 내 파일 관리</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+/* ====== Theme ====== */
+:root{
+  --bg: #f7f9fc;
+  --surface: #ffffff;
+  --muted: #6b7280;
+  --ink: #0f172a;
+  --line: #e5e7eb;
+  --brand: #2563eb;
+  --brand-2: #10b981;
+  --accent: #f59e0b;
+  --danger: #ef4444;
+  --radius: 14px;
+  --shadow: 0 10px 30px rgba(2,6,23,.08);
+  --shadow-sm: 0 4px 14px rgba(2,6,23,.06);
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0; background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 100%);
+  color:var(--ink); font-family:Pretendard, system-ui, -apple-system, Segoe UI, Roboto, 'Noto Sans KR', sans-serif;
+}
+
+/* ====== Shell ====== */
+.app{
+  display:grid; grid-template-columns:260px 1fr; min-height:100vh;
+}
+.sidebar{
+  backdrop-filter: blur(8px) saturate(1.1);
+  background:linear-gradient(180deg, #f3f7ffcc, #f9fbffcc);
+  border-right:1px solid #e6edf7;
+  padding:18px 16px;
+}
+.brand{
+  display:flex; align-items:center; gap:12px; margin-bottom:18px;
+}
+.logo{ width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#2396ff,#2563eb); color:#fff; display:grid;place-items:center; font-weight:900; box-shadow: var(--shadow-sm) }
+.brand .t1{font-weight:900}
+.brand .t2{font-size:12px;color:#475569}
+
+.nav{ display:flex; flex-direction:column; gap:6px; margin-top:8px }
+.nav a{
+  display:flex; align-items:center; gap:10px;
+  padding:10px 12px; border-radius:10px; text-decoration:none; color:#0b2447;
+}
+.nav a:hover{ background:#eff6ff; }
+.nav a.active{ background:#dbeafe; color:#0b2447; font-weight:800 }
+
+.main{
+  display:grid; grid-template-rows:auto 1fr; gap:16px; padding:18px 22px;
+}
+
+/* ====== Top bar ====== */
+.topbar{
+  display:grid; grid-template-columns:1fr auto auto; gap:12px; align-items:center;
+}
+.search{
+  display:flex; gap:8px; align-items:center;
+  background:var(--surface); border:1px solid var(--line); border-radius:999px; padding:10px 14px; box-shadow: var(--shadow-sm)
+}
+.search input{ flex:1; border:0; outline:none; font:inherit; }
+.kbd{ padding:4px 8px; background:#f3f4f6; border:1px solid #e5e7eb; border-radius:8px; font-size:12px; color:#334155; }
+.user{
+  display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--line);
+  border-radius:999px; padding:6px 10px; box-shadow: var(--shadow-sm)
+}
+.avatar{ width:28px;height:28px;border-radius:999px;background:#c7d2fe; display:grid; place-items:center; font-weight:800 }
+.badge{ padding:4px 8px; border-radius:999px; font-size:12px; background:#ecfeff; color:#0ea5e9; border:1px solid #bae6fd }
+
+/* ====== Toolbar ====== */
+.toolbar{
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;
+}
+h2{ margin:0; font-size:20px; font-weight:900 }
+.btn{
+  appearance:none; border:1px solid transparent; border-radius:12px; padding:10px 14px; font-weight:800; cursor:pointer;
+  background:#eef2ff; color:#1e40af;
+}
+.btn.primary{ background:linear-gradient(135deg,#4f9aff,#2563eb); color:#fff; box-shadow:var(--shadow) }
+.btn.ghost{ background:#fff; border-color:#e5e7eb; color:#0f172a }
+.btn.danger{ background:#fee2e2; color:#991b1b }
+.btn:active{ transform:translateY(1px) }
+.counter{ color:var(--muted); font-weight:700 }
+
+/* ====== Grid (Folders + Files) ====== */
+.grid{
+  display:grid; gap:14px; grid-template-columns:repeat(3,1fr);
+}
+.tile{
+  display:flex; gap:12px; align-items:center; background:var(--surface); border:1px solid #e6edf6; border-radius:14px; padding:14px; box-shadow:var(--shadow-sm);
+  transition: transform .05s ease, box-shadow .2s ease;
+}
+.tile:hover{ transform:translateY(-1px); box-shadow:var(--shadow) }
+.icon{
+  width:36px; height:36px; border-radius:10px; display:grid; place-items:center; color:#fff; font-weight:900;
+  background:linear-gradient(135deg,#a78bfa,#6366f1);
+}
+.icon.folder{ background:linear-gradient(135deg,#34d399,#10b981) }
+.meta{ margin-left:auto; display:flex; gap:8px; align-items:center; color:var(--muted); font-size:12px }
+.name{ font-weight:800; }
+.chk{ margin-right:2px; }
+.chips{ display:flex; gap:6px; flex-wrap:wrap; }
+.chip{
+  padding:4px 8px; border-radius:999px; font-size:12px; background:#f1f5f9; border:1px solid #e5e7eb; color:#334155;
+}
+.actions{ margin-left:auto; display:flex; gap:8px }
+.small{ padding:6px 10px; border-radius:10px }
+
+/* ====== Empty ====== */
+.empty{
+  grid-column:1/-1; text-align:center; color:#64748b; padding:40px 0;
+  background:linear-gradient(180deg,#fff, #f8fbff); border:1px dashed #dbeafe; border-radius:14px;
+}
+
+/* ====== Footer note ====== */
+.note{ color:#64748b; margin-top:10px }
+@media (max-width: 1100px){
+  .grid{ grid-template-columns:repeat(2,1fr) }
+  .app{ grid-template-columns: 1fr }
+  .sidebar{ position:sticky; top:0; z-index:2 }
+}
+</style>
+</head>
+<body>
+  <div class="app">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="logo">Z</div>
+        <div>
+          <div class="t1">제로타이핑</div>
+          <div class="t2">클릭만으로 만드는 학습지</div>
+        </div>
+      </div>
+      <nav class="nav">
+        <a href="#" class="active">내 파일 관리</a>
+        <a href="#">시험지 제작</a>
+        <a href="#">수업</a>
+        <a href="#">계정</a>
+      </nav>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="topbar">
+        <div class="search">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#64748b" stroke-width="2" stroke-linecap="round"/></svg>
+          <input placeholder="학습지명, 태그, 출제자로 검색" />
+          <span class="kbd">/</span>
+        </div>
+        <span class="badge">베타</span>
+        <div class="user"><div class="avatar">김</div>김태훈 선생님</div>
+      </div>
+
+      <section>
+        <div class="toolbar">
+          <h2>라이브러리</h2>
+          <span class="counter">선택 0개</span>
+          <div style="flex:1"></div>
+          <button class="btn ghost">모두 선택</button>
+          <button class="btn">이동</button>
+          <button class="btn">이름 변경</button>
+          <button class="btn danger">삭제</button>
+          <button class="btn primary">새 폴더</button>
+        </div>
+
+        <div class="grid">
+          <!-- Folders -->
+          <div class="tile">
+            <input type="checkbox" class="chk" />
+            <div class="icon folder">📂</div>
+            <div>
+              <div class="name">가온고 중간고사</div>
+              <div class="chips"><span class="chip">폴더</span><span class="chip">3개 파일</span></div>
+            </div>
+            <div class="actions">
+              <button class="btn small ghost">열기</button>
+            </div>
+          </div>
+
+          <div class="tile">
+            <input type="checkbox" class="chk" />
+            <div class="icon folder">📂</div>
+            <div>
+              <div class="name">보정고 기말</div>
+              <div class="chips"><span class="chip">폴더</span><span class="chip">7개 파일</span></div>
+            </div>
+            <div class="actions">
+              <button class="btn small ghost">열기</button>
+            </div>
+          </div>
+
+          <!-- Files -->
+          <div class="tile">
+            <input type="checkbox" class="chk" />
+            <div class="icon">📄</div>
+            <div>
+              <div class="name">sample1</div>
+              <div class="chips">
+                <span class="chip">문항 12개</span><span class="chip">2025.09.04</span>
+              </div>
+            </div>
+            <div class="meta">
+              <button class="btn small">열기</button>
+              <button class="btn small ghost">미리보기</button>
+            </div>
+          </div>
+
+          <div class="tile">
+            <input type="checkbox" class="chk" />
+            <div class="icon">📄</div>
+            <div>
+              <div class="name">가온고 1-1 중간고사</div>
+              <div class="chips">
+                <span class="chip">문항 6개</span><span class="chip">수정 2일 전</span>
+              </div>
+            </div>
+            <div class="meta">
+              <button class="btn small">열기</button>
+              <button class="btn small ghost">미리보기</button>
+            </div>
+          </div>
+
+          <div class="empty">
+            업로드한 문서가 더 없습니다. 상단의 <b>새 폴더</b> 또는 <b>이동</b> 버튼으로 정리해 보세요.
+          </div>
+        </div>
+
+        <div class="note">※ 업로드하면 라이브러리에 추가됩니다. 시험지 제작 탭에서 골라 여세요.</div>
+      </section>
+    </main>
+  </div>
+</body>
+</html>
