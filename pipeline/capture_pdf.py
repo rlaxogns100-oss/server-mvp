@@ -55,6 +55,17 @@ class ScreenCapturePDF:
                 EC.presence_of_element_located((By.TAG_NAME, "body"))
             )
 
+            # 선택된 문제가 있는지 확인
+            exam_problems_count = self.driver.execute_script("""
+                return window.examProblems ? window.examProblems.length : 0;
+            """)
+
+            print(f"선택된 문제 수: {exam_problems_count}개")
+
+            if exam_problems_count == 0:
+                print("오류: 선택된 문제가 없습니다. 캡쳐를 중단합니다.")
+                return []
+
             # MathJax 렌더링 대기
             time.sleep(3)
 
@@ -145,6 +156,7 @@ class ScreenCapturePDF:
             story = []
             A4_WIDTH = A4[0]
             A4_HEIGHT = A4[1]
+            temp_files_to_delete = []  # 나중에 삭제할 임시 파일 목록
 
             for i, img_data in enumerate(captured_images):
                 try:
@@ -168,14 +180,11 @@ class ScreenCapturePDF:
                     # 임시 파일로 이미지 저장
                     temp_img_path = f"temp_pdf_img_{i}.png"
                     image.save(temp_img_path, 'PNG')
+                    temp_files_to_delete.append(temp_img_path)  # 삭제 목록에 추가
 
                     # PDF에 이미지 추가
                     rl_image = RLImage(temp_img_path, width=pdf_width, height=pdf_height)
                     story.append(rl_image)
-
-                    # 임시 파일 정리
-                    if os.path.exists(temp_img_path):
-                        os.remove(temp_img_path)
 
                     print(f"PDF 페이지 {i+1} 추가 완료")
 
@@ -186,10 +195,23 @@ class ScreenCapturePDF:
             # PDF 빌드
             doc.build(story)
 
+            # PDF 빌드 완료 후 임시 파일들 정리
+            for temp_file in temp_files_to_delete:
+                if os.path.exists(temp_file):
+                    try:
+                        os.remove(temp_file)
+                        print(f"임시 파일 삭제: {temp_file}")
+                    except Exception as e:
+                        print(f"임시 파일 삭제 실패: {temp_file} - {e}")
+
             # 임시 캡쳐 파일들 정리
             for img_data in captured_images:
                 if os.path.exists(img_data['path']):
-                    os.remove(img_data['path'])
+                    try:
+                        os.remove(img_data['path'])
+                        print(f"캡쳐 파일 삭제: {img_data['path']}")
+                    except Exception as e:
+                        print(f"캡쳐 파일 삭제 실패: {img_data['path']} - {e}")
 
             print(f"PDF 생성 완료: {output_path}")
             return True

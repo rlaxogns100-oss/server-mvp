@@ -267,46 +267,61 @@ async function uploadToServer(file) {
   const pc = $('#progressContainer');
   const pf = $('#progressFill');
   const pt = $('#progressText');
+  let eventSource = null;
 
   try {
     if(pc) pc.style.display = 'block';
 
-    // 단계별 진행 상태 시뮬레이션
-    const steps = [
-      { progress: 10, text: '파일 업로드 중...' },
-      { progress: 30, text: 'PDF 변환 중...' },
-      { progress: 50, text: '텍스트 추출 중...' },
-      { progress: 70, text: '문제 분할 중...' },
-      { progress: 90, text: 'AI 구조화 중...' },
-      { progress: 95, text: '결과 저장 중...' }
-    ];
+    // 세션 ID 생성
+    const sessionId = Date.now().toString();
 
-    let stepIndex = 0;
-    const updateStep = () => {
-      if (stepIndex < steps.length) {
-        const step = steps[stepIndex];
-        if(pt) pt.textContent = step.text;
-        if(pf) pf.style.width = step.progress + '%';
-        stepIndex++;
+    // SSE 연결 설정
+    console.log(`🔗 클라이언트 SSE 연결 시작 - 세션 ID: ${sessionId}`);
+    eventSource = new EventSource(`/api/progress/${sessionId}`);
+
+    eventSource.onopen = function(event) {
+      console.log(`✅ 클라이언트 SSE 연결 성공 - 세션 ID: ${sessionId}`);
+    };
+
+    eventSource.onmessage = function(event) {
+      console.log(`📨 클라이언트 SSE 메시지 수신:`, event.data);
+      try {
+        const data = JSON.parse(event.data);
+        console.log(`📊 파싱된 데이터:`, data);
+        
+        if(pt) {
+          pt.textContent = data.message;
+          console.log(`📝 진행상황 텍스트 업데이트: "${data.message}"`);
+        }
+        
+        if(pf && data.progress !== undefined) {
+          pf.style.width = data.progress + '%';
+          console.log(`📊 진행률 바 업데이트: ${data.progress}%`);
+        }
+      } catch (error) {
+        console.error(`❌ SSE 메시지 파싱 오류:`, error, `원본 데이터:`, event.data);
       }
     };
 
-    // 초기 상태
-    updateStep();
+    eventSource.onerror = function(event) {
+      console.error(`❌ 클라이언트 SSE 연결 오류 - 세션 ID: ${sessionId}:`, event);
+    };
 
     // FormData로 파일 업로드
     const formData = new FormData();
     formData.append('pdf', file);
 
-    // 주기적으로 진행률 업데이트
-    const progressInterval = setInterval(updateStep, 2000);
-
     const response = await fetch('/upload', {
       method: 'POST',
+      headers: {
+        'X-Session-Id': sessionId
+      },
       body: formData
     });
 
-    clearInterval(progressInterval);
+    // SSE 연결 종료
+    console.log(`🔌 클라이언트 SSE 연결 종료 - 세션 ID: ${sessionId}`);
+    eventSource.close();
 
     if (!response.ok) {
       throw new Error(`업로드 실패: ${response.status}`);
@@ -315,8 +330,7 @@ async function uploadToServer(file) {
     const result = await response.json();
 
     if (result.success) {
-      if(pt) pt.textContent = '처리 완료!';
-      if(pf) pf.style.width = '100%';
+      // 최종 상태는 SSE에서 이미 업데이트됨
 
       // 새로운 문제 데이터를 PROBLEMS_DATA에 추가
       const fileName = file.name.replace(/\.pdf$/i, '') + '_structured.json';
@@ -356,6 +370,14 @@ async function uploadToServer(file) {
   } catch (error) {
     console.error('업로드 오류:', error);
     if(pt) pt.textContent = '업로드 실패';
+    if(pf) pf.style.width = '0%';
+
+    // SSE 연결이 있다면 종료
+    if (eventSource) {
+      console.log(`🔌 클라이언트 SSE 연결 종료 (오류 시) - 세션 ID: ${sessionId}`);
+      eventSource.close();
+    }
+
     alert(`업로드 오류: ${error.message}`);
   } finally {
     setTimeout(() => {
