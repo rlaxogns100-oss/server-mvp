@@ -161,6 +161,7 @@ def structure_problems_parallel(problems: List[Dict], max_workers: int = 30) -> 
                 if result:
                     structured_problems.append(result)
                     completed_count += 1
+                    print(f"Processing problem {completed_count}/{len(problems)}")
                     print(f"완료: {completed_count}/{len(problems)} - ID {problem.get('id')}")
                 else:
                     failed_problems.append(problem)

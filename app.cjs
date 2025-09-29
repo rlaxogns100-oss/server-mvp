@@ -122,7 +122,7 @@ console.log('현재 작업 디렉토리:', process.cwd());
 console.log('APP_ID 로드됨:', MATHPIX_APP_ID ? '✓' : '✗');
 console.log('APP_KEY 로드됨:', MATHPIX_APP_KEY ? '✓' : '✗');
 
-async function convertPdfToText(pdfPath) {
+async function convertPdfToText(pdfPath, sessionId = null) {
   try {
     // API 키 확인
     if (!MATHPIX_APP_ID || !MATHPIX_APP_KEY) {
@@ -154,7 +154,7 @@ async function convertPdfToText(pdfPath) {
       console.log(`PDF ID 생성: ${pdfId}`);
 
       // 변환 완료 대기
-      return await waitForConversion(pdfId);
+      return await waitForConversion(pdfId, sessionId);
     } else {
       throw new Error('PDF ID를 받지 못했습니다.');
     }
@@ -164,11 +164,16 @@ async function convertPdfToText(pdfPath) {
   }
 }
 
-async function waitForConversion(pdfId) {
+async function waitForConversion(pdfId, sessionId = null) {
   const maxAttempts = 60; // 2분간 대기
   const delay = 2000; // 2초마다 확인
 
   console.log(`변환 대기 시작: ${pdfId}`);
+  
+  // 즉시 시작 메시지 전송
+  if (sessionId) {
+    sendProgress(sessionId, 20, 'PDF 변환 중...');
+  }
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -180,10 +185,15 @@ async function waitForConversion(pdfId) {
         }
       });
 
-      console.log(`시도 ${attempt}/${maxAttempts} - 상태:`, statusResponse.data?.status);
+      const statusData = statusResponse.data;
+      console.log(`시도 ${attempt}/${maxAttempts} - 상태:`, statusData?.status);
 
       // 변환이 완료되었으면 결과 요청
-      if (statusResponse.data?.status === 'completed') {
+      if (statusData?.status === 'completed') {
+        if (sessionId) {
+          sendProgress(sessionId, 40, 'PDF 변환 완료');
+        }
+
         const resultResponse = await axios.get(`https://api.mathpix.com/v3/pdf/${pdfId}.md`, {
           headers: {
             'app_id': MATHPIX_APP_ID,
@@ -198,8 +208,8 @@ async function waitForConversion(pdfId) {
       }
 
       // 아직 변환 중이면 대기
-      if (statusResponse.data?.status === 'processing' || statusResponse.data?.status === 'split') {
-        console.log(`변환 진행 중... (${attempt}/${maxAttempts}) - 상태: ${statusResponse.data.status}`);
+      if (statusData?.status === 'processing' || statusData?.status === 'split') {
+        console.log(`변환 진행 중... (${attempt}/${maxAttempts}) - 상태: ${statusData.status}`);
         await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
@@ -309,13 +319,19 @@ async function runPythonSplit() {
   });
 }
 
-async function runPythonLLMStructure() {
+async function runPythonLLMStructure(sessionId = null) {
   return new Promise((resolve, reject) => {
     console.log('Python LLM structure 스크립트 실행 중...');
 
+    // 즉시 시작 메시지 전송
+    if (sessionId) {
+      sendProgress(sessionId, 70, 'AI 구조화 준비 중...');
+    }
+
     const pythonProcess = spawn('python', ['pipeline/llm_structure.py'], {
       cwd: process.cwd(),
-      stdio: ['pipe', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PYTHONUNBUFFERED: '1' }
     });
 
     let stdout = '';
@@ -323,7 +339,73 @@ async function runPythonLLMStructure() {
 
     pythonProcess.stdout.on('data', (data) => {
       stdout += data.toString();
-      console.log('Python LLM stdout:', data.toString().trim());
+      const output = data.toString();
+      console.log('Python LLM stdout:', output);
+
+      // 진행상황 파싱 - 줄 단위로 처리
+      if (sessionId) {
+        const lines = output.split('\n');
+        
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine) continue;
+          
+          console.log('Processing line:', trimmedLine);
+          
+          // 시작 메시지 감지 - 더 많은 패턴 추가
+          if (trimmedLine.includes('LLM Structure Script 시작') || 
+              trimmedLine.includes('개 문제를 로드했습니다') ||
+              trimmedLine.includes('로드된 문제 수:') ||
+              trimmedLine.includes('개 문제를') && trimmedLine.includes('스레드로 병렬 처리')) {
+            sendProgress(sessionId, 70, 'AI 구조화 시작...');
+          }
+          
+          // 패턴 1: "Processing problem 3/34"
+          const progressMatch = trimmedLine.match(/Processing problem (\d+)\/(\d+)/);
+          if (progressMatch) {
+            const current = parseInt(progressMatch[1]);
+            const total = parseInt(progressMatch[2]);
+            const progress = Math.floor((current / total) * 20) + 70; // 70-90% 범위
+            console.log(`Progress update: ${current}/${total} (${progress}%)`);
+            sendProgress(sessionId, progress, `AI 구조화 중... (${current}/${total})`);
+          }
+          
+          // 패턴 2: "완료: 3/34 - ID 17"
+          const completeMatch = trimmedLine.match(/완료: (\d+)\/(\d+) - ID (\d+)/);
+          if (completeMatch) {
+            const current = parseInt(completeMatch[1]);
+            const total = parseInt(completeMatch[2]);
+            const problemId = completeMatch[3];
+            const progress = Math.floor((current / total) * 20) + 70;
+            console.log(`Complete update: ${current}/${total} - ID ${problemId} (${progress}%)`);
+            sendProgress(sessionId, progress, `AI 구조화 중... (${current}/${total}) - 문제 ${problemId} 완료`);
+          }
+          
+          // 패턴 3: "문제 17 구조화 완료"
+          const problemCompleteMatch = trimmedLine.match(/문제 (\d+) 구조화 완료/);
+          if (problemCompleteMatch) {
+            const problemId = problemCompleteMatch[1];
+            console.log(`Problem complete: ${problemId}`);
+            sendProgress(sessionId, null, `AI 구조화 중... - 문제 ${problemId} 완료`);
+          }
+          
+          // 패턴 4: "34개 문제를 30개 스레드로 병렬 처리 중..."
+          const parallelMatch = trimmedLine.match(/(\d+)개 문제를 (\d+)개 스레드로 병렬 처리 중/);
+          if (parallelMatch) {
+            const totalProblems = parseInt(parallelMatch[1]);
+            const threads = parseInt(parallelMatch[2]);
+            console.log(`Parallel processing: ${totalProblems} problems with ${threads} threads`);
+            sendProgress(sessionId, 70, `AI 구조화 시작... (${totalProblems}개 문항, ${threads}개 스레드)`);
+          }
+          
+          // 완료 메시지 감지
+          if (trimmedLine.includes('구조화 완료:') || 
+              trimmedLine.includes('전체 작업 완료!') ||
+              trimmedLine.includes('개 문제를 저장했습니다')) {
+            sendProgress(sessionId, 90, 'AI 구조화 완료!');
+          }
+        }
+      }
     });
 
     pythonProcess.stderr.on('data', (data) => {
@@ -482,6 +564,36 @@ async function runPythonScreenCapture(captureConfig) {
   });
 }
 
+// 진행상황 전송을 위한 글로벌 변수
+const progressClients = new Map();
+
+// 진행상황 전송 함수
+function sendProgress(sessionId, progress, message) {
+  const client = progressClients.get(sessionId);
+  console.log(`📡 sendProgress 호출 - 세션: ${sessionId}, 진행률: ${progress}%, 메시지: "${message}"`);
+  console.log(`📡 클라이언트 상태 - 존재: ${!!client}, 파괴됨: ${client?.destroyed}`);
+  
+  if (client && !client.destroyed) {
+    try {
+      // progress가 null이면 이전 진행률 유지
+      const data = { message };
+      if (progress !== null) {
+        data.progress = progress;
+      }
+      const sseData = `data: ${JSON.stringify(data)}\n\n`;
+      console.log(`📡 SSE 데이터 전송: ${sseData.trim()}`);
+      client.write(sseData);
+      console.log(`✅ SSE 전송 성공 (${sessionId})`);
+    } catch (error) {
+      console.log(`❌ SSE 전송 오류 (${sessionId}):`, error.message);
+      // 오류 발생시 클라이언트 제거
+      progressClients.delete(sessionId);
+    }
+  } else {
+    console.log(`❌ SSE 클라이언트 없음 또는 파괴됨 (${sessionId})`);
+  }
+}
+
 const server = http.createServer((req, res) => {
   // 이미지 파일 서빙
   if (req.method === 'GET' && req.url.startsWith('/images/')) {
@@ -521,6 +633,33 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
       res.end(data);
     });
+  } else if (req.method === 'GET' && req.url.startsWith('/api/progress/')) {
+    // SSE 엔드포인트
+    const sessionId = req.url.split('/').pop();
+    console.log(`🔗 SSE 연결 요청 - 세션 ID: ${sessionId}`);
+
+    res.writeHead(200, {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Origin': '*'
+    });
+
+    // 클라이언트 등록
+    progressClients.set(sessionId, res);
+    console.log(`✅ SSE 클라이언트 등록 완료 - 세션 ID: ${sessionId}, 총 클라이언트 수: ${progressClients.size}`);
+
+    // 연결 종료 시 정리
+    req.on('close', () => {
+      console.log(`🔌 SSE 연결 종료 - 세션 ID: ${sessionId}`);
+      progressClients.delete(sessionId);
+      console.log(`🗑️ SSE 클라이언트 제거 완료 - 세션 ID: ${sessionId}, 남은 클라이언트 수: ${progressClients.size}`);
+    });
+
+    // 초기 메시지
+    const initialMessage = { progress: 0, message: '연결됨' };
+    console.log(`📤 SSE 초기 메시지 전송: ${JSON.stringify(initialMessage)}`);
+    res.write(`data: ${JSON.stringify(initialMessage)}\n\n`);
   } else if (req.method === 'GET' && req.url === '/api/problems') {
     // Return problems data as JSON for the frontend
     const structuredPath = 'output/problems_llm_structured.json';
@@ -852,19 +991,26 @@ const server = http.createServer((req, res) => {
 
       try {
         const startTime = Date.now();
+        const sessionId = req.headers['x-session-id'] || Date.now().toString();
+
         console.log(`\n🚀 파일 업로드 시작: ${req.file.originalname}`);
         console.log(`📁 파일 크기: ${(req.file.size / 1024 / 1024).toFixed(2)} MB`);
 
+        // 파일 업로드 완료 알림
+        sendProgress(sessionId, 10, '파일 업로드 완료');
+
         // PDF 변환 실행
         console.log('\n📄 PDF 변환 시작...');
+        sendProgress(sessionId, 15, 'PDF 변환 중...');
         const pdfStartTime = Date.now();
-        const extractedText = await convertPdfToText(req.file.path);
+        const extractedText = await convertPdfToText(req.file.path, sessionId);
         const pdfEndTime = Date.now();
         console.log(`✅ PDF 변환 완료 - 소요시간: ${((pdfEndTime - pdfStartTime) / 1000).toFixed(2)}초`);
         console.log(`📝 변환된 텍스트 길이: ${extractedText.length.toLocaleString()} 문자`);
 
         // 원본 파일 저장
         console.log('\n💾 원본 파일 저장...');
+        sendProgress(sessionId, 45, '텍스트 저장 중...');
         const saveStartTime = Date.now();
         const originalPath = 'output/result.paged.mmd';
         fs.writeFileSync(originalPath, extractedText, 'utf8');
@@ -873,6 +1019,7 @@ const server = http.createServer((req, res) => {
 
         // Python 필터링 스크립트 실행
         console.log('\n🔍 Python 필터링 실행...');
+        sendProgress(sessionId, 50, '텍스트 필터링 중...');
         const filterStartTime = Date.now();
         await runPythonFilter();
         const filterEndTime = Date.now();
@@ -880,6 +1027,7 @@ const server = http.createServer((req, res) => {
 
         // Python split 스크립트 실행
         console.log('\n✂️ Python split 실행...');
+        sendProgress(sessionId, 60, '문제 분할 중...');
         const splitStartTime = Date.now();
         await runPythonSplit();
         const splitEndTime = Date.now();
@@ -887,10 +1035,12 @@ const server = http.createServer((req, res) => {
 
         // Python LLM structure 스크립트 실행
         console.log('\n🤖 Python LLM structure 실행...');
+        sendProgress(sessionId, 70, 'AI 구조화 중...');
         const llmStartTime = Date.now();
-        await runPythonLLMStructure();
+        await runPythonLLMStructure(sessionId);
         const llmEndTime = Date.now();
         console.log(`✅ AI 구조화 완료 - 소요시간: ${((llmEndTime - llmStartTime) / 1000).toFixed(2)}초`);
+        sendProgress(sessionId, 90, 'AI 구조화 완료');
 
         // 구조화된 문제들 읽기 (우선순위: structured > original)
         let problems = [];
@@ -898,6 +1048,7 @@ const server = http.createServer((req, res) => {
         const originalProblemsPath = 'output/problems.json';
 
         console.log('\n📊 결과 파일 로딩...');
+        sendProgress(sessionId, 95, '결과 저장 중...');
         const loadStartTime = Date.now();
         if (fs.existsSync(structuredProblemsPath)) {
           const problemsText = fs.readFileSync(structuredProblemsPath, 'utf8');
@@ -909,6 +1060,7 @@ const server = http.createServer((req, res) => {
           console.log(`✅ 원본 문제 ${problems.length}개 로드`);
         }
         const loadEndTime = Date.now();
+        sendProgress(sessionId, 100, '처리 완료!');
 
         // 전체 처리 시간 요약
         const totalTime = Date.now() - startTime;
@@ -939,6 +1091,11 @@ const server = http.createServer((req, res) => {
 
       } catch (error) {
         const totalTime = Date.now() - (startTime || Date.now());
+        const sessionId = req.headers['x-session-id'] || Date.now().toString();
+
+        // 에러 진행상황 알림
+        sendProgress(sessionId, 0, `오류: ${error.message}`);
+
         console.log('\n' + '='.repeat(60));
         console.log('❌ 처리 실패!');
         console.log('='.repeat(60));
