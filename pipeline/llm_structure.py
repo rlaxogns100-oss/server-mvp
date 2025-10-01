@@ -4,6 +4,9 @@ LLM Structure Script
 problems.json을 읽고 deepseek에 병렬로 보내서 problems_structured.json 형식으로 변환합니다.
 """
 
+import sys
+print("PY:", sys.executable, file=sys.stderr)
+
 import json
 import requests
 from typing import List, Dict, Optional, Any
