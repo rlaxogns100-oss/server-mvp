@@ -75,24 +75,24 @@ function bindMyFiles() {
       const result = await response.json();
 
       if (result.success) {
-        displayMyFiles(result.files);
+        displayMyFiles(result.files, result.folders);
       } else {
         console.error('파일 로드 실패:', result.message);
         // 로그인되지 않은 경우 빈 폴더 표시
         if (result.message === '로그인이 필요합니다.') {
-          displayMyFiles([]);
+          displayMyFiles([], []);
         }
       }
     } catch (error) {
       console.error('파일 로드 오류:', error);
       // 오류 발생 시에도 빈 폴더 표시
-      displayMyFiles([]);
+      displayMyFiles([], []);
     }
   }
   
-  // 파일 목록 표시
-  function displayMyFiles(files) {
-    // '내 파일' 폴더에 파일들을 추가
+  // 파일 및 폴더 목록 표시
+  function displayMyFiles(files, folders) {
+    // '내 파일' 폴더에 파일들과 폴더들을 추가
     if (window.__FS__ && window.__FS__.children) {
       let myFilesFolder = window.__FS__.children.find(c => c.name === '내 파일');
       if (!myFilesFolder) {
@@ -103,10 +103,44 @@ function bindMyFiles() {
       // 기존 파일들 제거
       myFilesFolder.children = [];
 
-      // 파일이 있는 경우에만 추가
+      // 경로별로 폴더와 파일을 그룹화하여 트리 구조 생성
+      const pathMap = new Map();
+      pathMap.set('내 파일', myFilesFolder);
+
+      // 폴더 생성
+      if (folders && folders.length > 0) {
+        folders.forEach(folder => {
+          const parentFolder = pathMap.get(folder.parentPath) || myFilesFolder;
+          const folderNode = {
+            name: folder.name,
+            type: 'folder',
+            folderId: folder._id,
+            children: []
+          };
+
+          if (!parentFolder.children) {
+            parentFolder.children = [];
+          }
+          parentFolder.children.push(folderNode);
+
+          // 경로 맵에 추가
+          const folderPath = folder.parentPath === '내 파일'
+            ? `내 파일/${folder.name}`
+            : `${folder.parentPath}/${folder.name}`;
+          pathMap.set(folderPath, folderNode);
+        });
+      }
+
+      // 파일 추가
       if (files && files.length > 0) {
         files.forEach(file => {
-          myFilesFolder.children.push({
+          const parentFolder = pathMap.get(file.parentPath) || myFilesFolder;
+
+          if (!parentFolder.children) {
+            parentFolder.children = [];
+          }
+
+          parentFolder.children.push({
             name: file.filename,
             type: 'file',
             fileId: file._id,
@@ -147,7 +181,7 @@ function bindMyFiles() {
     const dataSource = `db_file_${fileId}`;
     window.PROBLEMS_DATA = window.PROBLEMS_DATA || {};
     window.PROBLEMS_DATA[dataSource] = problems.map((problem, index) => ({
-      id: problem.problemNumber || (index + 1),
+      id: problem.problemNumber || problem.id || (index + 1),
       content: problem.content || '',
       answer: problem.answer || '',
       explanation: problem.explanation || '',
@@ -155,13 +189,16 @@ function bindMyFiles() {
       type: problem.type || 'multiple_choice',
       difficulty: problem.difficulty || 'medium',
       subject: problem.subject || '',
-      // content_blocks 형태로 변환 (기존 업로드와 동일한 구조)
-      content_blocks: [
-        {
-          type: 'text',
-          content: problem.content || ''
-        }
-      ]
+      page: problem.page,
+      // DB에 저장된 content_blocks 사용 (있으면), 없으면 기본 구조 생성
+      content_blocks: problem.content_blocks && problem.content_blocks.length > 0
+        ? problem.content_blocks
+        : [
+            {
+              type: 'text',
+              content: problem.content || ''
+            }
+          ]
     }));
 
     // 탭 생성 (기존 createTab 함수 사용, 파일명 전달)
