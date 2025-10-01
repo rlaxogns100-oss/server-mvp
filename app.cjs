@@ -397,7 +397,7 @@ async function runPythonSplit() {
 }
 
 async function runPythonLLMStructure(sessionId = null) {
-  const startTime = Date.now();
+  const startTime = Date.now(); // ✅ 항상 먼저 선언
   const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
   const scriptPath = path.resolve(__dirname, 'pipeline/llm_structure.py');
 
