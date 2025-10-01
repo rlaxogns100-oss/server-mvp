@@ -6,6 +6,49 @@ const toArr = x => Array.prototype.slice.call(x);
 const setToArr = s => Array.from ? Array.from(s) : toArr(s);
 const GB = 1024*1024*1024;
 
+// 마크다운 표를 HTML로 변환
+function renderMarkdownTable(text) {
+  if (!text || typeof text !== 'string') return text;
+
+  const tableRegex = /(?:^|\n)((?:\|[^\n]*\|(?:\n|$))+)/g;
+
+  return text.replace(tableRegex, (match, tableBlock) => {
+    const rows = tableBlock.trim().split('\n').map(row => row.trim()).filter(row => row.startsWith('|') && row.endsWith('|'));
+
+    if (rows.length < 1) return match;
+
+    let html = '<table class="table">';
+    html += '<tbody>';
+
+    // 구분선 위치 찾기
+    let separatorIndex = -1;
+    for (let i = 0; i < rows.length; i++) {
+      if (rows[i].includes('---') || rows[i].includes('===')) {
+        separatorIndex = i;
+        break;
+      }
+    }
+
+    // 구분선 이후의 데이터 행만 렌더링 (헤더 제외)
+    const startIndex = separatorIndex >= 0 ? separatorIndex + 1 : 0;
+
+    for (let i = startIndex; i < rows.length; i++) {
+      const dataCells = rows[i].slice(1, -1).split('|').map(cell => cell.trim());
+
+      html += '<tr>';
+      dataCells.forEach(cell => {
+        html += `<td>${cell}</td>`;
+      });
+      html += '</tr>';
+    }
+
+    html += '</tbody>';
+    html += '</table>';
+
+    return html;
+  });
+}
+
 /* ---- State ---- */
 window.__USAGE__ = window.__USAGE__ || { used: 0, capacity: 15*GB };
 if (!window.__FS__) {
@@ -200,7 +243,7 @@ document.addEventListener('drop', e=>{
 });
 
 /* ---- Move ---- */
-function moveEntries(pathKeys, targetFolder){
+async function moveEntries(pathKeys, targetFolder){
   if(!targetFolder || targetFolder.type!=='folder') return;
   const safe=[];
   pathKeys.forEach(k=>{
@@ -212,7 +255,10 @@ function moveEntries(pathKeys, targetFolder){
   });
   if(!safe.length) return;
 
-  safe.forEach(node=>{
+  // 새로운 parentPath 계산
+  const newParentPath = pathOf(targetFolder);
+
+  for(const node of safe){
     const parent=node.__parent;
     parent.children = (parent.children||[]).filter(x=>x!==node);
     let base=node.name.replace(/\(\d+\)$/,''); let name=base, i=1;
@@ -221,37 +267,192 @@ function moveEntries(pathKeys, targetFolder){
     (targetFolder.children=targetFolder.children||[]).push(node);
     node.__parent=targetFolder;
     __SEL__.delete(pathOf(node)); __SEL__.add(pathOf(node));
-  });
+
+    // DB에 저장된 파일/폴더인 경우 서버에 이동 요청
+    if (node.fileId || node.folderId) {
+      try {
+        const itemId = node.fileId || node.folderId;
+        const itemType = node.type; // 'file' or 'folder'
+        const response = await fetch('/api/move-item', {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itemId: itemId,
+            itemType: itemType,
+            newParentPath: newParentPath
+          })
+        });
+        const result = await response.json();
+        if (!result.success) {
+          console.error('항목 이동 실패:', result.message);
+        } else {
+          console.log('✅ 항목 이동 완료:', node.name);
+        }
+      } catch (error) {
+        console.error('항목 이동 요청 오류:', error);
+      }
+    }
+  }
   renderDirectory();
 }
 
 /* ---- Toolbar & Upload ---- */
 function bindToolbar(){
   const $id = id=>document.getElementById(id);
-  $id('renameBtn')?.addEventListener('click', ()=>{
+  $id('renameBtn')?.addEventListener('click', async ()=>{
     if(__SEL__.size!==1) return alert('이름 변경은 1개만 가능합니다.');
     const key=setToArr(__SEL__)[0], node=getNodeByPathKey(key), parent=node.__parent;
     const nv=prompt('새 이름', node.name); if(!nv || nv===node.name) return;
     if((parent.children||[]).some(ch=>ch!==node && ch.name===nv)) return alert('동일 이름이 이미 있습니다.');
+
+    // DB 파일인 경우 서버에 이름 변경 요청
+    if (node.type === 'file' && node.fileId) {
+      try {
+        const response = await fetch(`/api/rename-file/${node.fileId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newName: nv })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          alert(`파일 이름 변경 실패: ${result.message}`);
+          return;
+        }
+
+        console.log(`✅ DB 파일 이름 변경 완료: ${node.name} → ${nv}`);
+      } catch (error) {
+        console.error('파일 이름 변경 오류:', error);
+        alert(`파일 이름 변경 중 오류 발생: ${error.message}`);
+        return;
+      }
+    }
+
+    // DB 폴더인 경우 서버에 이름 변경 요청
+    if (node.type === 'folder' && node.folderId) {
+      try {
+        const response = await fetch(`/api/rename-folder/${node.folderId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ newName: nv })
+        });
+        const result = await response.json();
+
+        if (!result.success) {
+          alert(`폴더 이름 변경 실패: ${result.message}`);
+          return;
+        }
+
+        console.log(`✅ DB 폴더 이름 변경 완료: ${node.name} → ${nv}`);
+      } catch (error) {
+        console.error('폴더 이름 변경 오류:', error);
+        alert(`폴더 이름 변경 중 오류 발생: ${error.message}`);
+        return;
+      }
+    }
+
+    // 로컬 파일 시스템에서도 이름 변경
     node.name=nv; __SEL__.clear(); __SEL__.add(pathOf(node)); renderDirectory();
   });
-  $id('deleteBtn')?.addEventListener('click', ()=>{
+  $id('deleteBtn')?.addEventListener('click', async ()=>{
     if(!__SEL__.size) return alert('삭제할 항목을 선택하세요.');
     if(!confirm(`선택한 ${__SEL__.size}개 항목을 삭제할까요?`)) return;
-    setToArr(__SEL__).forEach(k=>{
-      const node=getNodeByPathKey(k); if(!node||!node.__parent) return;
+
+    const keysToDelete = setToArr(__SEL__);
+
+    for (const k of keysToDelete) {
+      const node=getNodeByPathKey(k);
+      if(!node||!node.__parent) continue;
+
+      // DB 파일인 경우 서버에 삭제 요청
+      if (node.type === 'file' && node.fileId) {
+        try {
+          const response = await fetch(`/api/delete-file/${node.fileId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const result = await response.json();
+
+          if (!result.success) {
+            alert(`파일 삭제 실패: ${result.message}`);
+            continue;
+          }
+
+          console.log(`✅ DB 파일 삭제 완료: ${node.name} (${result.deletedProblems}개 문제 삭제)`);
+        } catch (error) {
+          console.error('파일 삭제 오류:', error);
+          alert(`파일 삭제 중 오류 발생: ${error.message}`);
+          continue;
+        }
+      }
+
+      // DB 폴더인 경우 서버에 삭제 요청
+      if (node.type === 'folder' && node.folderId) {
+        try {
+          const response = await fetch(`/api/delete-folder/${node.folderId}`, {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const result = await response.json();
+
+          if (!result.success) {
+            alert(`폴더 삭제 실패: ${result.message}`);
+            continue;
+          }
+
+          console.log(`✅ DB 폴더 삭제 완료: ${node.name}`);
+        } catch (error) {
+          console.error('폴더 삭제 오류:', error);
+          alert(`폴더 삭제 중 오류 발생: ${error.message}`);
+          continue;
+        }
+      }
+
+      // 로컬 파일 시스템에서 제거
       __USAGE__.used = Math.max(0, __USAGE__.used - (node.type==='file' ? (node.size||5*1024*1024) : sumFolderSize(node)));
       node.__parent.children=node.__parent.children.filter(x=>x!==node);
       __SEL__.delete(k);
-    });
+    }
+
     renderDirectory();
   });
-  $id('newFolderBtn')?.addEventListener('click', ()=>{
+  $id('newFolderBtn')?.addEventListener('click', async ()=>{
     const myFilesFolder = getNodeByPathKey('내 파일');
     const folder = myFilesFolder || currentFolder();
     let base='새 폴더', name=base, i=1;
     while((folder.children||[]).some(ch=>ch.name===name)) name=`${base} (${i++})`;
-    (folder.children=folder.children||[]).push({name, type:'folder', children:[]});
+
+    const parentPath = pathOf(folder);
+
+    // DB에 폴더 생성 요청
+    try {
+      const response = await fetch('/api/create-folder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ folderName: name, parentPath: parentPath })
+      });
+      const result = await response.json();
+
+      if (!result.success) {
+        alert(`폴더 생성 실패: ${result.message}`);
+        return;
+      }
+
+      // 로컬 파일 시스템에 추가
+      (folder.children=folder.children||[]).push({
+        name,
+        type:'folder',
+        folderId: result.folder._id,
+        children:[]
+      });
+
+      console.log(`✅ DB 폴더 생성 완료: ${name}`);
+    } catch (error) {
+      console.error('폴더 생성 오류:', error);
+      alert(`폴더 생성 중 오류 발생: ${error.message}`);
+      return;
+    }
+
     // '내 파일' 폴더가 닫혀있으면 열기
     if(myFilesFolder && !__OPEN__.has('내 파일')) {
       __OPEN__.add('내 파일');
@@ -748,7 +949,10 @@ function renderExamProblems() {
   
   // MathJax 렌더링
   if(window.MathJax && window.MathJax.typesetPromise) {
-    window.MathJax.typesetPromise();
+    // DOM 업데이트 후 MathJax 렌더링
+    setTimeout(() => {
+      window.MathJax.typesetPromise().catch(err => console.error('MathJax 렌더링 오류:', err));
+    }, 100);
   }
 }
 
@@ -770,6 +974,7 @@ function createExamProblemElement(examProblem) {
     examProblem.data.content_blocks.forEach(block => {
       if(block.type === 'text') {
         const textDiv = document.createElement('div');
+        // LaTeX가 포함된 텍스트는 그대로 innerHTML로 설정
         textDiv.innerHTML = block.content;
         pbody.appendChild(textDiv);
       } else if(block.type === 'table' && Array.isArray(block.content)) {
@@ -785,8 +990,15 @@ function createExamProblemElement(examProblem) {
           table.appendChild(tr);
         });
         pbody.appendChild(table);
+      } else if(block.type === 'table') {
+        // 마크다운 표 형태의 문자열
+        const tableDiv = document.createElement('div');
+        tableDiv.className = 'table-block';
+        tableDiv.innerHTML = renderMarkdownTable(block.content);
+        pbody.appendChild(tableDiv);
       } else if(block.type === 'examples') {
         const examplesDiv = document.createElement('div');
+        examplesDiv.className = 'examples-block';
         if(Array.isArray(block.content)) {
           block.content.forEach(example => {
             const exampleDiv = document.createElement('div');
@@ -809,8 +1021,8 @@ function createExamProblemElement(examProblem) {
     });
   }
   
-  // options 처리
-  if(examProblem.data.options && Array.isArray(examProblem.data.options)) {
+  // options 처리 (비어있지 않은 경우에만)
+  if(examProblem.data.options && Array.isArray(examProblem.data.options) && examProblem.data.options.length > 0) {
     const optionsDiv = document.createElement('div');
     optionsDiv.style.marginTop = '8px';
     examProblem.data.options.forEach((option, index) => {
@@ -907,7 +1119,10 @@ function displayProblems(problems) {
   
   // MathJax 재렌더링
   if(window.MathJax && window.MathJax.typesetPromise) {
-    window.MathJax.typesetPromise();
+    // DOM 업데이트 후 MathJax 렌더링
+    setTimeout(() => {
+      window.MathJax.typesetPromise().catch(err => console.error('MathJax 렌더링 오류:', err));
+    }, 100);
   }
 }
 
@@ -939,6 +1154,7 @@ function createProblemElement(problem) {
     problem.content_blocks.forEach(block => {
       if(block.type === 'text') {
         const textDiv = document.createElement('div');
+        // LaTeX가 포함된 텍스트는 그대로 innerHTML로 설정
         textDiv.innerHTML = block.content;
         pbody.appendChild(textDiv);
       } else if(block.type === 'table' && Array.isArray(block.content)) {
@@ -954,8 +1170,15 @@ function createProblemElement(problem) {
           table.appendChild(tr);
         });
         pbody.appendChild(table);
+      } else if(block.type === 'table') {
+        // 마크다운 표 형태의 문자열
+        const tableDiv = document.createElement('div');
+        tableDiv.className = 'table-block';
+        tableDiv.innerHTML = renderMarkdownTable(block.content);
+        pbody.appendChild(tableDiv);
       } else if(block.type === 'examples') {
         const examplesDiv = document.createElement('div');
+        examplesDiv.className = 'examples-block';
         if(Array.isArray(block.content)) {
           block.content.forEach(example => {
             const exampleDiv = document.createElement('div');
@@ -978,8 +1201,8 @@ function createProblemElement(problem) {
     });
   }
   
-  // 선택지 추가
-  if(problem.options && Array.isArray(problem.options)) {
+  // 선택지 추가 (비어있지 않은 경우에만)
+  if(problem.options && Array.isArray(problem.options) && problem.options.length > 0) {
     const optionsDiv = document.createElement('div');
     optionsDiv.style.marginTop = '8px';
     problem.options.forEach((option, index) => {

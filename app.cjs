@@ -1246,7 +1246,7 @@ const server = http.createServer((req, res) => {
       message: '로그아웃 성공'
     }));
   } else if (req.method === 'GET' && req.url === '/api/my-files') {
-    // 사용자 파일 목록 조회 (로그인 필요)
+    // 사용자 파일 및 폴더 목록 조회 (로그인 필요)
     (async () => {
       const cookies = parseCookies(req.headers.cookie);
       const sessionId = cookies.sessionId;
@@ -1263,6 +1263,7 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({
           success: true,
           files: [],
+          folders: [],
           message: '로그인이 필요합니다.'
         }));
         return;
@@ -1283,10 +1284,16 @@ const server = http.createServer((req, res) => {
           userId: new ObjectId(userId)
         }).sort({ uploadDate: -1 }).toArray();
 
+        // 해당 사용자의 폴더 목록 조회
+        const folders = await db.collection('folders').find({
+          userId: new ObjectId(userId)
+        }).sort({ createdAt: 1 }).toArray();
+
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({
           success: true,
-          files: files
+          files: files,
+          folders: folders
         }));
       } catch (error) {
         console.error('파일 목록 조회 오류:', error);
@@ -1303,13 +1310,13 @@ const server = http.createServer((req, res) => {
       const fileId = req.url.split('/').pop();
       const cookies = parseCookies(req.headers.cookie);
       const sessionId = cookies.sessionId;
-      
+
       // 세션 확인
       let userId = null;
       if (sessionId && sessions.has(sessionId)) {
         userId = sessions.get(sessionId).userId;
       }
-      
+
       if (!userId) {
         res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({
@@ -1349,6 +1356,447 @@ const server = http.createServer((req, res) => {
         }));
       }
     })();
+  } else if (req.method === 'DELETE' && req.url.startsWith('/api/delete-file/')) {
+    // 파일 삭제 API (로그인 필요)
+    (async () => {
+      const fileId = req.url.split('/').pop();
+      const cookies = parseCookies(req.headers.cookie);
+      const sessionId = cookies.sessionId;
+
+      // 세션 확인
+      let userId = null;
+      if (sessionId && sessions.has(sessionId)) {
+        userId = sessions.get(sessionId).userId;
+      }
+
+      if (!userId) {
+        res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '로그인이 필요합니다.'
+        }));
+        return;
+      }
+
+      if (!db) {
+        res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '데이터베이스에 연결할 수 없습니다.'
+        }));
+        return;
+      }
+
+      try {
+        // 파일 소유자 확인
+        const file = await db.collection('files').findOne({
+          _id: new ObjectId(fileId),
+          userId: new ObjectId(userId)
+        });
+
+        if (!file) {
+          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '파일을 찾을 수 없거나 삭제 권한이 없습니다.'
+          }));
+          return;
+        }
+
+        // 해당 파일의 모든 문제 삭제
+        const problemsDeleteResult = await db.collection('problems').deleteMany({
+          fileId: new ObjectId(fileId),
+          userId: new ObjectId(userId)
+        });
+
+        // 파일 삭제
+        const fileDeleteResult = await db.collection('files').deleteOne({
+          _id: new ObjectId(fileId),
+          userId: new ObjectId(userId)
+        });
+
+        console.log(`✅ 파일 삭제 완료 - 파일 ID: ${fileId}, 삭제된 문제 수: ${problemsDeleteResult.deletedCount}`);
+
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          message: '파일과 관련 문제가 삭제되었습니다.',
+          deletedProblems: problemsDeleteResult.deletedCount
+        }));
+      } catch (error) {
+        console.error('파일 삭제 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '파일 삭제 중 오류가 발생했습니다.'
+        }));
+      }
+    })();
+  } else if (req.method === 'POST' && req.url === '/api/create-folder') {
+    // 폴더 생성 API
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { folderName, parentPath } = JSON.parse(body);
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionId = cookies.sessionId;
+
+        let userId = null;
+        if (sessionId && sessions.has(sessionId)) {
+          userId = sessions.get(sessionId).userId;
+        }
+
+        if (!userId) {
+          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '로그인이 필요합니다.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스에 연결할 수 없습니다.'
+          }));
+          return;
+        }
+
+        const folderDoc = {
+          userId: new ObjectId(userId),
+          name: folderName,
+          parentPath: parentPath || '내 파일',
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        const result = await db.collection('folders').insertOne(folderDoc);
+
+        console.log(`✅ 폴더 생성 완료 - ${folderName}`);
+
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          folder: { _id: result.insertedId, ...folderDoc }
+        }));
+      } catch (error) {
+        console.error('폴더 생성 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '폴더 생성 중 오류가 발생했습니다.'
+        }));
+      }
+    });
+  } else if (req.method === 'DELETE' && req.url.startsWith('/api/delete-folder/')) {
+    // 폴더 삭제 API
+    (async () => {
+      const folderId = req.url.split('/').pop();
+      const cookies = parseCookies(req.headers.cookie);
+      const sessionId = cookies.sessionId;
+
+      let userId = null;
+      if (sessionId && sessions.has(sessionId)) {
+        userId = sessions.get(sessionId).userId;
+      }
+
+      if (!userId) {
+        res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '로그인이 필요합니다.'
+        }));
+        return;
+      }
+
+      if (!db) {
+        res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '데이터베이스에 연결할 수 없습니다.'
+        }));
+        return;
+      }
+
+      try {
+        const result = await db.collection('folders').deleteOne({
+          _id: new ObjectId(folderId),
+          userId: new ObjectId(userId)
+        });
+
+        if (result.deletedCount === 0) {
+          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '폴더를 찾을 수 없습니다.'
+          }));
+          return;
+        }
+
+        console.log(`✅ 폴더 삭제 완료 - ${folderId}`);
+
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          message: '폴더가 삭제되었습니다.'
+        }));
+      } catch (error) {
+        console.error('폴더 삭제 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '폴더 삭제 중 오류가 발생했습니다.'
+        }));
+      }
+    })();
+  } else if (req.method === 'PUT' && req.url.startsWith('/api/rename-folder/')) {
+    // 폴더 이름 변경 API
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const folderId = req.url.split('/').pop();
+        const { newName } = JSON.parse(body);
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionId = cookies.sessionId;
+
+        let userId = null;
+        if (sessionId && sessions.has(sessionId)) {
+          userId = sessions.get(sessionId).userId;
+        }
+
+        if (!userId) {
+          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '로그인이 필요합니다.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스에 연결할 수 없습니다.'
+          }));
+          return;
+        }
+
+        const result = await db.collection('folders').updateOne(
+          {
+            _id: new ObjectId(folderId),
+            userId: new ObjectId(userId)
+          },
+          {
+            $set: {
+              name: newName.trim(),
+              updatedAt: new Date()
+            }
+          }
+        );
+
+        if (result.matchedCount === 0) {
+          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '폴더를 찾을 수 없습니다.'
+          }));
+          return;
+        }
+
+        console.log(`✅ 폴더 이름 변경 완료 - ${folderId} → ${newName}`);
+
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          message: '폴더 이름이 변경되었습니다.',
+          newName: newName.trim()
+        }));
+      } catch (error) {
+        console.error('폴더 이름 변경 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '폴더 이름 변경 중 오류가 발생했습니다.'
+        }));
+      }
+    });
+  } else if (req.method === 'PUT' && req.url.startsWith('/api/rename-file/')) {
+    // 파일 이름 변경 API (로그인 필요)
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const fileId = req.url.split('/').pop();
+        const { newName } = JSON.parse(body);
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionId = cookies.sessionId;
+
+        // 세션 확인
+        let userId = null;
+        if (sessionId && sessions.has(sessionId)) {
+          userId = sessions.get(sessionId).userId;
+        }
+
+        if (!userId) {
+          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '로그인이 필요합니다.'
+          }));
+          return;
+        }
+
+        if (!newName || newName.trim() === '') {
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '새 파일명을 입력해주세요.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스에 연결할 수 없습니다.'
+          }));
+          return;
+        }
+
+        // 파일 소유자 확인 및 이름 변경
+        const result = await db.collection('files').updateOne(
+          {
+            _id: new ObjectId(fileId),
+            userId: new ObjectId(userId)
+          },
+          {
+            $set: {
+              filename: newName.trim(),
+              updatedAt: new Date()
+            }
+          }
+        );
+
+        if (result.matchedCount === 0) {
+          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '파일을 찾을 수 없거나 수정 권한이 없습니다.'
+          }));
+          return;
+        }
+
+        console.log(`✅ 파일 이름 변경 완료 - 파일 ID: ${fileId}, 새 이름: ${newName}`);
+
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          message: '파일 이름이 변경되었습니다.',
+          newName: newName.trim()
+        }));
+      } catch (error) {
+        console.error('파일 이름 변경 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '파일 이름 변경 중 오류가 발생했습니다.'
+        }));
+      }
+    });
+  } else if (req.method === 'PUT' && req.url.startsWith('/api/move-item')) {
+    // 파일 또는 폴더 이동 API (parentPath 업데이트)
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { itemId, itemType, newParentPath } = JSON.parse(body);
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionId = cookies.sessionId;
+
+        // 세션 확인
+        let userId = null;
+        if (sessionId && sessions.has(sessionId)) {
+          userId = sessions.get(sessionId).userId;
+        }
+
+        if (!userId) {
+          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '로그인이 필요합니다.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스에 연결할 수 없습니다.'
+          }));
+          return;
+        }
+
+        // 컬렉션 선택
+        const collection = itemType === 'file' ? 'files' : 'folders';
+
+        // 아이템 소유자 확인 및 parentPath 업데이트
+        const result = await db.collection(collection).updateOne(
+          {
+            _id: new ObjectId(itemId),
+            userId: new ObjectId(userId)
+          },
+          {
+            $set: {
+              parentPath: newParentPath,
+              updatedAt: new Date()
+            }
+          }
+        );
+
+        if (result.matchedCount === 0) {
+          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '항목을 찾을 수 없거나 수정 권한이 없습니다.'
+          }));
+          return;
+        }
+
+        console.log(`✅ ${itemType} 이동 완료 - ID: ${itemId}, 새 경로: ${newParentPath}`);
+
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          message: '항목이 이동되었습니다.'
+        }));
+      } catch (error) {
+        console.error('항목 이동 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '항목 이동 중 오류가 발생했습니다.'
+        }));
+      }
+    });
   } else if (req.method === 'POST' && req.url === '/upload') {
     // 쿠키에서 세션 ID 가져오기
     const cookies = parseCookies(req.headers.cookie);
@@ -1490,6 +1938,7 @@ const server = http.createServer((req, res) => {
             const fileDoc = {
               userId: new ObjectId(userId),
               filename: req.file.originalname,
+              parentPath: '내 파일', // 기본적으로 '내 파일' 폴더에 저장
               originalText: extractedText,
               problemCount: problems.length,
               uploadDate: new Date(),
@@ -1505,20 +1954,37 @@ const server = http.createServer((req, res) => {
             
             // 문제들을 MongoDB에 저장
             if (problems.length > 0) {
-              const problemDocs = problems.map((problem, index) => ({
-                fileId: fileId,
-                userId: new ObjectId(userId),
-                problemNumber: index + 1,
-                content: problem.content || problem.text || '',
-                answer: problem.answer || '',
-                explanation: problem.explanation || '',
-                type: problem.type || 'multiple_choice',
-                options: problem.options || [],
-                difficulty: problem.difficulty || 'medium',
-                subject: problem.subject || '',
-                createdAt: new Date()
-              }));
-              
+              const problemDocs = problems.map((problem, index) => {
+                // 불필요한 기본 보기 메시지 필터링
+                let filteredOptions = [];
+                if (problem.options && Array.isArray(problem.options)) {
+                  filteredOptions = problem.options.filter(option =>
+                    option &&
+                    !option.includes('보기 내용은 문제에 명시되지') &&
+                    !option.includes('실제 문제의 보기를 여기에 작성하세요')
+                  );
+                }
+
+                return {
+                  fileId: fileId,
+                  userId: new ObjectId(userId),
+                  problemNumber: index + 1,
+                  // 구조화된 문제의 전체 정보 저장
+                  id: problem.id,
+                  page: problem.page,
+                  content_blocks: problem.content_blocks || [],
+                  options: filteredOptions,
+                  answer: problem.answer || '',
+                  explanation: problem.explanation || '',
+                  type: problem.type || 'multiple_choice',
+                  difficulty: problem.difficulty || 'medium',
+                  subject: problem.subject || '',
+                  // 호환성을 위해 content 필드도 유지
+                  content: problem.content || problem.text || '',
+                  createdAt: new Date()
+                };
+              });
+
               await db.collection('problems').insertMany(problemDocs);
               console.log(`✅ 문제 ${problems.length}개 저장 완료`);
             }
