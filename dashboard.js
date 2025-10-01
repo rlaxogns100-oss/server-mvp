@@ -7,23 +7,27 @@ const setToArr = s => Array.from ? Array.from(s) : toArr(s);
 const GB = 1024*1024*1024;
 
 /* ---- State ---- */
-window.__USAGE__ = window.__USAGE__ || { used: 2.4*GB, capacity: 15*GB };
-window.__FS__    = window.__FS__ || {
-  name:'root', type:'folder', children:[
-    { name:'내 파일', type:'folder', children:[
-      { name:'sample', type:'folder', children:[
-        { name:'sample1', type:'file', size:2*1024*1024, dataSource:'problems1_structured.json' },
-        { name:'sample2', type:'file', size:3*1024*1024, dataSource:'output/problems_llm_structured.json' },
-        { name:'sample3', type:'file', size:2*1024*1024, dataSource:'problems2_structured.json' }
-      ]}
-    ]}
-  ]
-};
-// 초기 상태에서 root에 머물되, '내 파일' 폴더는 펼쳐진 상태로 설정
-window.__PATH__  = window.__PATH__ || [__FS__];
+window.__USAGE__ = window.__USAGE__ || { used: 0, capacity: 15*GB };
+if (!window.__FS__) {
+  window.__FS__ = {
+    name:'root', type:'folder', children:[
+      { name:'내 파일', type:'folder', children:[] }
+    ]
+  };
+} else {
+  // '내 파일' 폴더가 없으면 추가
+  if (!window.__FS__.children) {
+    window.__FS__.children = [];
+  }
+  if (!window.__FS__.children.find(c => c.name === '내 파일')) {
+    window.__FS__.children.push({ name:'내 파일', type:'folder', children:[] });
+  }
+}
+// 초기 상태에서 root 폴더에서 시작, '내 파일' 폴더는 펼쳐진 상태로 설정
+window.__PATH__  = window.__PATH__ || [window.__FS__]; // root
 window.__SEL__   = window.__SEL__  || new Set();
-// 초기 상태에서 '내 파일'과 'sample' 폴더를 펼쳐진 상태로 설정
-window.__OPEN__  = window.__OPEN__ || new Set(['내 파일', 'sample']);
+// 초기 상태에서 '내 파일' 폴더를 펼쳐진 상태로 설정
+window.__OPEN__  = window.__OPEN__ || new Set(['내 파일']);
 window.__DRAG_KEYS__ = [];
 
 /* ---- Model helpers ---- */
@@ -76,23 +80,22 @@ function renderUsage(){
   $('#usageText') && ($('#usageText').textContent = (g=>g>=1?g.toFixed(1)+'GB':Math.round(used/1024/1024)+'MB')(used/GB) + ' / ' + (cap/GB).toFixed(1)+'GB');
 }
 function renderBreadcrumb(){
-  const bc=$('#breadcrumb'); if(!bc) return; bc.innerHTML='';
-  __PATH__.forEach((node,idx)=>{
-    // root 폴더는 브레드크럼에서 숨김
-    if(idx === 0 && node.name === 'root') return;
-    const s=document.createElement('span'); s.className='crumb'; s.textContent=node.name;
-    s.addEventListener('click',()=>{ __PATH__=__PATH__.slice(0,idx+1); renderDirectory(); });
-    bc.appendChild(s);
-    const visibleIndex = __PATH__.filter((n,i)=>!(i===0 && n.name==='root')).indexOf(node);
-    const visibleLength = __PATH__.filter((n,i)=>!(i===0 && n.name==='root')).length;
-    if(visibleIndex < visibleLength-1){ const sep=document.createElement('span'); sep.className='sep'; sep.textContent='›'; bc.appendChild(sep); }
-  });
+  // 브레드크럼 제거됨
 }
 function renderDirectory(){
+  // '내 파일' 폴더 확인 및 추가 (항상 보장)
+  if (!__FS__.children) {
+    __FS__.children = [];
+  }
+  const myFilesFolder = __FS__.children.find(c => c.name === '내 파일');
+  if (!myFilesFolder) {
+    __FS__.children.push({ name:'내 파일', type:'folder', children:[] });
+    __OPEN__.add('내 파일');
+  }
+
   attachParents(__FS__);
   renderUsage(); renderBreadcrumb();
   const body = $('#fileGridBody'); if(!body) return; body.innerHTML='';
-
 
   const folder=currentFolder();
   const children=(folder.children||[]).slice().sort((a,b)=> a.type!==b.type ? (a.type==='folder'?-1:1) : a.name.localeCompare(b.name,'ko'));
@@ -107,10 +110,14 @@ function renderDirectory(){
   updateSelectionCounter();
 }
 
+// 전역으로 노출
+window.renderDirectory = renderDirectory;
+
 /* ---- Selection & dblclick (delegated) ---- */
 function updateSelectionCounter(){ const c=$('#selectionCounter'); if(c) c.textContent = '선택 ' + __SEL__.size + '개'; }
 document.addEventListener('mousedown', e=>{
   const tile = e.target.closest?.('.small-tile');
+  // 화살표 클릭 시 무시
   if(!tile || e.target.classList.contains('chev')) return;
   const pathKey = tile.dataset.path, multi = e.ctrlKey||e.metaKey; if(!pathKey) return;
   if(multi){ tile.classList.toggle('selected'); tile.classList.contains('selected')?__SEL__.add(pathKey):__SEL__.delete(pathKey); }
@@ -119,18 +126,18 @@ document.addEventListener('mousedown', e=>{
 }, true);
 document.addEventListener('dblclick', e=>{
   const tile = e.target.closest?.('.small-tile'); if(!tile) return;
-  if(tile.classList.contains('folder-header')){
-    const key = tile.dataset.path;
-    const node = getNodeByPathKey(key);
-    if(node && node.type==='folder'){ __PATH__.push(node); renderDirectory(); }
-    return;
-  }
-  if(tile.dataset.type==='file'){ 
+  // 폴더 더블클릭 기능 제거 (아코디언 방식만 사용)
+  if(tile.dataset.type==='file'){
     const name=tile.querySelector('.name')?.textContent || '';
     const pathKey = tile.dataset.path;
     const node = getNodeByPathKey(pathKey);
     if(node && node.dataSource) {
       createTab(node.dataSource, name);
+    } else if(node && node.fileId) {
+      // DB 파일인 경우 - 파일명도 함께 전달
+      if(window.viewFileProblems) {
+        window.viewFileProblems(node.fileId, node.name);
+      }
     } else {
       console.log('파일 열기:', name);
     }
@@ -240,9 +247,16 @@ function bindToolbar(){
     renderDirectory();
   });
   $id('newFolderBtn')?.addEventListener('click', ()=>{
-    const folder=currentFolder(); let base='새 폴더', name=base, i=1;
+    const myFilesFolder = getNodeByPathKey('내 파일');
+    const folder = myFilesFolder || currentFolder();
+    let base='새 폴더', name=base, i=1;
     while((folder.children||[]).some(ch=>ch.name===name)) name=`${base} (${i++})`;
-    (folder.children=folder.children||[]).push({name, type:'folder', children:[]}); renderDirectory();
+    (folder.children=folder.children||[]).push({name, type:'folder', children:[]});
+    // '내 파일' 폴더가 닫혀있으면 열기
+    if(myFilesFolder && !__OPEN__.has('내 파일')) {
+      __OPEN__.add('내 파일');
+    }
+    renderDirectory();
   });
 }
 function setupUpload(){
@@ -387,590 +401,8 @@ async function uploadToServer(file) {
 }
 
 /* ---- Problem Data ---- */
-let PROBLEMS_DATA = {
-  'problems1_structured.json': [
-    {
-      "id": 1,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "다음 표에서 가로, 세로, 대각선에 있는 세 다항식의 합이 모두 $3 x^{2}-6 x+9$ 가 되도록 나머지 칸에 써 넣으려 한다. (가)의 위치에 알맞은 다항식을 $f(x)$ 라 할 때, $f(2)$ 의 값은?"
-        },
-        {
-          "type": "table",
-          "content": [
-            ["", "", "$3 x^{3}+4 x^{2}+x+6$"],
-            ["$4 x^{3}+5 x^{2}+2 x+7$", "(가)", ""],
-            ["", "", "$x^{3}+2 x^{2}-x+4$"]
-          ]
-        }
-      ],
-      "options": ["-5", "-4", "-1", "3", "11"]
-    },
-    {
-      "id": 2,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$x+y+z=3, \\frac{1}{x}+\\frac{1}{y}+\\frac{1}{z}=\\frac{2}{3}$ 일 때, $x^{3}+y^{3}+z^{3}+3 x y z$ 의 값은? (단, $x y z \\neq 0$ 이다.)"
-        }
-      ],
-      "options": ["3", "6", "9", "18", "27"]
-    },
-    {
-      "id": 3,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "다항식 $x^{4}-2 x^{3}+a x^{2}+b x+c$ 가 $(x-1)^{3}$ 으로 나누어떨어질 때, 세 상수 $a, b, c$ 에 대하여 $a+2 b+3 c$ 의 값은?"
-        }
-      ],
-      "options": ["1", "2", "3", "4", "5"]
-    },
-    {
-      "id": 4,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "두 다항식 $F(x)=a x^{4}+b, G(x)=a x^{5}+b$ 에 대하여 두 다항식 모두 $a x+b$ 를 인수로 가진다. $F(x)$ 를 $a x+b$ 로 나누었을 때의 몫을 $Q_{1}(x), G(x)$ 를 $a x+b$ 로 나누었을 때의 몫을 $Q_{2}(x)$ 라 할 때, $Q_{2}(x)$ 를 $Q_{1}(x)$ 로 나누었을 때의 나머지의 값은? (단, $a, b$ 는 실수, $a b \\neq 0$ )"
-        }
-      ],
-      "options": ["-1", "0", "1", "2", "3"]
-    },
-    {
-      "id": 5,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$\\left(x^{2}-4 x\\right)^{2}-2 x^{2}+8 x-15$ 의 인수 중 일차항의 계수가 1 인 모든 일차식의 합을 $S(x)=p x+q$ 라 할 때 $p q$ 의 값은? (단, $p, q$ 는 상수)"
-        }
-      ],
-      "options": ["-40", "-36", "-32", "-28", "-24"]
-    },
-    {
-      "id": 6,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$\\frac{1600 \\times 1601+1}{1561}$ 의 값은?"
-        }
-      ],
-      "options": ["1621", "1631", "1641", "1651", "1661"]
-    },
-    {
-      "id": 7,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차 이상의 다항식 $f(x)$ 를 $(x-a)(x-b)$ 로 나눈 나머지를 $R(x)$ 라 할 때, [보기]에서 옳은 것만을 있는 대로 고른 것은? (단, $a, b$ 는 서로 다른 두 실수이다.)"
-        },
-        {
-          "type": "examples",
-          "content": [
-            "ㄱ. $f(a)=R(a)$",
-            "ᄂ. $f(a)-R(b)=f(b)-R(a)$",
-            "ᄃ. $a f(b)-b f(a)=(a-b) R(0)$"
-          ]
-        }
-      ],
-      "options": ["ᄀ", "ᄂ", "ᄀ, ᄃ", "ᄂ, ᄃ", "ᄀ, ᄂ, ᄃ"]
-    },
-    {
-      "id": 8,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "두 복소수 $\\alpha=5+3 i, \\beta=1-i$ 에 대하여 $\\alpha+\\frac{1}{\\bar{\\beta}}$ 의 값은? (단, $i=\\sqrt{-1}, \\bar{\\beta}$ 는 $\\beta$ 의 켤레복소수)"
-        }
-      ],
-      "options": ["$\\frac{9+5 i}{2}$", "$\\frac{10+7 i}{2}$", "$\\frac{10+5 i}{2}$", "$\\frac{11+7 i}{2}$", "$\\frac{11+5 i}{2}$"]
-    },
-    {
-      "id": 9,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "실수 $x, y$ 에 대하여 $x+y=-3, x y=1$ 을 만족할 때, $\\sqrt{\\frac{y}{x}}+\\sqrt{\\frac{x}{y}}$ 의 값은?"
-        }
-      ],
-      "options": ["-3", "-1", "0", "1", "3"]
-    },
-    {
-      "id": 10,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "두 이차방정식\n\n$x^{2}+a x+b=0 \\cdots \\text{ (ㄱ) }$\n\n$x^{2}+b x+a=0 \\cdots \\text{ (ㄴ) }$\n\n에 대하여 <보기> 에서 옳은 것만을 있는 대로 고른 것은? (단, $a, b$ 는 실수)"
-        },
-        {
-          "type": "examples",
-          "content": "ㄱ. $a b \\leq 0$ 이면 (ㄱ) 과 (ㄴ) 중 적어도 하나는 실근을 가진다.\n\nㄴ. $a+b \\leq 0$ 이면 (ㄱ) 과 (ㄴ) 중 적어도 하나는 실근을 가진다.\n\nᄃ. $a b \\leq a+b \\leq 0$ 이면 (ㄱ) 과 (ㄴ) 중 적어도 하나는 허근을 가진다."
-        }
-      ],
-      "options": ["ᄀ", "ᄂ", "ᄀ, ᄂ", "ᄀ, ᄃ", "ᄀ, ᄂ, ᄃ"]
-    },
-    {
-      "id": 11,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$x$ 에 대한 이차방정식 $x^{2}+(2 k-1) x+a(k+4)+b+3=0$ 이 실수 $k$ 의 값에 관계없이 항상 1 을 근으로 가질 때, 상수 $a, b$ 에 대하여 $a+b$ 의 값은?"
-        }
-      ],
-      "options": ["1", "2", "3", "4", "5"]
-    },
-    {
-      "id": 12,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "삼각형의 세 변의 길이가 각각 $a, b, c$ 일 때, $x$ 에 대한 이차방정식 $a x^{2}-2 \\sqrt{b^{2} c+b c^{2}+c^{2} a} x+b^{2}+a b+c a=0$ 이 중근을 갖는다. 이 삼각형은 어떤 삼각형인가?"
-        }
-      ],
-      "options": ["$a=b$ 인 이등변삼각형", "$b=c$ 인 이등변삼각형", "$a=c$ 인 이등변삼각형", "$a$ 가 빗변인 직각삼각형", "$b$ 가 빗변인 직각삼각형"]
-    }
-  ],
-  'problems2_structured.json': [
-    {
-      "id": 1,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "세 다항식 $A, B, C$ 가 다음과 같을 때, $2(A-B)-(A-3 C)$ 를 계산한 값은? [3.0점]"
-        },
-        {
-          "type": "text",
-          "content": "$A=x^{3}-x^{2}-3 x+1$"
-        },
-        {
-          "type": "text",
-          "content": "$B=2 x^{3}+x^{2}+4 x-5$"
-        },
-        {
-          "type": "text",
-          "content": "$C=-x^{2}+9$"
-        }
-      ],
-      "options": ["$-x^{3}+6 x^{2}-11 x+36$", "$-2 x^{3}-6 x^{2}+12 x+36$", "$-3 x^{3}+6 x^{2}-10 x+37$", "$-3 x^{3}-6 x^{2}-11 x+37$", "$-3 x^{3}-6 x^{2}-11 x+38$"]
-    },
-    {
-      "id": 2,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$\\frac{3+i}{3-i}$ 를 $a+b i$ 의 꼴로 나타낼 때, $a+b$ 의 값은? (단, $i=\\sqrt{-1}$ 이고, $a, b$ 는 실수이다.) [3.1점]"
-        }
-      ],
-      "options": ["$\\frac{7}{5}$", "$\\frac{8}{5}$", "$\\frac{9}{5}$", "2", "$\\frac{11}{5}$"]
-    },
-    {
-      "id": 3,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차방정식 $x^{2}+x-a+2=0$ 이 서로 다른 두 허근을 가질 때, $a$ 의 값으로 가능한 것은? [3.2점]"
-        }
-      ],
-      "options": ["$\\frac{3}{2}$", "$\\frac{7}{4}$", "2", "$\\frac{9}{4}$", "$\\frac{5}{2}$"]
-    },
-    {
-      "id": 4,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "등식 $a x(x+1)+b(x+1)(x-2)+c x(x-2)=x^{2}+3 x-4$ 가 모든 실수 $x$ 에 대하여 성립하도록 하는 상수 $a, b, c$ 에 대하여 $2 a+b-c$ 의 값은? [3.3점]"
-        }
-      ],
-      "options": ["2", "4", "6", "8", "10"]
-    },
-    {
-      "id": 5,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차함수 $y=x^{2}+2 k x+k^{2}-2 k$ 의 그래프와 직선 $y=p x+q$ 가 $k$ 의 값에 관계없이 항상 접할 때, 실수 $p, q$ 에 대하여 $p+q$ 의 값은? (단, $p \\neq 0$ 이다.) [3.4점]"
-        }
-      ],
-      "options": ["-2", "-1", "0", "1", "2"]
-    },
-    {
-      "id": 6,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "아래 그림과 같이 이차함수 $y=-2 x^{2}+5 x$ 의 그래프와 접 하고 기울기가 음수인 직선이 점 $(0,4)$ 를 지날 때，이 직선의 기울기는？［3．5점］"
-        },
-        {
-          "type": "image",
-          "content": "https://cdn.mathpix.com/cropped/2025_09_21_803fdcb25b27b6e56c43g-1.jpg?height=312&width=466&top_left_y=467&top_left_x=165"
-        },
-        {
-          "type": "text",
-          "content": "$y=-2 x^{2}+5 x$"
-        }
-      ],
-      "options": ["$4-4 \\sqrt{2}$", "$4-3 \\sqrt{2}$", "$5-4 \\sqrt{2}$", "$5-3 \\sqrt{2}$", "$6-4 \\sqrt{2}$"]
-    },
-    {
-      "id": 7,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "복소수 $z=\\frac{1+\\sqrt{3} i}{2}$ 에 대하여［보기］에서 옳은 것의 개수는？（단，$i=\\sqrt{-1}$ 이고 $\\bar{z}$ 는 $z$ 의 켤레복소수이다．）［3．7점］"
-        },
-        {
-          "type": "examples",
-          "content": "ᄀ．$z^{3}=-1$\nᄂ．$z^{5}+z^{22}=-1$\nᄃ．임의의 자연수 $a, b$ 에 대하여 $a, b$ 의 차가 3 이면 $z^{a}+z^{b}=0$ 이다．\nㄹ． $\\bar{z}=z^{n}$ 을 만족하는 100 이하의 자연수 $n$ 의 개수는 16 개이다．"
-        }
-      ],
-      "options": ["0 개", "1 개", "2 개", "3 개", "4 개"]
-    },
-    {
-      "id": 8,
-      "page": 2,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차방정식 $x^{2}-2 x-4=0$ 의 양수인 근을 $\\alpha$ 라 하자． $\\alpha(\\alpha^{2}-3 \\alpha-6)(\\alpha^{2}-\\alpha-5)$ 의 값을 $a+b \\sqrt{5}$ 라 할 때，$a+b$ 의 값은？（단，$a, b$ 는 정수이다．）［3．6점］"
-        }
-      ],
-      "options": ["－30", "－28", "－26", "－24", "－22"]
-    },
-    {
-      "id": 9,
-      "page": 3,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "두 다항식 $P(x), Q(x)$ 에 대하여 $P(x)=a x^{2}-x-2$ 를 $x+2$ 로 나누었을 때 나머지와 $x-3$ 으로 나누었을 때 나머지가 서로 같다. 그리고 $Q(x)$ 를 $P(x)$ 로 나누었을 때 나머지가 $2 x-1$ 이고, $x-a$ 로 나누었을 때 나머지가 4 이다. $Q(x)$ 를 $x^{2}-a^{2}$ 으로 나누었을 때 나머지는? (단, $a \\neq 0$ 인 실수이다.) [3.8점]"
-        }
-      ],
-      "options": ["$\\frac{7}{2} x-\\frac{1}{2}$", "$\\frac{7}{2} x+\\frac{1}{2}$", "$\\frac{5}{2} x+\\frac{1}{2}$", "$\\frac{1}{2} x-\\frac{7}{2}$", "$\\frac{1}{2} x+\\frac{5}{2}$"]
-    },
-    {
-      "id": 10,
-      "page": 3,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "최고차항의 계수가 -2 인 삼차다항식 $P(x)$ 에 대하여 $P(2)=5, P(3)=10, P(4)=17$ 을 만족한다. 다음 등식 $P(x)=a(x-2)^{3}+b(x-2)^{2}+c(x-2)+d$ 가 $x$ 에 대한 항등식이 되도록 상수 $a, b, c, d$ 를 정할 때, $a+2 b+3 c+4 d$ 의 값은? [3.9점]"
-        }
-      ],
-      "options": ["28", "29", "30", "31", "32"]
-    },
-    {
-      "id": 11,
-      "page": 3,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차함수 $y=x^{2}-2 a x+a^{2}-8$ 의 그래프와 직선 $y=-8 x-n$ 이 서로 다른 두 점에서 만나도록 하는 모든 자연 수 $n$ 의 개수를 $f(a)$ 라 할 때, $f(1)+f(2)+f(3)$ 의 값은? (단, $a$ 는 실수이다.) [4.0점]"
-        }
-      ],
-      "options": ["20", "21", "22", "23", "24"]
-    },
-    {
-      "id": 12,
-      "page": 4,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차함수 $f(x)=-x^{2}+4 a x+a$ 의 그래프가 $x$ 축과 서로 다른 두 점에서 만날 때, 다음 [보기]중에서 옳은 것만을 있는 대로 고른 것은? (단, $a<-\\frac{1}{4}$ 또는 $a>0$ 이다.) [4.1점]"
-        },
-        {
-          "type": "examples",
-          "content": [
-            "ᄀ. 함수 $y=f(x)$ 의 그래프와 $x$ 축이 만나는 교점의 $x$ 좌 표는 $2 a \\pm \\sqrt{4 a^{2}+a}$ 이다.",
-            "ᄂ. 등식 $f(x)-f\\left(a^{2}-1-x\\right)=0$ 이 $x$ 에 대한 항등식이 되도록 하는 $a$ 의 개수는 2이다.",
-            "ᄃ. $0 \\leq x \\leq 2$ 에서 이차함수 $y=f(x)$ 의 최솟값이 1 이 되도록 하는 모든 $a$ 의 값의 합은 $\\frac{13}{9}$ 이다."
-          ]
-        }
-      ],
-      "options": ["ᄀ", "ᄀ, ᄂ", "ᄂ, ᄃ", "ᄀ, ᄃ", "ᄀ, ᄂ, ᄃ"]
-    },
-    {
-      "id": 13,
-      "page": 4,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차방정식 $x^{2}-k x-1=0$ 의 두 근을 $\\alpha, \\beta$ 라 할 때, 두 근의 차는 $2 \\sqrt{2}$ 이고, $y=x^{2}+a x+b$ 의 그래프가 두 점 $(\\alpha^{2}-\\alpha-1, \\alpha),(\\beta^{2}-\\beta-1, \\beta)$ 를 지난다. 두 상수 $a, b$ 의 합 $a+b$ 의 값은? (단, $k>0$ 인 실수이다.)"
-        }
-      ],
-      "options": ["2", "1", "0", "-1", "-2"]
-    },
-    {
-      "id": 14,
-      "page": 4,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차방정식 $x^{2}-(2 k-1) x+3 k=0$ 이 허근 $z$ 를 가질 때, $z^{4}$ 이 실수가 되도록 하는 모든 실수 $k$ 의 값의 합은?"
-        }
-      ],
-      "options": ["1", "2", "3", "4", "5"]
-    },
-    {
-      "id": 15,
-      "page": 5,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$\\left\\{\\left(\\frac{-1+\\sqrt{3} i}{2}\\right)^{a}+\\left(\\frac{1-\\sqrt{3} i}{2}\\right)^{b}\\right\\}^{c}=k$ 라 할 때, 4 이하의 자연수 $a, b, c$ 에 대하여 $k$ 가 음의 정수가 되도록 하는 순서쌍 $(a, b, c)$ 의 개수는? (단, $i=\\sqrt{-1}$ 이다.) [4.4점]"
-        }
-      ],
-      "options": ["3", "5", "7", "9", "11"]
-    },
-    {
-      "id": 16,
-      "page": 5,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "다항식 $x^{13}+x^{7}+3$ 을 $x^{2}+x+1$, $x^{2}-x+1$, $(x^{3}+1)(x^{3}-1)$ 로 나눈 나머지를 각각 $r_{1}(x), r_{2}(x), r_{3}(x)$ 라 할 때, $r_{1}(x)+r_{2}(x)+r_{3}(x)$ 를 $x-2$ 로 나눈 나머지는?"
-        }
-      ],
-      "options": ["20", "21", "22", "23", "24"]
-    },
-    {
-      "id": 17,
-      "page": 6,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "다항식 $A$ 를 $x^{2}-3 x+1$ 로 나누었더니 몫이 $x^{2}-1$ 이고 나머지가 $-x+3$ 이라 할 때，다음 물음에 답하시오．［10점，부분점수 있음］"
-        }
-      ],
-      "options": []
-    },
-    {
-      "id": 18,
-      "page": null,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "（1）다항식 $A$ 를 풀이과정과 함께 구하고，$x$ 에 대하여 내림차 순으로 쓰시오．［2점］"
-        },
-        {
-          "type": "text",
-          "content": "（2）다항식 $A$ 를 다항식 $x^{2}+x-1$ 로 나누었을 때 몫을 $Q(x)$ ，나머지를 $R(x)$ 라 하자． $Q(x), R(x), Q(0), R(0)$ 을 각각 풀이과정과 함께 구하시오．［8점］"
-        }
-      ],
-      "options": []
-    },
-    {
-      "id": 19,
-      "page": 6,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$-1 \\leq x \\leq 1$ 에서 이차함수 $f(x)=-x^{2}+2 a x-2 a+1$ 의 최댓값을 $g(a)$ 라 할 때，$g(a)$ 의 최솟값을 풀이과정과 함께 구하시오．［10점，부분점수 있음］"
-        }
-      ],
-      "options": []
-    },
-    {
-      "id": 20,
-      "page": 7,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "［서답형3］"
-        },
-        {
-          "type": "text",
-          "content": "$y=-\\left(-x^{2}+4 x-3\\right)^{2}+4\\left(-x^{2}+4 x-3\\right)-3$ 에 대하여 $0 \\leq x \\leq 5$ 에서의 최댓값을 $a$ ，최솟값을 $b$ 라 하고， $-3 \\leq x \\leq 1$ 에서 최댓값을 $c$ ，최솟값을 $d$ 라 할 때， $a+b+c+d$ 의 값을 풀이과정과 함께 구하시오．［10점，부분점 수 있음］"
-        }
-      ],
-      "options": []
-    },
-    {
-      "id": 21,
-      "page": null,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "다항식 $P(x)$ 를 $x^{2}-2 x$ 로 나눈 몫은 $Q(x)$ ，나머지는 $5 x+k$ 이고，$P(x)$ 를 $x^{4}+x^{3}-8 x^{2}+5 x-2$ 로 나누었을 때 나 머지는 $x^{3}+2 x^{2}-1$ 이다．$Q(x)$ 를 $x^{3}+3 x^{2}-2 x+1$ 로 나눈 나머지 $R(x)$ 에 대하여 $R(1)+k$ 의 값을 풀이과정과 함께 구 하시오．（단，$k$ 는 상수이다．）［10점，부분점수 있음］"
-        }
-      ],
-      "options": []
-    }
-  ],
-  'output/problems_llm_structured.json': [
-    {
-      "id": 1,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "다음 표에서 가로, 세로, 대각선에 있는 세 다항식의 합이 모두 $3 x^{2}-6 x+9$ 가 되도록 나머지 칸에 써 넣으려 한다. (가)의 위치에 알맞은 다항식을 $f(x)$ 라 할 때, $f(2)$ 의 값은?"
-        },
-        {
-          "type": "table",
-          "content": "| | $x^2-2x+3$ | $2x^2-x+1$ | |\n|---|---|---|---|\n| $x^2+4x-1$ | | | $x^2-3x+7$ |\n| | (가) | | |"
-        }
-      ],
-      "options": ["-1", "0", "1", "2", "3"]
-    },
-    {
-      "id": 2,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$x+y+z=3, \\frac{1}{x}+\\frac{1}{y}+\\frac{1}{z}=\\frac{2}{3}$ 일 때, $x^{3}+y^{3}+z^{3}+3 x y z$ 의 값은? (단, $x y z \\neq 0$ 이다.)"
-        }
-      ],
-      "options": ["3", "6", "9", "18", "27"]
-    },
-    {
-      "id": 3,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "다항식 $x^{4}-2 x^{3}+a x^{2}+b x+c$ 가 $(x-1)^{3}$ 으로 나누어떨어질 때, 세 상수 $a, b, c$ 에 대하여 $a+2 b+3 c$ 의 값은?"
-        }
-      ],
-      "options": ["1", "2", "3", "4", "5"]
-    },
-    {
-      "id": 4,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "두 다항식 $F(x)=a x^{4}+b, G(x)=a x^{5}+b$ 에 대하여 두 다항식 모두 $a x+b$ 를 인수로 가진다. $F(x)$ 를 $a x+b$ 로 나누었을 때의 몫을 $Q_{1}(x), G(x)$ 를 $a x+b$ 로 나누었을 때의 몫을 $Q_{2}(x)$ 라 할 때, $Q_{2}(x)$ 를 $Q_{1}(x)$ 로 나누었을 때의 나머지의 값은? (단, $a, b$ 는 실수, $a b \\neq 0$ )"
-        }
-      ],
-      "options": ["-1", "0", "1", "2", "3"]
-    },
-    {
-      "id": 5,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$\\left(x^{2}-4 x\\right)^{2}-2 x^{2}+8 x-15$ 의 인수 중 일차항의 계수가 1 인 모든 일차식의 합을 $S(x)=p x+q$ 라 할 때 $p q$ 의 값은? (단, $p, q$ 는 상수)"
-        }
-      ],
-      "options": ["-40", "-36", "-32", "-28", "-24"]
-    },
-    {
-      "id": 6,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$\\frac{1600 \\times 1601+1}{1561}$ 의 값은?"
-        }
-      ],
-      "options": ["1621", "1631", "1641", "1651", "1661"]
-    },
-    {
-      "id": 7,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "이차 이상의 다항식 $f(x)$ 를 $(x-a)(x-b)$ 로 나눈 나머지를 $R(x)$ 라 할 때, [보기]에서 옳은 것만을 있는 대로 고른 것은? (단, $a, b$ 는 서로 다른 두 실수이다.)"
-        },
-        {
-          "type": "examples",
-          "content": [
-            "ㄱ. $R(x)$ 는 일차식이다.",
-            "ㄴ. $f(a)=f(b)$ 이면 $R(x)$ 는 상수이다.",
-            "ㄷ. $f(a)=f(b)$ 이면 $f(x)-R(x)$ 는 $(x-a)(x-b)$ 로 나누어떨어진다."
-          ]
-        }
-      ],
-      "options": ["ㄱ", "ㄴ", "ㄷ", "ㄱ, ㄴ", "ㄱ, ㄷ", "ㄴ, ㄷ", "ㄱ, ㄴ, ㄷ"]
-    },
-    {
-      "id": 8,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "두 복소수 $\\alpha=5+3 i, \\beta=1-i$ 에 대하여 $\\alpha+\\frac{1}{\\bar{\\beta}}$ 의 값은? (단, $i=\\sqrt{-1}, \\bar{\\beta}$ 는 $\\beta$ 의 켤레복소수)"
-        }
-      ],
-      "options": ["$\\frac{9+5 i}{2}$", "$\\frac{10+7 i}{2}$", "$\\frac{10+5 i}{2}$", "$\\frac{11+7 i}{2}$", "$\\frac{11+5 i}{2}$"]
-    },
-    {
-      "id": 9,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "실수 $x, y$ 에 대하여 $x+y=-3, x y=1$ 을 만족할 때, $\\sqrt{\\frac{y}{x}}+\\sqrt{\\frac{x}{y}}$ 의 값은?"
-        }
-      ],
-      "options": ["-3", "-1", "0", "1", "3"]
-    },
-    {
-      "id": 10,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "두 이차방정식\n\n$$x^{2}+a x+b=0 \\cdots \\text { (ㄱ) }$$\n\n$$x^{2}+b x+a=0 \\cdots \\text { (ㄴ) }$$\n\n에 대하여 <보기> 에서 옳은 것만을 있는 대로 고른 것은? (단, $a, b$ 는 실수)"
-        },
-        {
-          "type": "examples",
-          "content": [
-            "ㄱ. $a b \\leq 0$ 이면 (ㄱ) 과 (ㄴ) 중 적어도 하나는 실근을 가진다.",
-            "ㄴ. $a+b \\leq 0$ 이면 (ㄱ) 과 (ㄴ) 중 적어도 하나는 실근을 가진다.",
-            "ㄷ. $a b \\leq a+b \\leq 0$ 이면 (ㄱ) 과 (ㄴ) 중 적어도 하나는 허근을 가진다."
-          ]
-        }
-      ],
-      "options": ["ᄀ", "ᄂ", "ᄀ, ᄂ", "ᄀ, ᄃ", "ᄀ, ᄂ, ᄃ"]
-    },
-    {
-      "id": 11,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "$x$ 에 대한 이차방정식 $x^{2}+(2 k-1) x+a(k+4)+b+3=0$ 이 실수 $k$ 의 값에 관계없이 항상 1 을 근으로 가질 때, 상수 $a, b$ 에 대하여 $a+b$ 의 값은?"
-        }
-      ],
-      "options": ["1", "2", "3", "4", "5"]
-    },
-    {
-      "id": 12,
-      "page": 1,
-      "content_blocks": [
-        {
-          "type": "text",
-          "content": "삼각형의 세 변의 길이가 각각 $a, b, c$ 일 때, $x$ 에 대한 이차방정식 $a x^{2}-2 \\sqrt{b^{2} c+b c^{2}+c^{2} a} x+b^{2}+a b+c a=0$ 이 중근을 갖는다. 이 삼각형은 어떤 삼각형인가?"
-        }
-      ],
-      "options": ["$a=b$ 인 이등변삼각형", "$b=c$ 인 이등변삼각형", "$a=c$ 인 이등변삼각형", "$a$ 가 빗변인 직각삼각형", "$b$ 가 빗변인 직각삼각형"]
-    }
-  ]
-};
-
+let PROBLEMS_DATA = {};
+window.PROBLEMS_DATA = PROBLEMS_DATA;
 /* ---- Tab Management ---- */
 let openTabs = [];
 let activeTabId = null;
@@ -1010,6 +442,9 @@ function createTab(dataSource, fileName) {
   renderTabs();
   loadProblemsFromFile(dataSource);
 }
+
+// 전역으로 노출
+window.createTab = createTab;
 
 function switchToTab(tabId) {
   activeTabId = tabId;
@@ -1090,6 +525,9 @@ function getCurrentFileSelectedProblems() {
   }
   return selectedProblemsByFile.get(activeTabId);
 }
+
+// 전역으로 노출
+window.getCurrentFileSelectedProblems = getCurrentFileSelectedProblems;
 
 function toggleProblemSelection(problemId) {
   const currentFileSelected = getCurrentFileSelectedProblems();
@@ -1473,6 +911,9 @@ function displayProblems(problems) {
   }
 }
 
+// 전역으로 노출
+window.displayProblems = displayProblems;
+
 function createProblemElement(problem) {
   const div = document.createElement('div');
   div.className = 'problem';
@@ -1555,6 +996,9 @@ function createProblemElement(problem) {
   return div;
 }
 
+// 전역으로 노출
+window.createProblemElement = createProblemElement;
+
 /* ---- Search & misc ---- */
 function filterGlobal(e){
   const q=(e.target.value||'').toLowerCase();
@@ -1600,15 +1044,10 @@ function initDashboard(){
   if (downloadBtn) downloadBtn.addEventListener('click', downloadImages);
   if (clearBtn) clearBtn.addEventListener('click', clearExam);
 
-  // 초기 로드 시 sample1 데이터 표시
+  // DOM이 완전히 로드된 후 핸들 위치 재설정
   setTimeout(() => {
-    createTab('problems1_structured.json', 'sample1');
-
-    // DOM이 완전히 로드된 후 핸들 위치 재설정
-    setTimeout(() => {
-      updateResizeHandlePosition();
-    }, 100);
-  }, 500);
+    updateResizeHandlePosition();
+  }, 100);
 }
 
 /* ---- PDF 생성 (Python 화면 캡쳐 버전) ---- */
