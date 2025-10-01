@@ -5,6 +5,8 @@ const fs = require('fs');
 const axios = require('axios');
 const FormData = require('form-data');
 const { spawn } = require('child_process');
+const { MongoClient, ObjectId } = require('mongodb');
+const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 // 마크다운 렌더링 함수들
@@ -117,10 +119,71 @@ if (!fs.existsSync('output')) {
 const MATHPIX_APP_ID = process.env.APP_ID;
 const MATHPIX_APP_KEY = process.env.APP_KEY;
 
+// MongoDB 설정
+const MONGODB_URI = process.env.MONGODB_URI;
+const MONGODB_DATABASE = process.env.MONGODB_DATABASE;
+
 // 디버그: 환경변수 확인
 console.log('현재 작업 디렉토리:', process.cwd());
 console.log('APP_ID 로드됨:', MATHPIX_APP_ID ? '✓' : '✗');
 console.log('APP_KEY 로드됨:', MATHPIX_APP_KEY ? '✓' : '✗');
+console.log('MONGODB_URI 로드됨:', MONGODB_URI ? '✓' : '✗');
+console.log('MONGODB_DATABASE 로드됨:', MONGODB_DATABASE ? '✓' : '✗');
+
+// MongoDB 연결
+let db;
+let client;
+
+async function connectToMongoDB() {
+  try {
+    if (!MONGODB_URI) {
+      throw new Error('MONGODB_URI가 설정되지 않았습니다.');
+    }
+    
+    client = new MongoClient(MONGODB_URI);
+    await client.connect();
+    db = client.db(MONGODB_DATABASE);
+    console.log('✅ MongoDB 연결 성공');
+    
+    // 연결 테스트
+    await db.admin().ping();
+    console.log('✅ MongoDB 핑 성공');
+    
+    return db;
+  } catch (error) {
+    console.error('❌ MongoDB 연결 실패:', error.message);
+    throw error;
+  }
+}
+
+// 쿠키 파싱 함수
+function parseCookies(cookieHeader) {
+  const cookies = {};
+  if (cookieHeader) {
+    cookieHeader.split(';').forEach(cookie => {
+      const parts = cookie.trim().split('=');
+      if (parts.length === 2) {
+        cookies[parts[0]] = decodeURIComponent(parts[1]);
+      }
+    });
+  }
+  return cookies;
+}
+
+// 세션 ID 생성 함수
+function generateSessionId() {
+  return Date.now().toString(36) + Math.random().toString(36).substr(2);
+}
+
+// 세션 저장소 (메모리)
+const sessions = new Map();
+
+// 서버 시작 시 MongoDB 연결 (환경변수 확인 후)
+if (MONGODB_URI && MONGODB_DATABASE) {
+  connectToMongoDB().catch(console.error);
+} else {
+  console.log('⚠️ MongoDB 환경변수가 설정되지 않았습니다. 로그인/회원가입 기능이 비활성화됩니다.');
+}
 
 async function convertPdfToText(pdfPath, sessionId = null) {
   try {
@@ -958,7 +1021,354 @@ const server = http.createServer((req, res) => {
         }));
       }
     });
+  } else if (req.method === 'POST' && req.url === '/api/register') {
+    // 회원가입 API
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { username, email, password, name, role } = JSON.parse(body);
+
+        // 입력 검증
+        if (!username || !email || !password || !name || !role) {
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '모든 필드를 입력해주세요.'
+          }));
+          return;
+        }
+
+        // 이메일 형식 검증
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '올바른 이메일 형식이 아닙니다.'
+          }));
+          return;
+        }
+
+        // 비밀번호 길이 검증
+        if (password.length < 6) {
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '비밀번호는 최소 6자 이상이어야 합니다.'
+          }));
+          return;
+        }
+
+        // 역할 검증
+        if (!['teacher', 'student'].includes(role)) {
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '올바른 역할을 선택해주세요.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스 연결이 없습니다. 서버 관리자에게 문의하세요.'
+          }));
+          return;
+        }
+
+        const usersCollection = db.collection('users');
+
+        // 중복 검사
+        const existingUser = await usersCollection.findOne({
+          $or: [{ email }, { username }]
+        });
+
+        if (existingUser) {
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: existingUser.email === email ? '이미 사용 중인 이메일입니다.' : '이미 사용 중인 사용자명입니다.'
+          }));
+          return;
+        }
+
+        // 비밀번호 해시화
+        const saltRounds = 10;
+        const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+        // 사용자 생성
+        const newUser = {
+          username,
+          email,
+          password: hashedPassword,
+          name,
+          role,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+
+        const result = await usersCollection.insertOne(newUser);
+
+        res.writeHead(201, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          message: '회원가입이 완료되었습니다.',
+          user: {
+            id: result.insertedId,
+            username: newUser.username,
+            email: newUser.email,
+            name: newUser.name,
+            role: newUser.role
+          }
+        }));
+
+      } catch (error) {
+        console.error('회원가입 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '회원가입 중 오류가 발생했습니다.'
+        }));
+      }
+    });
+  } else if (req.method === 'POST' && req.url === '/api/login') {
+    // 로그인 API
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const { email, password } = JSON.parse(body);
+
+        // 입력 검증
+        if (!email || !password) {
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '이메일과 비밀번호를 입력해주세요.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스 연결이 없습니다. 서버 관리자에게 문의하세요.'
+          }));
+          return;
+        }
+
+        const usersCollection = db.collection('users');
+
+        // 사용자 찾기
+        const user = await usersCollection.findOne({ email });
+
+        if (!user) {
+          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '이메일 또는 비밀번호가 올바르지 않습니다.'
+          }));
+          return;
+        }
+
+        // 비밀번호 검증
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({
+            success: false,
+            message: '이메일 또는 비밀번호가 올바르지 않습니다.'
+          }));
+          return;
+        }
+
+        // 세션 생성
+        const sessionId = generateSessionId();
+        sessions.set(sessionId, {
+          userId: user._id.toString(),
+          username: user.username,
+          role: user.role,
+          createdAt: new Date()
+        });
+
+        // 로그인 성공
+        res.writeHead(200, {
+          'Content-Type': 'application/json; charset=utf-8',
+          'Set-Cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Max-Age=${24 * 60 * 60}`
+        });
+        res.end(JSON.stringify({
+          success: true,
+          message: '로그인 성공',
+          user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            name: user.name,
+            role: user.role
+          }
+        }));
+
+      } catch (error) {
+        console.error('로그인 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '로그인 중 오류가 발생했습니다.'
+        }));
+      }
+    });
+  } else if (req.method === 'POST' && req.url === '/api/logout') {
+    // 쿠키에서 세션 ID 가져오기
+    const cookies = parseCookies(req.headers.cookie);
+    const sessionId = cookies.sessionId;
+    
+    if (sessionId && sessions.has(sessionId)) {
+      sessions.delete(sessionId);
+    }
+    
+    res.writeHead(200, {
+      'Content-Type': 'application/json; charset=utf-8',
+      'Set-Cookie': 'sessionId=; HttpOnly; Path=/; Max-Age=0'
+    });
+    res.end(JSON.stringify({
+      success: true,
+      message: '로그아웃 성공'
+    }));
+  } else if (req.method === 'GET' && req.url === '/api/my-files') {
+    // 사용자 파일 목록 조회 (로그인 필요)
+    (async () => {
+      const cookies = parseCookies(req.headers.cookie);
+      const sessionId = cookies.sessionId;
+
+      // 세션 확인
+      let userId = null;
+      if (sessionId && sessions.has(sessionId)) {
+        userId = sessions.get(sessionId).userId;
+      }
+
+      // 로그인하지 않은 경우 빈 배열 반환
+      if (!userId) {
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          files: [],
+          message: '로그인이 필요합니다.'
+        }));
+        return;
+      }
+
+      if (!db) {
+        res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '데이터베이스에 연결할 수 없습니다.'
+        }));
+        return;
+      }
+
+      try {
+        // 해당 사용자의 파일 목록 조회
+        const files = await db.collection('files').find({
+          userId: new ObjectId(userId)
+        }).sort({ uploadDate: -1 }).toArray();
+
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          files: files
+        }));
+      } catch (error) {
+        console.error('파일 목록 조회 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '파일 목록 조회 중 오류가 발생했습니다.'
+        }));
+      }
+    })();
+  } else if (req.method === 'GET' && req.url.startsWith('/api/my-problems/')) {
+    // 특정 파일의 문제 목록 조회 (로그인 필요)
+    (async () => {
+      const fileId = req.url.split('/').pop();
+      const cookies = parseCookies(req.headers.cookie);
+      const sessionId = cookies.sessionId;
+      
+      // 세션 확인
+      let userId = null;
+      if (sessionId && sessions.has(sessionId)) {
+        userId = sessions.get(sessionId).userId;
+      }
+      
+      if (!userId) {
+        res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '로그인이 필요합니다.'
+        }));
+        return;
+      }
+
+      if (!db) {
+        res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '데이터베이스에 연결할 수 없습니다.'
+        }));
+        return;
+      }
+
+      try {
+        // 해당 파일의 문제 목록 조회 (사용자 확인)
+        const problems = await db.collection('problems').find({
+          fileId: new ObjectId(fileId),
+          userId: new ObjectId(userId)
+        }).sort({ problemNumber: 1 }).toArray();
+
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: true,
+          problems: problems
+        }));
+      } catch (error) {
+        console.error('문제 목록 조회 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          message: '문제 목록 조회 중 오류가 발생했습니다.'
+        }));
+      }
+    })();
   } else if (req.method === 'POST' && req.url === '/upload') {
+    // 쿠키에서 세션 ID 가져오기
+    const cookies = parseCookies(req.headers.cookie);
+    const sessionId = cookies.sessionId;
+    
+    // 세션 확인
+    let userId = null;
+    if (sessionId && sessions.has(sessionId)) {
+      userId = sessions.get(sessionId).userId;
+    }
+    
+    if (!userId) {
+      res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
+      res.end(JSON.stringify({
+        success: false,
+        message: '로그인이 필요합니다.'
+      }));
+      return;
+    }
+
     const uploadSingle = upload.single('pdf');
     uploadSingle(req, res, async (err) => {
       if (err) {
@@ -1073,12 +1483,58 @@ const server = http.createServer((req, res) => {
         console.log(`⏱️ 총 소요시간: ${(totalTime / 1000).toFixed(2)}초 (${(totalTime / 60000).toFixed(1)}분)`);
         console.log('='.repeat(60) + '\n');
 
+        // MongoDB에 파일 정보 저장
+        let fileId = null;
+        if (db) {
+          try {
+            const fileDoc = {
+              userId: new ObjectId(userId),
+              filename: req.file.originalname,
+              originalText: extractedText,
+              problemCount: problems.length,
+              uploadDate: new Date(),
+              stats: {
+                originalTextLength: extractedText.length,
+                problemCount: problems.length
+              }
+            };
+            
+            const fileResult = await db.collection('files').insertOne(fileDoc);
+            fileId = fileResult.insertedId;
+            console.log(`✅ 파일 정보 저장 완료 - 파일 ID: ${fileId}`);
+            
+            // 문제들을 MongoDB에 저장
+            if (problems.length > 0) {
+              const problemDocs = problems.map((problem, index) => ({
+                fileId: fileId,
+                userId: new ObjectId(userId),
+                problemNumber: index + 1,
+                content: problem.content || problem.text || '',
+                answer: problem.answer || '',
+                explanation: problem.explanation || '',
+                type: problem.type || 'multiple_choice',
+                options: problem.options || [],
+                difficulty: problem.difficulty || 'medium',
+                subject: problem.subject || '',
+                createdAt: new Date()
+              }));
+              
+              await db.collection('problems').insertMany(problemDocs);
+              console.log(`✅ 문제 ${problems.length}개 저장 완료`);
+            }
+          } catch (dbError) {
+            console.error('❌ MongoDB 저장 실패:', dbError);
+            // DB 저장 실패해도 파일 처리는 성공으로 처리
+          }
+        }
+
         // JSON 응답 반환
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({
           success: true,
           message: '파일 처리 완료',
           problems: problems,
+          fileId: fileId,
           stats: {
             originalTextLength: extractedText.length,
             problemCount: problems.length,
