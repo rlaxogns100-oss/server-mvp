@@ -5,8 +5,6 @@ const fs = require('fs');
 const axios = require('axios');
 const FormData = require('form-data');
 const { spawn } = require('child_process');
-const { MongoClient, ObjectId } = require('mongodb');
-const bcrypt = require('bcryptjs');
 require('dotenv').config();
 
 // 마크다운 렌더링 함수들
@@ -119,71 +117,10 @@ if (!fs.existsSync('output')) {
 const MATHPIX_APP_ID = process.env.APP_ID;
 const MATHPIX_APP_KEY = process.env.APP_KEY;
 
-// MongoDB 설정
-const MONGODB_URI = process.env.MONGODB_URI;
-const MONGODB_DATABASE = process.env.MONGODB_DATABASE;
-
 // 디버그: 환경변수 확인
 console.log('현재 작업 디렉토리:', process.cwd());
 console.log('APP_ID 로드됨:', MATHPIX_APP_ID ? '✓' : '✗');
 console.log('APP_KEY 로드됨:', MATHPIX_APP_KEY ? '✓' : '✗');
-console.log('MONGODB_URI 로드됨:', MONGODB_URI ? '✓' : '✗');
-console.log('MONGODB_DATABASE 로드됨:', MONGODB_DATABASE ? '✓' : '✗');
-
-// MongoDB 연결
-let db;
-let client;
-
-async function connectToMongoDB() {
-  try {
-    if (!MONGODB_URI) {
-      throw new Error('MONGODB_URI가 설정되지 않았습니다.');
-    }
-    
-    client = new MongoClient(MONGODB_URI);
-    await client.connect();
-    db = client.db(MONGODB_DATABASE);
-    console.log('✅ MongoDB 연결 성공');
-    
-    // 연결 테스트
-    await db.admin().ping();
-    console.log('✅ MongoDB 핑 성공');
-    
-    return db;
-  } catch (error) {
-    console.error('❌ MongoDB 연결 실패:', error.message);
-    throw error;
-  }
-}
-
-// 쿠키 파싱 함수
-function parseCookies(cookieHeader) {
-  const cookies = {};
-  if (cookieHeader) {
-    cookieHeader.split(';').forEach(cookie => {
-      const parts = cookie.trim().split('=');
-      if (parts.length === 2) {
-        cookies[parts[0]] = decodeURIComponent(parts[1]);
-      }
-    });
-  }
-  return cookies;
-}
-
-// 세션 ID 생성 함수
-function generateSessionId() {
-  return Date.now().toString(36) + Math.random().toString(36).substr(2);
-}
-
-// 세션 저장소 (메모리)
-const sessions = new Map();
-
-// 서버 시작 시 MongoDB 연결 (환경변수 확인 후)
-if (MONGODB_URI && MONGODB_DATABASE) {
-  connectToMongoDB().catch(console.error);
-} else {
-  console.log('⚠️ MongoDB 환경변수가 설정되지 않았습니다. 로그인/회원가입 기능이 비활성화됩니다.');
-}
 
 async function convertPdfToText(pdfPath, sessionId = null) {
   try {
@@ -305,17 +242,12 @@ async function waitForConversion(pdfId, sessionId = null) {
 }
 
 async function runPythonFilter() {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/filter_pages.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python 필터링 스크립트 실행 중...');
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/filter_pages.py'], {
       cwd: process.cwd(),
-      env: { ...process.env },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -331,37 +263,30 @@ async function runPythonFilter() {
       console.error('Python stderr:', data.toString().trim());
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python 프로세스 오류:', err.message);
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
-    });
-
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
       if (code === 0) {
         console.log('Python 필터링 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`필터링 스크립트 실행 실패: ${stderr}`));
       }
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Python 프로세스 오류:', error.message);
+      reject(new Error(`Python 실행 오류: ${error.message}`));
     });
   });
 }
 
 async function runPythonSplit() {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/split.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python split 스크립트 실행 중...');
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/split.py'], {
       cwd: process.cwd(),
-      env: { ...process.env },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -377,30 +302,24 @@ async function runPythonSplit() {
       console.error('Python stderr:', data.toString().trim());
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python split 프로세스 오류:', err.message);
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
-    });
-
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
       if (code === 0) {
         console.log('Python split 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python split 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`Split 스크립트 실행 실패: ${stderr}`));
       }
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Python split 프로세스 오류:', error.message);
+      reject(new Error(`Python split 실행 오류: ${error.message}`));
     });
   });
 }
 
 async function runPythonLLMStructure(sessionId = null) {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/llm_structure.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python LLM structure 스크립트 실행 중...');
 
@@ -409,9 +328,9 @@ async function runPythonLLMStructure(sessionId = null) {
       sendProgress(sessionId, 70, 'AI 구조화 준비 중...');
     }
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/llm_structure.py'], {
       cwd: process.cwd(),
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, PYTHONUNBUFFERED: '1' }
     });
 
@@ -495,29 +414,23 @@ async function runPythonLLMStructure(sessionId = null) {
     });
 
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
       if (code === 0) {
         console.log('Python LLM structure 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python LLM structure 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`LLM structure 스크립트 실행 실패: ${stderr}`));
       }
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python LLM structure 프로세스 오류:', err.message);
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
+    pythonProcess.on('error', (error) => {
+      console.error('Python LLM structure 프로세스 오류:', error.message);
+      reject(new Error(`Python LLM structure 실행 오류: ${error.message}`));
     });
   });
 }
 
 async function runPythonPDFGenerator(examData) {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/generate_pdf.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python PDF 생성 스크립트 실행 중...');
 
@@ -530,10 +443,9 @@ async function runPythonPDFGenerator(examData) {
       return;
     }
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/generate_pdf.py'], {
       cwd: process.cwd(),
-      env: { ...process.env },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -550,8 +462,6 @@ async function runPythonPDFGenerator(examData) {
     });
 
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
-      
       // 임시 파일 정리
       if (fs.existsSync(tempFilePath)) {
         try {
@@ -563,16 +473,15 @@ async function runPythonPDFGenerator(examData) {
 
       if (code === 0) {
         console.log('Python PDF 생성 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python PDF 생성 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`PDF 생성 스크립트 실행 실패: ${stderr}`));
       }
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python PDF 생성 프로세스 오류:', err.message);
+    pythonProcess.on('error', (error) => {
+      console.error('Python PDF 생성 프로세스 오류:', error.message);
 
       // 임시 파일 정리
       if (fs.existsSync(tempFilePath)) {
@@ -583,16 +492,12 @@ async function runPythonPDFGenerator(examData) {
         }
       }
 
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
+      reject(new Error(`Python PDF 생성 실행 오류: ${error.message}`));
     });
   });
 }
 
 async function runPythonScreenCapture(captureConfig) {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/capture_pdf.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python 화면 캡쳐 스크립트 실행 중...');
 
@@ -605,10 +510,9 @@ async function runPythonScreenCapture(captureConfig) {
       return;
     }
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/capture_pdf.py'], {
       cwd: process.cwd(),
-      env: { ...process.env },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -625,8 +529,6 @@ async function runPythonScreenCapture(captureConfig) {
     });
 
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
-      
       // 임시 파일 정리
       if (fs.existsSync(tempFilePath)) {
         try {
@@ -638,16 +540,15 @@ async function runPythonScreenCapture(captureConfig) {
 
       if (code === 0) {
         console.log('Python 화면 캡쳐 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python 화면 캡쳐 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`화면 캡쳐 스크립트 실행 실패: ${stderr}`));
       }
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python 화면 캡쳐 프로세스 오류:', err.message);
+    pythonProcess.on('error', (error) => {
+      console.error('Python 화면 캡쳐 프로세스 오류:', error.message);
 
       // 임시 파일 정리
       if (fs.existsSync(tempFilePath)) {
@@ -658,7 +559,7 @@ async function runPythonScreenCapture(captureConfig) {
         }
       }
 
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
+      reject(new Error(`Python 화면 캡쳐 실행 오류: ${error.message}`));
     });
   });
 }
@@ -1057,802 +958,7 @@ const server = http.createServer((req, res) => {
         }));
       }
     });
-  } else if (req.method === 'POST' && req.url === '/api/register') {
-    // 회원가입 API
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
-      try {
-        const { username, email, password, name, role } = JSON.parse(body);
-
-        // 입력 검증
-        if (!username || !email || !password || !name || !role) {
-          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '모든 필드를 입력해주세요.'
-          }));
-          return;
-        }
-
-        // 이메일 형식 검증
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '올바른 이메일 형식이 아닙니다.'
-          }));
-          return;
-        }
-
-        // 비밀번호 길이 검증
-        if (password.length < 6) {
-          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '비밀번호는 최소 6자 이상이어야 합니다.'
-          }));
-          return;
-        }
-
-        // 역할 검증
-        if (!['teacher', 'student'].includes(role)) {
-          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '올바른 역할을 선택해주세요.'
-          }));
-          return;
-        }
-
-        if (!db) {
-          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '데이터베이스 연결이 없습니다. 서버 관리자에게 문의하세요.'
-          }));
-          return;
-        }
-
-        const usersCollection = db.collection('users');
-
-        // 중복 검사
-        const existingUser = await usersCollection.findOne({
-          $or: [{ email }, { username }]
-        });
-
-        if (existingUser) {
-          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: existingUser.email === email ? '이미 사용 중인 이메일입니다.' : '이미 사용 중인 사용자명입니다.'
-          }));
-          return;
-        }
-
-        // 비밀번호 해시화
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-        // 사용자 생성
-        const newUser = {
-          username,
-          email,
-          password: hashedPassword,
-          name,
-          role,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        const result = await usersCollection.insertOne(newUser);
-
-        res.writeHead(201, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          message: '회원가입이 완료되었습니다.',
-          user: {
-            id: result.insertedId,
-            username: newUser.username,
-            email: newUser.email,
-            name: newUser.name,
-            role: newUser.role
-          }
-        }));
-
-      } catch (error) {
-        console.error('회원가입 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '회원가입 중 오류가 발생했습니다.'
-        }));
-      }
-    });
-  } else if (req.method === 'POST' && req.url === '/api/login') {
-    // 로그인 API
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
-      try {
-        const { email, password } = JSON.parse(body);
-
-        // 입력 검증
-        if (!email || !password) {
-          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '이메일과 비밀번호를 입력해주세요.'
-          }));
-          return;
-        }
-
-        if (!db) {
-          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '데이터베이스 연결이 없습니다. 서버 관리자에게 문의하세요.'
-          }));
-          return;
-        }
-
-        const usersCollection = db.collection('users');
-
-        // 사용자 찾기
-        const user = await usersCollection.findOne({ email });
-
-        if (!user) {
-          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '이메일 또는 비밀번호가 올바르지 않습니다.'
-          }));
-          return;
-        }
-
-        // 비밀번호 검증
-        const isPasswordValid = await bcrypt.compare(password, user.password);
-
-        if (!isPasswordValid) {
-          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '이메일 또는 비밀번호가 올바르지 않습니다.'
-          }));
-          return;
-        }
-
-        // 세션 생성
-        const sessionId = generateSessionId();
-        sessions.set(sessionId, {
-          userId: user._id.toString(),
-          username: user.username,
-          role: user.role,
-          createdAt: new Date()
-        });
-
-        // 로그인 성공
-        res.writeHead(200, {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Set-Cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Max-Age=${24 * 60 * 60}`
-        });
-        res.end(JSON.stringify({
-          success: true,
-          message: '로그인 성공',
-          user: {
-            id: user._id,
-            username: user.username,
-            email: user.email,
-            name: user.name,
-            role: user.role
-          }
-        }));
-
-      } catch (error) {
-        console.error('로그인 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '로그인 중 오류가 발생했습니다.'
-        }));
-      }
-    });
-  } else if (req.method === 'POST' && req.url === '/api/logout') {
-    // 쿠키에서 세션 ID 가져오기
-    const cookies = parseCookies(req.headers.cookie);
-    const sessionId = cookies.sessionId;
-    
-    if (sessionId && sessions.has(sessionId)) {
-      sessions.delete(sessionId);
-    }
-    
-    res.writeHead(200, {
-      'Content-Type': 'application/json; charset=utf-8',
-      'Set-Cookie': 'sessionId=; HttpOnly; Path=/; Max-Age=0'
-    });
-    res.end(JSON.stringify({
-      success: true,
-      message: '로그아웃 성공'
-    }));
-  } else if (req.method === 'GET' && req.url === '/api/my-files') {
-    // 사용자 파일 및 폴더 목록 조회 (로그인 필요)
-    (async () => {
-      const cookies = parseCookies(req.headers.cookie);
-      const sessionId = cookies.sessionId;
-
-      // 세션 확인
-      let userId = null;
-      if (sessionId && sessions.has(sessionId)) {
-        userId = sessions.get(sessionId).userId;
-      }
-
-      // 로그인하지 않은 경우 빈 배열 반환
-      if (!userId) {
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          files: [],
-          folders: [],
-          message: '로그인이 필요합니다.'
-        }));
-        return;
-      }
-
-      if (!db) {
-        res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '데이터베이스에 연결할 수 없습니다.'
-        }));
-        return;
-      }
-
-      try {
-        // 해당 사용자의 파일 목록 조회
-        const files = await db.collection('files').find({
-          userId: new ObjectId(userId)
-        }).sort({ uploadDate: -1 }).toArray();
-
-        // 해당 사용자의 폴더 목록 조회
-        const folders = await db.collection('folders').find({
-          userId: new ObjectId(userId)
-        }).sort({ createdAt: 1 }).toArray();
-
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          files: files,
-          folders: folders
-        }));
-      } catch (error) {
-        console.error('파일 목록 조회 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '파일 목록 조회 중 오류가 발생했습니다.'
-        }));
-      }
-    })();
-  } else if (req.method === 'GET' && req.url.startsWith('/api/my-problems/')) {
-    // 특정 파일의 문제 목록 조회 (로그인 필요)
-    (async () => {
-      const fileId = req.url.split('/').pop();
-      const cookies = parseCookies(req.headers.cookie);
-      const sessionId = cookies.sessionId;
-
-      // 세션 확인
-      let userId = null;
-      if (sessionId && sessions.has(sessionId)) {
-        userId = sessions.get(sessionId).userId;
-      }
-
-      if (!userId) {
-        res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '로그인이 필요합니다.'
-        }));
-        return;
-      }
-
-      if (!db) {
-        res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '데이터베이스에 연결할 수 없습니다.'
-        }));
-        return;
-      }
-
-      try {
-        // 해당 파일의 문제 목록 조회 (사용자 확인)
-        const problems = await db.collection('problems').find({
-          fileId: new ObjectId(fileId),
-          userId: new ObjectId(userId)
-        }).sort({ problemNumber: 1 }).toArray();
-
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          problems: problems
-        }));
-      } catch (error) {
-        console.error('문제 목록 조회 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '문제 목록 조회 중 오류가 발생했습니다.'
-        }));
-      }
-    })();
-  } else if (req.method === 'DELETE' && req.url.startsWith('/api/delete-file/')) {
-    // 파일 삭제 API (로그인 필요)
-    (async () => {
-      const fileId = req.url.split('/').pop();
-      const cookies = parseCookies(req.headers.cookie);
-      const sessionId = cookies.sessionId;
-
-      // 세션 확인
-      let userId = null;
-      if (sessionId && sessions.has(sessionId)) {
-        userId = sessions.get(sessionId).userId;
-      }
-
-      if (!userId) {
-        res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '로그인이 필요합니다.'
-        }));
-        return;
-      }
-
-      if (!db) {
-        res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '데이터베이스에 연결할 수 없습니다.'
-        }));
-        return;
-      }
-
-      try {
-        // 파일 소유자 확인
-        const file = await db.collection('files').findOne({
-          _id: new ObjectId(fileId),
-          userId: new ObjectId(userId)
-        });
-
-        if (!file) {
-          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '파일을 찾을 수 없거나 삭제 권한이 없습니다.'
-          }));
-          return;
-        }
-
-        // 해당 파일의 모든 문제 삭제
-        const problemsDeleteResult = await db.collection('problems').deleteMany({
-          fileId: new ObjectId(fileId),
-          userId: new ObjectId(userId)
-        });
-
-        // 파일 삭제
-        const fileDeleteResult = await db.collection('files').deleteOne({
-          _id: new ObjectId(fileId),
-          userId: new ObjectId(userId)
-        });
-
-        console.log(`✅ 파일 삭제 완료 - 파일 ID: ${fileId}, 삭제된 문제 수: ${problemsDeleteResult.deletedCount}`);
-
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          message: '파일과 관련 문제가 삭제되었습니다.',
-          deletedProblems: problemsDeleteResult.deletedCount
-        }));
-      } catch (error) {
-        console.error('파일 삭제 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '파일 삭제 중 오류가 발생했습니다.'
-        }));
-      }
-    })();
-  } else if (req.method === 'POST' && req.url === '/api/create-folder') {
-    // 폴더 생성 API
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
-      try {
-        const { folderName, parentPath } = JSON.parse(body);
-        const cookies = parseCookies(req.headers.cookie);
-        const sessionId = cookies.sessionId;
-
-        let userId = null;
-        if (sessionId && sessions.has(sessionId)) {
-          userId = sessions.get(sessionId).userId;
-        }
-
-        if (!userId) {
-          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '로그인이 필요합니다.'
-          }));
-          return;
-        }
-
-        if (!db) {
-          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '데이터베이스에 연결할 수 없습니다.'
-          }));
-          return;
-        }
-
-        const folderDoc = {
-          userId: new ObjectId(userId),
-          name: folderName,
-          parentPath: parentPath || '내 파일',
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        const result = await db.collection('folders').insertOne(folderDoc);
-
-        console.log(`✅ 폴더 생성 완료 - ${folderName}`);
-
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          folder: { _id: result.insertedId, ...folderDoc }
-        }));
-      } catch (error) {
-        console.error('폴더 생성 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '폴더 생성 중 오류가 발생했습니다.'
-        }));
-      }
-    });
-  } else if (req.method === 'DELETE' && req.url.startsWith('/api/delete-folder/')) {
-    // 폴더 삭제 API
-    (async () => {
-      const folderId = req.url.split('/').pop();
-      const cookies = parseCookies(req.headers.cookie);
-      const sessionId = cookies.sessionId;
-
-      let userId = null;
-      if (sessionId && sessions.has(sessionId)) {
-        userId = sessions.get(sessionId).userId;
-      }
-
-      if (!userId) {
-        res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '로그인이 필요합니다.'
-        }));
-        return;
-      }
-
-      if (!db) {
-        res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '데이터베이스에 연결할 수 없습니다.'
-        }));
-        return;
-      }
-
-      try {
-        const result = await db.collection('folders').deleteOne({
-          _id: new ObjectId(folderId),
-          userId: new ObjectId(userId)
-        });
-
-        if (result.deletedCount === 0) {
-          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '폴더를 찾을 수 없습니다.'
-          }));
-          return;
-        }
-
-        console.log(`✅ 폴더 삭제 완료 - ${folderId}`);
-
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          message: '폴더가 삭제되었습니다.'
-        }));
-      } catch (error) {
-        console.error('폴더 삭제 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '폴더 삭제 중 오류가 발생했습니다.'
-        }));
-      }
-    })();
-  } else if (req.method === 'PUT' && req.url.startsWith('/api/rename-folder/')) {
-    // 폴더 이름 변경 API
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
-      try {
-        const folderId = req.url.split('/').pop();
-        const { newName } = JSON.parse(body);
-        const cookies = parseCookies(req.headers.cookie);
-        const sessionId = cookies.sessionId;
-
-        let userId = null;
-        if (sessionId && sessions.has(sessionId)) {
-          userId = sessions.get(sessionId).userId;
-        }
-
-        if (!userId) {
-          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '로그인이 필요합니다.'
-          }));
-          return;
-        }
-
-        if (!db) {
-          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '데이터베이스에 연결할 수 없습니다.'
-          }));
-          return;
-        }
-
-        const result = await db.collection('folders').updateOne(
-          {
-            _id: new ObjectId(folderId),
-            userId: new ObjectId(userId)
-          },
-          {
-            $set: {
-              name: newName.trim(),
-              updatedAt: new Date()
-            }
-          }
-        );
-
-        if (result.matchedCount === 0) {
-          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '폴더를 찾을 수 없습니다.'
-          }));
-          return;
-        }
-
-        console.log(`✅ 폴더 이름 변경 완료 - ${folderId} → ${newName}`);
-
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          message: '폴더 이름이 변경되었습니다.',
-          newName: newName.trim()
-        }));
-      } catch (error) {
-        console.error('폴더 이름 변경 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '폴더 이름 변경 중 오류가 발생했습니다.'
-        }));
-      }
-    });
-  } else if (req.method === 'PUT' && req.url.startsWith('/api/rename-file/')) {
-    // 파일 이름 변경 API (로그인 필요)
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
-      try {
-        const fileId = req.url.split('/').pop();
-        const { newName } = JSON.parse(body);
-        const cookies = parseCookies(req.headers.cookie);
-        const sessionId = cookies.sessionId;
-
-        // 세션 확인
-        let userId = null;
-        if (sessionId && sessions.has(sessionId)) {
-          userId = sessions.get(sessionId).userId;
-        }
-
-        if (!userId) {
-          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '로그인이 필요합니다.'
-          }));
-          return;
-        }
-
-        if (!newName || newName.trim() === '') {
-          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '새 파일명을 입력해주세요.'
-          }));
-          return;
-        }
-
-        if (!db) {
-          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '데이터베이스에 연결할 수 없습니다.'
-          }));
-          return;
-        }
-
-        // 파일 소유자 확인 및 이름 변경
-        const result = await db.collection('files').updateOne(
-          {
-            _id: new ObjectId(fileId),
-            userId: new ObjectId(userId)
-          },
-          {
-            $set: {
-              filename: newName.trim(),
-              updatedAt: new Date()
-            }
-          }
-        );
-
-        if (result.matchedCount === 0) {
-          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '파일을 찾을 수 없거나 수정 권한이 없습니다.'
-          }));
-          return;
-        }
-
-        console.log(`✅ 파일 이름 변경 완료 - 파일 ID: ${fileId}, 새 이름: ${newName}`);
-
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          message: '파일 이름이 변경되었습니다.',
-          newName: newName.trim()
-        }));
-      } catch (error) {
-        console.error('파일 이름 변경 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '파일 이름 변경 중 오류가 발생했습니다.'
-        }));
-      }
-    });
-  } else if (req.method === 'PUT' && req.url.startsWith('/api/move-item')) {
-    // 파일 또는 폴더 이동 API (parentPath 업데이트)
-    let body = '';
-    req.on('data', chunk => {
-      body += chunk.toString();
-    });
-
-    req.on('end', async () => {
-      try {
-        const { itemId, itemType, newParentPath } = JSON.parse(body);
-        const cookies = parseCookies(req.headers.cookie);
-        const sessionId = cookies.sessionId;
-
-        // 세션 확인
-        let userId = null;
-        if (sessionId && sessions.has(sessionId)) {
-          userId = sessions.get(sessionId).userId;
-        }
-
-        if (!userId) {
-          res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '로그인이 필요합니다.'
-          }));
-          return;
-        }
-
-        if (!db) {
-          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '데이터베이스에 연결할 수 없습니다.'
-          }));
-          return;
-        }
-
-        // 컬렉션 선택
-        const collection = itemType === 'file' ? 'files' : 'folders';
-
-        // 아이템 소유자 확인 및 parentPath 업데이트
-        const result = await db.collection(collection).updateOne(
-          {
-            _id: new ObjectId(itemId),
-            userId: new ObjectId(userId)
-          },
-          {
-            $set: {
-              parentPath: newParentPath,
-              updatedAt: new Date()
-            }
-          }
-        );
-
-        if (result.matchedCount === 0) {
-          res.writeHead(404, {'Content-Type': 'application/json; charset=utf-8'});
-          res.end(JSON.stringify({
-            success: false,
-            message: '항목을 찾을 수 없거나 수정 권한이 없습니다.'
-          }));
-          return;
-        }
-
-        console.log(`✅ ${itemType} 이동 완료 - ID: ${itemId}, 새 경로: ${newParentPath}`);
-
-        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: true,
-          message: '항목이 이동되었습니다.'
-        }));
-      } catch (error) {
-        console.error('항목 이동 오류:', error);
-        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
-        res.end(JSON.stringify({
-          success: false,
-          message: '항목 이동 중 오류가 발생했습니다.'
-        }));
-      }
-    });
   } else if (req.method === 'POST' && req.url === '/upload') {
-    // 쿠키에서 세션 ID 가져오기
-    const cookies = parseCookies(req.headers.cookie);
-    const sessionId = cookies.sessionId;
-    
-    // 세션 확인
-    let userId = null;
-    if (sessionId && sessions.has(sessionId)) {
-      userId = sessions.get(sessionId).userId;
-    }
-    
-    if (!userId) {
-      res.writeHead(401, {'Content-Type': 'application/json; charset=utf-8'});
-      res.end(JSON.stringify({
-        success: false,
-        message: '로그인이 필요합니다.'
-      }));
-      return;
-    }
-
     const uploadSingle = upload.single('pdf');
     uploadSingle(req, res, async (err) => {
       if (err) {
@@ -1914,20 +1020,26 @@ const server = http.createServer((req, res) => {
         // Python 필터링 스크립트 실행
         console.log('\n🔍 Python 필터링 실행...');
         sendProgress(sessionId, 50, '텍스트 필터링 중...');
-        const filterResult = await runPythonFilter();
-        console.log(`✅ 필터링 완료 - 소요시간: ${(filterResult.totalTime / 1000).toFixed(2)}초`);
+        const filterStartTime = Date.now();
+        await runPythonFilter();
+        const filterEndTime = Date.now();
+        console.log(`✅ 필터링 완료 - 소요시간: ${((filterEndTime - filterStartTime) / 1000).toFixed(2)}초`);
 
         // Python split 스크립트 실행
         console.log('\n✂️ Python split 실행...');
         sendProgress(sessionId, 60, '문제 분할 중...');
-        const splitResult = await runPythonSplit();
-        console.log(`✅ 문제 분할 완료 - 소요시간: ${(splitResult.totalTime / 1000).toFixed(2)}초`);
+        const splitStartTime = Date.now();
+        await runPythonSplit();
+        const splitEndTime = Date.now();
+        console.log(`✅ 문제 분할 완료 - 소요시간: ${((splitEndTime - splitStartTime) / 1000).toFixed(2)}초`);
 
         // Python LLM structure 스크립트 실행
         console.log('\n🤖 Python LLM structure 실행...');
         sendProgress(sessionId, 70, 'AI 구조화 중...');
-        const llmResult = await runPythonLLMStructure(sessionId);
-        console.log(`✅ AI 구조화 완료 - 소요시간: ${(llmResult.totalTime / 1000).toFixed(2)}초`);
+        const llmStartTime = Date.now();
+        await runPythonLLMStructure(sessionId);
+        const llmEndTime = Date.now();
+        console.log(`✅ AI 구조화 완료 - 소요시간: ${((llmEndTime - llmStartTime) / 1000).toFixed(2)}초`);
         sendProgress(sessionId, 90, 'AI 구조화 완료');
 
         // 구조화된 문제들 읽기 (우선순위: structured > original)
@@ -1961,76 +1073,12 @@ const server = http.createServer((req, res) => {
         console.log(`⏱️ 총 소요시간: ${(totalTime / 1000).toFixed(2)}초 (${(totalTime / 60000).toFixed(1)}분)`);
         console.log('='.repeat(60) + '\n');
 
-        // MongoDB에 파일 정보 저장
-        let fileId = null;
-        if (db) {
-          try {
-            const fileDoc = {
-              userId: new ObjectId(userId),
-              filename: req.file.originalname,
-              parentPath: '내 파일', // 기본적으로 '내 파일' 폴더에 저장
-              originalText: extractedText,
-              problemCount: problems.length,
-              uploadDate: new Date(),
-              stats: {
-                originalTextLength: extractedText.length,
-                problemCount: problems.length
-              }
-            };
-            
-            const fileResult = await db.collection('files').insertOne(fileDoc);
-            fileId = fileResult.insertedId;
-            console.log(`✅ 파일 정보 저장 완료 - 파일 ID: ${fileId}`);
-            
-            // 문제들을 MongoDB에 저장
-            if (problems.length > 0) {
-              const problemDocs = problems.map((problem, index) => {
-                // 불필요한 기본 보기 메시지 필터링
-                let filteredOptions = [];
-                if (problem.options && Array.isArray(problem.options)) {
-                  filteredOptions = problem.options.filter(option =>
-                    option &&
-                    !option.includes('보기 내용은 문제에 명시되지') &&
-                    !option.includes('실제 문제의 보기를 여기에 작성하세요')
-                  );
-                }
-
-                return {
-                  fileId: fileId,
-                  userId: new ObjectId(userId),
-                  problemNumber: index + 1,
-                  // 구조화된 문제의 전체 정보 저장
-                  id: problem.id,
-                  page: problem.page,
-                  content_blocks: problem.content_blocks || [],
-                  options: filteredOptions,
-                  answer: problem.answer || '',
-                  explanation: problem.explanation || '',
-                  type: problem.type || 'multiple_choice',
-                  difficulty: problem.difficulty || 'medium',
-                  subject: problem.subject || '',
-                  // 호환성을 위해 content 필드도 유지
-                  content: problem.content || problem.text || '',
-                  createdAt: new Date()
-                };
-              });
-
-              await db.collection('problems').insertMany(problemDocs);
-              console.log(`✅ 문제 ${problems.length}개 저장 완료`);
-            }
-          } catch (dbError) {
-            console.error('❌ MongoDB 저장 실패:', dbError);
-            // DB 저장 실패해도 파일 처리는 성공으로 처리
-          }
-        }
-
         // JSON 응답 반환
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({
           success: true,
           message: '파일 처리 완료',
           problems: problems,
-          fileId: fileId,
           stats: {
             originalTextLength: extractedText.length,
             problemCount: problems.length,
@@ -2042,7 +1090,7 @@ const server = http.createServer((req, res) => {
         fs.unlinkSync(req.file.path);
 
       } catch (error) {
-        const totalTime = Date.now() - startTime;
+        const totalTime = Date.now() - (startTime || Date.now());
         const sessionId = req.headers['x-session-id'] || Date.now().toString();
 
         // 에러 진행상황 알림
