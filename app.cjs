@@ -306,7 +306,7 @@ async function waitForConversion(pdfId, sessionId = null) {
 
 async function runPythonFilter() {
   const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
+  const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
   const scriptPath = path.resolve(__dirname, 'pipeline/filter_pages.py');
 
   return new Promise((resolve, reject) => {
@@ -352,7 +352,7 @@ async function runPythonFilter() {
 
 async function runPythonSplit() {
   const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
+  const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
   const scriptPath = path.resolve(__dirname, 'pipeline/split.py');
 
   return new Promise((resolve, reject) => {
@@ -398,7 +398,7 @@ async function runPythonSplit() {
 
 async function runPythonLLMStructure(sessionId = null) {
   const startTime = Date.now(); // ✅ 항상 먼저 선언
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
+  const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
   const scriptPath = path.resolve(__dirname, 'pipeline/llm_structure.py');
 
   return new Promise((resolve, reject) => {
@@ -515,7 +515,7 @@ async function runPythonLLMStructure(sessionId = null) {
 
 async function runPythonPDFGenerator(examData) {
   const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
+  const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
   const scriptPath = path.resolve(__dirname, 'pipeline/generate_pdf.py');
 
   return new Promise((resolve, reject) => {
@@ -590,7 +590,7 @@ async function runPythonPDFGenerator(examData) {
 
 async function runPythonScreenCapture(captureConfig) {
   const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
+  const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
   const scriptPath = path.resolve(__dirname, 'pipeline/capture_pdf.py');
 
   return new Promise((resolve, reject) => {
@@ -969,7 +969,7 @@ const server = http.createServer((req, res) => {
 
         // 캡쳐 설정 구성
         const captureConfig = {
-          url: captureData.url || 'http://localhost:3000',
+          url: captureData.url || process.env.BASE_URL || 'http://localhost:3000',
           areas: captureData.areas || [
             {
               selector: '#examProblems',
