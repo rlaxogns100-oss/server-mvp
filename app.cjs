@@ -2,8 +2,6 @@ const http = require('http');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
-const axios = require('axios');
-const FormData = require('form-data');
 const { spawn } = require('child_process');
 const { MongoClient, ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
@@ -115,9 +113,7 @@ if (!fs.existsSync('output')) {
   fs.mkdirSync('output');
 }
 
-// Mathpix API 설정 (.env에서 로드)
-const MATHPIX_APP_ID = process.env.APP_ID;
-const MATHPIX_APP_KEY = process.env.APP_KEY;
+// Mathpix API 설정은 이제 Python 스크립트에서 처리
 
 // MongoDB 설정
 const MONGODB_URI = process.env.MONGODB_URI;
@@ -125,8 +121,6 @@ const MONGODB_DATABASE = process.env.MONGODB_DATABASE;
 
 // 디버그: 환경변수 확인
 console.log('현재 작업 디렉토리:', process.cwd());
-console.log('APP_ID 로드됨:', MATHPIX_APP_ID ? '✓' : '✗');
-console.log('APP_KEY 로드됨:', MATHPIX_APP_KEY ? '✓' : '✗');
 console.log('MONGODB_URI 로드됨:', MONGODB_URI ? '✓' : '✗');
 console.log('MONGODB_DATABASE 로드됨:', MONGODB_DATABASE ? '✓' : '✗');
 
@@ -186,136 +180,76 @@ if (MONGODB_URI && MONGODB_DATABASE) {
 }
 
 async function convertPdfToText(pdfPath, sessionId = null) {
-  try {
-    // API 키 확인
-    if (!MATHPIX_APP_ID || !MATHPIX_APP_KEY) {
-      throw new Error('.env 파일에 APP_ID와 APP_KEY가 설정되지 않았습니다.');
+  return new Promise((resolve, reject) => {
+    console.log(`PDF 변환 시작 (Python): ${pdfPath}`);
+    
+    // 진행상황 전송
+    if (sessionId) {
+      sendProgress(sessionId, 20, 'PDF 변환 중...');
     }
 
-    console.log(`PDF 변환 시작: ${pdfPath}`);
-
-    const formData = new FormData();
-    formData.append('file', fs.createReadStream(pdfPath));
-    formData.append('options_json', JSON.stringify({
-      conversion_formats: { md: true },
-      math_inline_delimiters: ['$', '$'],
-      math_display_delimiters: ['$$', '$$'],
-      rm_spaces: true
-    }));
-
-    const response = await axios.post('https://api.mathpix.com/v3/pdf', formData, {
-      headers: {
-        ...formData.getHeaders(),
-        'app_id': MATHPIX_APP_ID,
-        'app_key': MATHPIX_APP_KEY,
-      },
-      timeout: 60000
+    const pythonProcess = spawn('python', ['pipeline/convert_pdf.py', '--pdf', pdfPath], {
+      cwd: process.cwd(),
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env, PYTHONUNBUFFERED: '1' }
     });
 
-    if (response.data && response.data.pdf_id) {
-      const pdfId = response.data.pdf_id;
-      console.log(`PDF ID 생성: ${pdfId}`);
+    let stdout = '';
+    let stderr = '';
 
-      // 변환 완료 대기
-      return await waitForConversion(pdfId, sessionId);
-    } else {
-      throw new Error('PDF ID를 받지 못했습니다.');
-    }
-  } catch (error) {
-    console.error('PDF 변환 오류:', error.message);
-    throw error;
-  }
-}
+    pythonProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+      const output = data.toString();
+      console.log('Python Convert stdout:', output);
 
-async function waitForConversion(pdfId, sessionId = null) {
-  const maxAttempts = 60; // 2분간 대기
-  const delay = 2000; // 2초마다 확인
+      // 진행상황 파싱
+      if (sessionId && output.includes('페이지당')) {
+        sendProgress(sessionId, 40, 'PDF 변환 완료');
+      }
+    });
 
-  console.log(`변환 대기 시작: ${pdfId}`);
-  
-  // 즉시 시작 메시지 전송
-  if (sessionId) {
-    sendProgress(sessionId, 20, 'PDF 변환 중...');
-  }
+    pythonProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+      console.error('Python Convert stderr:', data.toString().trim());
+    });
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    try {
-      // 먼저 상태 확인
-      const statusResponse = await axios.get(`https://api.mathpix.com/v3/pdf/${pdfId}`, {
-        headers: {
-          'app_id': MATHPIX_APP_ID,
-          'app_key': MATHPIX_APP_KEY,
-        }
-      });
-
-      const statusData = statusResponse.data;
-      console.log(`시도 ${attempt}/${maxAttempts} - 상태:`, statusData?.status);
-
-      // 변환이 완료되었으면 결과 요청
-      if (statusData?.status === 'completed') {
-        if (sessionId) {
-          sendProgress(sessionId, 40, 'PDF 변환 완료');
-        }
-
-        const resultResponse = await axios.get(`https://api.mathpix.com/v3/pdf/${pdfId}.md`, {
-          headers: {
-            'app_id': MATHPIX_APP_ID,
-            'app_key': MATHPIX_APP_KEY,
+    pythonProcess.on('close', (code) => {
+      if (code === 0) {
+        console.log('Python PDF 변환 완료');
+        
+        // result.paged.mmd 파일 읽기
+        try {
+          const resultPath = 'result.paged.mmd';
+          if (fs.existsSync(resultPath)) {
+            const result = fs.readFileSync(resultPath, 'utf8');
+            resolve(result);
+          } else {
+            reject(new Error('변환 결과 파일을 찾을 수 없습니다.'));
           }
-        });
-
-        if (resultResponse.status === 200 && resultResponse.data) {
-          console.log('PDF 변환 완료');
-          return resultResponse.data;
+        } catch (error) {
+          reject(new Error(`결과 파일 읽기 실패: ${error.message}`));
         }
+      } else {
+        console.error(`Python PDF 변환 스크립트 실행 실패: 종료 코드 ${code}`);
+        reject(new Error(`PDF 변환 스크립트 실행 실패: ${stderr}`));
       }
+    });
 
-      // 아직 변환 중이면 대기
-      if (statusData?.status === 'processing' || statusData?.status === 'split') {
-        console.log(`변환 진행 중... (${attempt}/${maxAttempts}) - 상태: ${statusData.status}`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-
-      // 오류 상태인 경우
-      if (statusResponse.data?.status === 'error') {
-        throw new Error(`변환 실패: ${statusResponse.data?.message || 'Unknown error'}`);
-      }
-
-    } catch (error) {
-      if (error.response?.status === 404) {
-        console.log(`PDF 아직 준비 안됨... (${attempt}/${maxAttempts})`);
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-
-      console.error(`변환 확인 중 오류 (시도 ${attempt}):`, error.message);
-
-      // 마지막 시도가 아니면 계속
-      if (attempt < maxAttempts) {
-        await new Promise(resolve => setTimeout(resolve, delay));
-        continue;
-      }
-
-      throw error;
-    }
-  }
-
-  throw new Error('변환 시간 초과 (2분)');
+    pythonProcess.on('error', (error) => {
+      console.error('Python 프로세스 오류:', error.message);
+      reject(new Error(`Python 실행 오류: ${error.message}`));
+    });
+  });
 }
+
 
 async function runPythonFilter() {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/filter_pages.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python 필터링 스크립트 실행 중...');
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/filter_pages.py'], {
       cwd: process.cwd(),
-      env: { ...process.env },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -331,37 +265,30 @@ async function runPythonFilter() {
       console.error('Python stderr:', data.toString().trim());
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python 프로세스 오류:', err.message);
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
-    });
-
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
       if (code === 0) {
         console.log('Python 필터링 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`필터링 스크립트 실행 실패: ${stderr}`));
       }
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Python 프로세스 오류:', error.message);
+      reject(new Error(`Python 실행 오류: ${error.message}`));
     });
   });
 }
 
 async function runPythonSplit() {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/split.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python split 스크립트 실행 중...');
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/split.py'], {
       cwd: process.cwd(),
-      env: { ...process.env },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -377,30 +304,24 @@ async function runPythonSplit() {
       console.error('Python stderr:', data.toString().trim());
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python split 프로세스 오류:', err.message);
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
-    });
-
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
       if (code === 0) {
         console.log('Python split 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python split 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`Split 스크립트 실행 실패: ${stderr}`));
       }
+    });
+
+    pythonProcess.on('error', (error) => {
+      console.error('Python split 프로세스 오류:', error.message);
+      reject(new Error(`Python split 실행 오류: ${error.message}`));
     });
   });
 }
 
 async function runPythonLLMStructure(sessionId = null) {
-  const startTime = Date.now(); // ✅ 항상 먼저 선언
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/llm_structure.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python LLM structure 스크립트 실행 중...');
 
@@ -409,9 +330,9 @@ async function runPythonLLMStructure(sessionId = null) {
       sendProgress(sessionId, 70, 'AI 구조화 준비 중...');
     }
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/llm_structure.py'], {
       cwd: process.cwd(),
-      stdio: ['ignore', 'pipe', 'pipe'],
+      stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, PYTHONUNBUFFERED: '1' }
     });
 
@@ -495,29 +416,23 @@ async function runPythonLLMStructure(sessionId = null) {
     });
 
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
       if (code === 0) {
         console.log('Python LLM structure 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python LLM structure 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`LLM structure 스크립트 실행 실패: ${stderr}`));
       }
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python LLM structure 프로세스 오류:', err.message);
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
+    pythonProcess.on('error', (error) => {
+      console.error('Python LLM structure 프로세스 오류:', error.message);
+      reject(new Error(`Python LLM structure 실행 오류: ${error.message}`));
     });
   });
 }
 
 async function runPythonPDFGenerator(examData) {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/generate_pdf.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python PDF 생성 스크립트 실행 중...');
 
@@ -530,10 +445,9 @@ async function runPythonPDFGenerator(examData) {
       return;
     }
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/generate_pdf.py'], {
       cwd: process.cwd(),
-      env: { ...process.env },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -550,8 +464,6 @@ async function runPythonPDFGenerator(examData) {
     });
 
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
-      
       // 임시 파일 정리
       if (fs.existsSync(tempFilePath)) {
         try {
@@ -563,16 +475,15 @@ async function runPythonPDFGenerator(examData) {
 
       if (code === 0) {
         console.log('Python PDF 생성 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python PDF 생성 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`PDF 생성 스크립트 실행 실패: ${stderr}`));
       }
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python PDF 생성 프로세스 오류:', err.message);
+    pythonProcess.on('error', (error) => {
+      console.error('Python PDF 생성 프로세스 오류:', error.message);
 
       // 임시 파일 정리
       if (fs.existsSync(tempFilePath)) {
@@ -583,16 +494,12 @@ async function runPythonPDFGenerator(examData) {
         }
       }
 
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
+      reject(new Error(`Python PDF 생성 실행 오류: ${error.message}`));
     });
   });
 }
 
 async function runPythonScreenCapture(captureConfig) {
-  const startTime = Date.now();
-  const PYTHON_BIN = '/home/ubuntu/.venvs/dalkkak/bin/python';
-  const scriptPath = path.resolve(__dirname, 'pipeline/capture_pdf.py');
-
   return new Promise((resolve, reject) => {
     console.log('Python 화면 캡쳐 스크립트 실행 중...');
 
@@ -605,10 +512,9 @@ async function runPythonScreenCapture(captureConfig) {
       return;
     }
 
-    const pythonProcess = spawn(PYTHON_BIN, [scriptPath], {
+    const pythonProcess = spawn('python', ['pipeline/capture_pdf.py'], {
       cwd: process.cwd(),
-      env: { ...process.env },
-      stdio: ['ignore', 'pipe', 'pipe']
+      stdio: ['pipe', 'pipe', 'pipe']
     });
 
     let stdout = '';
@@ -625,8 +531,6 @@ async function runPythonScreenCapture(captureConfig) {
     });
 
     pythonProcess.on('close', (code) => {
-      const totalTime = Date.now() - startTime;
-      
       // 임시 파일 정리
       if (fs.existsSync(tempFilePath)) {
         try {
@@ -638,16 +542,15 @@ async function runPythonScreenCapture(captureConfig) {
 
       if (code === 0) {
         console.log('Python 화면 캡쳐 완료');
-        resolve({ stdout, totalTime });
+        resolve(stdout);
       } else {
         console.error(`Python 화면 캡쳐 스크립트 실행 실패: 종료 코드 ${code}`);
-        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+        reject(new Error(`화면 캡쳐 스크립트 실행 실패: ${stderr}`));
       }
     });
 
-    pythonProcess.on('error', (err) => {
-      const totalTime = Date.now() - startTime;
-      console.error('Python 화면 캡쳐 프로세스 오류:', err.message);
+    pythonProcess.on('error', (error) => {
+      console.error('Python 화면 캡쳐 프로세스 오류:', error.message);
 
       // 임시 파일 정리
       if (fs.existsSync(tempFilePath)) {
@@ -658,7 +561,7 @@ async function runPythonScreenCapture(captureConfig) {
         }
       }
 
-      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
+      reject(new Error(`Python 화면 캡쳐 실행 오류: ${error.message}`));
     });
   });
 }
@@ -1914,20 +1817,26 @@ const server = http.createServer((req, res) => {
         // Python 필터링 스크립트 실행
         console.log('\n🔍 Python 필터링 실행...');
         sendProgress(sessionId, 50, '텍스트 필터링 중...');
-        const filterResult = await runPythonFilter();
-        console.log(`✅ 필터링 완료 - 소요시간: ${(filterResult.totalTime / 1000).toFixed(2)}초`);
+        const filterStartTime = Date.now();
+        await runPythonFilter();
+        const filterEndTime = Date.now();
+        console.log(`✅ 필터링 완료 - 소요시간: ${((filterEndTime - filterStartTime) / 1000).toFixed(2)}초`);
 
         // Python split 스크립트 실행
         console.log('\n✂️ Python split 실행...');
         sendProgress(sessionId, 60, '문제 분할 중...');
-        const splitResult = await runPythonSplit();
-        console.log(`✅ 문제 분할 완료 - 소요시간: ${(splitResult.totalTime / 1000).toFixed(2)}초`);
+        const splitStartTime = Date.now();
+        await runPythonSplit();
+        const splitEndTime = Date.now();
+        console.log(`✅ 문제 분할 완료 - 소요시간: ${((splitEndTime - splitStartTime) / 1000).toFixed(2)}초`);
 
         // Python LLM structure 스크립트 실행
         console.log('\n🤖 Python LLM structure 실행...');
         sendProgress(sessionId, 70, 'AI 구조화 중...');
-        const llmResult = await runPythonLLMStructure(sessionId);
-        console.log(`✅ AI 구조화 완료 - 소요시간: ${(llmResult.totalTime / 1000).toFixed(2)}초`);
+        const llmStartTime = Date.now();
+        await runPythonLLMStructure(sessionId);
+        const llmEndTime = Date.now();
+        console.log(`✅ AI 구조화 완료 - 소요시간: ${((llmEndTime - llmStartTime) / 1000).toFixed(2)}초`);
         sendProgress(sessionId, 90, 'AI 구조화 완료');
 
         // 구조화된 문제들 읽기 (우선순위: structured > original)
@@ -2042,7 +1951,7 @@ const server = http.createServer((req, res) => {
         fs.unlinkSync(req.file.path);
 
       } catch (error) {
-        const totalTime = Date.now() - startTime;
+        const totalTime = Date.now() - (startTime || Date.now());
         const sessionId = req.headers['x-session-id'] || Date.now().toString();
 
         // 에러 진행상황 알림
