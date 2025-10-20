@@ -188,7 +188,8 @@ async function convertPdfToText(pdfPath, sessionId = null) {
       sendProgress(sessionId, 20, 'PDF 변환 중...');
     }
 
-    const pythonProcess = spawn('python', ['pipeline/convert_pdf.py', '--pdf', pdfPath], {
+    const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
+    const pythonProcess = spawn(PYTHON_BIN, ['pipeline/convert_pdf.py', '--pdf', pdfPath], {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
       env: { ...process.env, PYTHONUNBUFFERED: '1' }
@@ -250,7 +251,7 @@ async function runPythonFilter() {
   return new Promise((resolve, reject) => {
     console.log('Python 필터링 스크립트 실행 중...');
 
-    const pythonProcess = spawn('python', ['pipeline/filter_pages.py'], {
+    const pythonProcess = spawn(PYTHON_BIN, ['pipeline/filter_pages.py'], {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -292,7 +293,7 @@ async function runPythonSplit() {
   return new Promise((resolve, reject) => {
     console.log('Python split 스크립트 실행 중...');
 
-    const pythonProcess = spawn('python', ['pipeline/split.py'], {
+    const pythonProcess = spawn(PYTHON_BIN, ['pipeline/split.py'], {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -351,7 +352,8 @@ async function runPythonLLMStructure(sessionId = null, userId = null, filename =
       env.FILENAME = filename;
     }
 
-    const pythonProcess = spawn('python', ['pipeline/llm_structure.py'], {
+    const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
+    const pythonProcess = spawn(PYTHON_BIN, ['pipeline/llm_structure.py'], {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
       env: env
@@ -469,7 +471,8 @@ async function runPythonPDFGenerator(examData) {
       return;
     }
 
-    const pythonProcess = spawn('python', ['pipeline/generate_pdf.py'], {
+    const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
+    const pythonProcess = spawn(PYTHON_BIN, ['pipeline/generate_pdf.py'], {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -539,7 +542,8 @@ async function runPythonScreenCapture(captureConfig) {
       return;
     }
 
-    const pythonProcess = spawn('python', ['pipeline/capture_pdf.py'], {
+    const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
+    const pythonProcess = spawn(PYTHON_BIN, ['pipeline/capture_pdf.py'], {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe']
     });
@@ -2039,11 +2043,12 @@ async function runPythonPDFGenerator(examData) {
     }
 
     // Python 실행 인자 확인
+    const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
     const pythonArgs = [scriptPath, ...problemIds];
-    console.log(`🐍 Python 실행 명령어:`, 'python', pythonArgs);
+    console.log(`🐍 Python 실행 명령어:`, PYTHON_BIN, pythonArgs);
 
     // test_pdf.py에 문제 ID들을 커맨드라인 인자로 전달
-    const pythonProcess = spawn('python', pythonArgs, {
+    const pythonProcess = spawn(PYTHON_BIN, pythonArgs, {
       cwd: process.cwd(),
       env: { ...process.env },
       stdio: ['ignore', 'pipe', 'pipe']
