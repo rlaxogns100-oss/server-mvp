@@ -87,7 +87,13 @@ r"""\documentclass[10.5pt]{article}
 \usepackage[a4paper, top=16mm, bottom=20mm, left=13mm, right=13mm]{geometry}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0pt}
-\IfFontExistsTF{Noto Sans KR}{\setmainfont{Noto Sans KR}}{\setmainfont{Malgun Gothic}}
+\IfFontExistsTF{Noto Sans KR}{\setmainfont{Noto Sans KR}}{
+  \IfFontExistsTF{Malgun Gothic}{\setmainfont{Malgun Gothic}}{
+    \IfFontExistsTF{NanumGothic}{\setmainfont{NanumGothic}}{
+      \setmainfont{DejaVu Sans}
+    }
+  }
+}
 \definecolor{examBlue}{HTML}{245BD1}
 \definecolor{ruleGray}{gray}{0.6}
 \pagestyle{fancy}
