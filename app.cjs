@@ -321,7 +321,7 @@ async function runPythonSplit() {
   });
 }
 
-async function runPythonLLMStructure(sessionId = null) {
+async function runPythonLLMStructure(sessionId = null, userId = null, filename = 'problems.json') {
   return new Promise((resolve, reject) => {
     console.log('Python LLM structure 스크립트 실행 중...');
 
@@ -330,10 +330,22 @@ async function runPythonLLMStructure(sessionId = null) {
       sendProgress(sessionId, 70, 'AI 구조화 준비 중...');
     }
 
+    // userId와 filename을 환경변수로 전달
+    const env = {
+      ...process.env,
+      PYTHONUNBUFFERED: '1'
+    };
+    if (userId) {
+      env.USER_ID = userId;
+    }
+    if (filename) {
+      env.FILENAME = filename;
+    }
+
     const pythonProcess = spawn('python', ['pipeline/llm_structure.py'], {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
-      env: { ...process.env, PYTHONUNBUFFERED: '1' }
+      env: env
     });
 
     let stdout = '';
@@ -1279,7 +1291,7 @@ const server = http.createServer((req, res) => {
         const problems = await db.collection('problems').find({
           fileId: new ObjectId(fileId),
           userId: new ObjectId(userId)
-        }).sort({ problemNumber: 1 }).toArray();
+        }).sort({ id: 1 }).toArray();
 
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({
@@ -1736,6 +1748,53 @@ const server = http.createServer((req, res) => {
         }));
       }
     });
+  } else if (req.method === 'POST' && req.url === '/api/generate-pdf') {
+    // PDF 생성 API
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const examData = JSON.parse(body);
+
+        console.log('🔧 PDF 생성 요청 수신:', examData.problems?.length || 0, '개 문제');
+        console.log('🔧 examData 전체:', JSON.stringify(examData, null, 2));
+
+        // Python PDF 생성기 호출
+        const result = await runPythonPDFGenerator(examData);
+
+        // 생성된 PDF 파일 확인
+        const pdfPath = 'output/generated_exam.pdf';
+        if (fs.existsSync(pdfPath)) {
+          // PDF 파일을 base64로 인코딩하여 반환
+          const pdfBuffer = fs.readFileSync(pdfPath);
+          const pdfBase64 = pdfBuffer.toString('base64');
+
+          res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8'
+          });
+          res.end(JSON.stringify({
+            success: true,
+            message: 'PDF 생성 완료',
+            pdfData: pdfBase64,
+            filename: 'generated_exam.pdf'
+          }));
+        } else {
+          throw new Error('PDF 파일이 생성되지 않았습니다');
+        }
+
+      } catch (error) {
+        console.error('PDF 생성 API 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({
+          success: false,
+          error: error.message,
+          message: 'PDF 생성 중 오류가 발생했습니다'
+        }));
+      }
+    });
   } else if (req.method === 'POST' && req.url === '/upload') {
     // 쿠키에서 세션 ID 가져오기
     const cookies = parseCookies(req.headers.cookie);
@@ -1834,29 +1893,39 @@ const server = http.createServer((req, res) => {
         console.log('\n🤖 Python LLM structure 실행...');
         sendProgress(sessionId, 70, 'AI 구조화 중...');
         const llmStartTime = Date.now();
-        await runPythonLLMStructure(sessionId);
+        await runPythonLLMStructure(sessionId, userId, req.file.originalname);
         const llmEndTime = Date.now();
         console.log(`✅ AI 구조화 완료 - 소요시간: ${((llmEndTime - llmStartTime) / 1000).toFixed(2)}초`);
         sendProgress(sessionId, 90, 'AI 구조화 완료');
 
-        // 구조화된 문제들 읽기 (우선순위: structured > original)
+        // MongoDB에서 저장된 파일과 문제 데이터 조회
+        let problemCount = 0;
+        let fileId = null;
         let problems = [];
-        const structuredProblemsPath = 'output/problems_llm_structured.json';
-        const originalProblemsPath = 'output/problems.json';
+        try {
+          if (db) {
+            // 가장 최근에 업로드된 파일 조회
+            const recentFile = await db.collection('files').findOne(
+              { userId: userId ? new ObjectId(userId) : { $exists: false } },
+              { sort: { uploadDate: -1 } }
+            );
+            if (recentFile) {
+              fileId = recentFile._id.toString();
+              problemCount = recentFile.problemCount || 0;
+              console.log(`✅ MongoDB에서 파일 ID ${fileId} 확인, 문제 ${problemCount}개`);
 
-        console.log('\n📊 결과 파일 로딩...');
-        sendProgress(sessionId, 95, '결과 저장 중...');
-        const loadStartTime = Date.now();
-        if (fs.existsSync(structuredProblemsPath)) {
-          const problemsText = fs.readFileSync(structuredProblemsPath, 'utf8');
-          problems = JSON.parse(problemsText);
-          console.log(`✅ 구조화된 문제 ${problems.length}개 로드`);
-        } else if (fs.existsSync(originalProblemsPath)) {
-          const problemsText = fs.readFileSync(originalProblemsPath, 'utf8');
-          problems = JSON.parse(problemsText);
-          console.log(`✅ 원본 문제 ${problems.length}개 로드`);
+              // 해당 파일의 문제들 조회
+              problems = await db.collection('problems').find({
+                fileId: new ObjectId(fileId),
+                userId: new ObjectId(userId)
+              }).sort({ id: 1 }).toArray();
+              console.log(`✅ MongoDB에서 문제 ${problems.length}개 로드 완료`);
+            }
+          }
+        } catch (error) {
+          console.error('MongoDB 데이터 조회 오류:', error);
         }
-        const loadEndTime = Date.now();
+
         sendProgress(sessionId, 100, '처리 완료!');
 
         // 전체 처리 시간 요약
@@ -1866,83 +1935,25 @@ const server = http.createServer((req, res) => {
         console.log('='.repeat(60));
         console.log(`📁 파일명: ${req.file.originalname}`);
         console.log(`📝 추출된 텍스트: ${extractedText.length.toLocaleString()} 문자`);
-        console.log(`🔢 분할된 문제 수: ${problems.length}개`);
+        console.log(`🔢 분할된 문제 수: ${problemCount}개`);
         console.log(`⏱️ 총 소요시간: ${(totalTime / 1000).toFixed(2)}초 (${(totalTime / 60000).toFixed(1)}분)`);
         console.log('='.repeat(60) + '\n');
 
-        // MongoDB에 파일 정보 저장
-        let fileId = null;
-        if (db) {
-          try {
-            const fileDoc = {
-              userId: new ObjectId(userId),
-              filename: req.file.originalname,
-              parentPath: '내 파일', // 기본적으로 '내 파일' 폴더에 저장
-              originalText: extractedText,
-              problemCount: problems.length,
-              uploadDate: new Date(),
-              stats: {
-                originalTextLength: extractedText.length,
-                problemCount: problems.length
-              }
-            };
-            
-            const fileResult = await db.collection('files').insertOne(fileDoc);
-            fileId = fileResult.insertedId;
-            console.log(`✅ 파일 정보 저장 완료 - 파일 ID: ${fileId}`);
-            
-            // 문제들을 MongoDB에 저장
-            if (problems.length > 0) {
-              const problemDocs = problems.map((problem, index) => {
-                // 불필요한 기본 보기 메시지 필터링
-                let filteredOptions = [];
-                if (problem.options && Array.isArray(problem.options)) {
-                  filteredOptions = problem.options.filter(option =>
-                    option &&
-                    !option.includes('보기 내용은 문제에 명시되지') &&
-                    !option.includes('실제 문제의 보기를 여기에 작성하세요')
-                  );
-                }
+        // MongoDB 저장은 llm_structure.py에서 직접 처리됨
+        console.log(`✅ 파일 처리 완료 - MongoDB에 직접 저장됨`);
 
-                return {
-                  fileId: fileId,
-                  userId: new ObjectId(userId),
-                  problemNumber: index + 1,
-                  // 구조화된 문제의 전체 정보 저장
-                  id: problem.id,
-                  page: problem.page,
-                  content_blocks: problem.content_blocks || [],
-                  options: filteredOptions,
-                  answer: problem.answer || '',
-                  explanation: problem.explanation || '',
-                  type: problem.type || 'multiple_choice',
-                  difficulty: problem.difficulty || 'medium',
-                  subject: problem.subject || '',
-                  // 호환성을 위해 content 필드도 유지
-                  content: problem.content || problem.text || '',
-                  createdAt: new Date()
-                };
-              });
-
-              await db.collection('problems').insertMany(problemDocs);
-              console.log(`✅ 문제 ${problems.length}개 저장 완료`);
-            }
-          } catch (dbError) {
-            console.error('❌ MongoDB 저장 실패:', dbError);
-            // DB 저장 실패해도 파일 처리는 성공으로 처리
-          }
-        }
-
-        // JSON 응답 반환
+        // JSON 응답 반환 (problems 배열과 fileId 포함)
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({
           success: true,
           message: '파일 처리 완료',
-          problems: problems,
+          problemCount: problemCount,
           fileId: fileId,
+          filename: req.file.originalname,
+          problems: problems,
           stats: {
             originalTextLength: extractedText.length,
-            problemCount: problems.length,
+            problemCount: problemCount,
             filename: req.file.originalname
           }
         }));
@@ -1983,6 +1994,81 @@ const server = http.createServer((req, res) => {
     res.end('<h1>404 - 페이지를 찾을 수 없습니다</h1>');
   }
 });
+
+// Python PDF 생성기 함수
+async function runPythonPDFGenerator(examData) {
+  const startTime = Date.now();
+  const scriptPath = path.resolve(__dirname, 'pipeline/generate_pdf.py');
+
+  return new Promise((resolve, reject) => {
+    console.log('Python PDF 생성 스크립트 실행 중...');
+
+    // 임시 파일에 시험지 데이터 저장
+    const tempFilePath = 'temp_exam_data.json';
+    try {
+      fs.writeFileSync(tempFilePath, JSON.stringify(examData, null, 2), 'utf8');
+    } catch (error) {
+      reject(new Error(`임시 파일 생성 실패: ${error.message}`));
+      return;
+    }
+
+    const pythonProcess = spawn('python', [scriptPath], {
+      cwd: process.cwd(),
+      env: { ...process.env },
+      stdio: ['ignore', 'pipe', 'pipe']
+    });
+
+    let stdout = '';
+    let stderr = '';
+
+    pythonProcess.stdout.on('data', (data) => {
+      stdout += data.toString();
+      console.log('Python PDF stdout:', data.toString().trim());
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      stderr += data.toString();
+      console.error('Python PDF stderr:', data.toString().trim());
+    });
+
+    pythonProcess.on('close', (code) => {
+      const totalTime = Date.now() - startTime;
+      
+      // 임시 파일 정리
+      if (fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (e) {
+          console.warn('임시 파일 삭제 실패:', e.message);
+        }
+      }
+
+      if (code === 0) {
+        console.log('Python PDF 생성 완료');
+        resolve({ stdout, totalTime });
+      } else {
+        console.error(`Python PDF 생성 스크립트 실행 실패: 종료 코드 ${code}`);
+        reject(new Error(`python exited ${code} (${totalTime}ms)\n${stderr || stdout}`));
+      }
+    });
+
+    pythonProcess.on('error', (err) => {
+      const totalTime = Date.now() - startTime;
+      console.error('Python PDF 생성 프로세스 오류:', err.message);
+
+      // 임시 파일 정리
+      if (fs.existsSync(tempFilePath)) {
+        try {
+          fs.unlinkSync(tempFilePath);
+        } catch (e) {
+          console.warn('임시 파일 삭제 실패:', e.message);
+        }
+      }
+
+      reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
+    });
+  });
+}
 
 const PORT = 3000;
 //server.listen(PORT, () => {

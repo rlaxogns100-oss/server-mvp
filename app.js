@@ -175,30 +175,17 @@ function bindMyFiles() {
     }
   };
   
-  // 파일 문제 표시 (기존 업로드와 같은 형태)
+  // 파일 문제 표시 (현재 저장되는 필드만 사용)
   function displayFileProblems(problems, fileId, fileName) {
     // 문제 데이터를 PROBLEMS_DATA에 저장
     const dataSource = `db_file_${fileId}`;
     window.PROBLEMS_DATA = window.PROBLEMS_DATA || {};
     window.PROBLEMS_DATA[dataSource] = problems.map((problem, index) => ({
-      id: problem.problemNumber || problem.id || (index + 1),
-      content: problem.content || '',
-      answer: problem.answer || '',
-      explanation: problem.explanation || '',
-      options: problem.options || [],
-      type: problem.type || 'multiple_choice',
-      difficulty: problem.difficulty || 'medium',
-      subject: problem.subject || '',
+      // 현재 저장되는 필드만 사용
+      id: problem.id || (index + 1),
       page: problem.page,
-      // DB에 저장된 content_blocks 사용 (있으면), 없으면 기본 구조 생성
-      content_blocks: problem.content_blocks && problem.content_blocks.length > 0
-        ? problem.content_blocks
-        : [
-            {
-              type: 'text',
-              content: problem.content || ''
-            }
-          ]
+      options: problem.options || [],
+      content_blocks: problem.content_blocks || []
     }));
 
     // 탭 생성 (기존 createTab 함수 사용, 파일명 전달)

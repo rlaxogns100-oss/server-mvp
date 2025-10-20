@@ -622,3 +622,14 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   border-radius: 4px;
 }
 
+/* Condition block styling (조건 블록 - 네모 박스) */
+.condition-block {
+  background: transparent;
+  border: 1px solid #000000;
+  padding: 12px;
+  border-radius: 6px;
+  margin: 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+

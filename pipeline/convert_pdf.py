@@ -1,3 +1,9 @@
+#!/usr/bin/env python3
+"""
+최적화된 PDF 변환 스크립트
+argparse를 사용한 개선된 CLI 인터페이스
+"""
+
 import os, sys, io, json, time, requests
 from pathlib import Path
 from dotenv import load_dotenv
@@ -5,6 +11,7 @@ from pypdf import PdfReader, PdfWriter
 import concurrent.futures
 import threading
 from typing import List, Tuple
+import argparse
 
 API_URL = "https://api.mathpix.com/v3/pdf"
 
@@ -126,22 +133,104 @@ def process_pages_parallel(pdf_path: Path, headers: dict, max_workers: int = 3) 
     results.sort(key=lambda x: x[0])
     return results
 
-def main():
-    if len(sys.argv) < 2:
-        die("사용법: python convert_pdf_parallel.py <input.pdf> [max_workers]")
-    
-    pdf_path = Path(sys.argv[1]).resolve()
-    if not pdf_path.exists():
-        die(f"파일 없음: {pdf_path}")
-    
-    # 최대 워커 수 설정 (기본값: 8 - 최적화됨)
-    max_workers = 8
-    if len(sys.argv) > 2:
+def find_sample_dirs():
+    """history 폴더에서 샘플 폴더들을 찾기"""
+    history_dir = Path("history")
+    if not history_dir.exists():
+        return []
+
+    sample_dirs = []
+    for sample_dir in history_dir.iterdir():
+        if sample_dir.is_dir() and sample_dir.name.startswith("sample"):
+            sample_dirs.append(sample_dir)
+
+    # 샘플 이름의 숫자 기준으로 정렬 (sample1, sample2, ..., sample10, ...)
+    def get_sample_number(path):
+        import re
+        match = re.search(r'sample(\d+)', path.name)
+        return int(match.group(1)) if match else 0
+
+    return sorted(sample_dirs, key=get_sample_number)
+
+def select_sample_interactive():
+    """대화형으로 샘플 선택"""
+    sample_dirs = find_sample_dirs()
+
+    if not sample_dirs:
+        print("❌ history 폴더에서 샘플 폴더를 찾을 수 없습니다.")
+        sys.exit(1)
+
+    print("\n📁 사용 가능한 샘플:")
+    print("=" * 50)
+    for idx, sample_dir in enumerate(sample_dirs, 1):
+        pdf_files = list(sample_dir.glob("*.pdf"))
+        if pdf_files:
+            print(f"  {idx}. {sample_dir.name} ({pdf_files[0].name})")
+        else:
+            print(f"  {idx}. {sample_dir.name} (PDF 없음)")
+    print("=" * 50)
+
+    while True:
         try:
-            max_workers = int(sys.argv[2])
+            choice = input("\n선택할 샘플 번호를 입력하세요 (0=종료): ").strip()
+            if choice == '0':
+                print("종료합니다.")
+                sys.exit(0)
+
+            choice_num = int(choice)
+            if 1 <= choice_num <= len(sample_dirs):
+                selected = sample_dirs[choice_num - 1].name
+                print(f"✅ '{selected}' 선택됨\n")
+                return selected
+            else:
+                print(f"⚠️ 1~{len(sample_dirs)} 사이의 번호를 입력하세요.")
         except ValueError:
-            print("[WARN] 잘못된 max_workers 값, 기본값 8 사용")
-    
+            print("⚠️ 숫자를 입력하세요.")
+        except KeyboardInterrupt:
+            print("\n\n종료합니다.")
+            sys.exit(0)
+
+def main():
+    parser = argparse.ArgumentParser(description="최적화된 PDF 변환 스크립트")
+    parser.add_argument("--pdf", type=str, help="변환할 PDF 파일 경로 (서버 모드)")
+    parser.add_argument("--sample", type=str, help="history 폴더의 샘플 번호 (테스트 모드)")
+    parser.add_argument("--workers", type=int, default=8, help="병렬 처리 워커 수 (기본값: 8)")
+
+    args = parser.parse_args()
+
+    # 모드 결정
+    if args.pdf:
+        # 서버 모드: --pdf 옵션 사용
+        pdf_path = Path(args.pdf).resolve()
+        if not pdf_path.exists():
+            die(f"파일 없음: {pdf_path}")
+        sample_path = None  # 출력은 루트 폴더
+    elif args.sample:
+        # 테스트 모드: --sample 옵션 사용
+        sample_path = Path(f"history/{args.sample}")
+        if not sample_path.exists():
+            die(f"샘플 폴더가 존재하지 않습니다: {sample_path}")
+
+        pdf_files = list(sample_path.glob("*.pdf"))
+        if not pdf_files:
+            die(f"샘플 폴더에 PDF 파일이 없습니다: {sample_path}")
+
+        pdf_path = pdf_files[0]
+    else:
+        # 대화형 모드: 샘플 선택
+        selected_sample = select_sample_interactive()
+        sample_path = Path(f"history/{selected_sample}")
+
+        if not sample_path.exists():
+            die(f"샘플 폴더가 존재하지 않습니다: {sample_path}")
+
+        pdf_files = list(sample_path.glob("*.pdf"))
+        if not pdf_files:
+            die(f"샘플 폴더에 PDF 파일이 없습니다: {sample_path}")
+
+        pdf_path = pdf_files[0]
+
+    # 환경 변수 로드
     load_dotenv()
     app_id  = os.getenv("APP_ID")
     app_key = os.getenv("APP_KEY")
@@ -152,32 +241,37 @@ def main():
     reader = PdfReader(str(pdf_path))
     num_pages = len(reader.pages)
     print(f"[*] 입력: {pdf_path.name}  총 {num_pages}p")
-    print(f"[*] 병렬 처리: {max_workers}개 스레드")
-    
+    print(f"[*] 병렬 처리: {args.workers}개 스레드")
+
     start_time = time.time()
-    
+
     # 병렬 처리로 페이지들 변환
-    results = process_pages_parallel(pdf_path, headers, max_workers)
-    
+    results = process_pages_parallel(pdf_path, headers, args.workers)
+
     # 결과 합치기
     combined = []
     for page_idx, mmd in results:
         page_no = page_idx + 1
         combined.append(f"<<<PAGE {page_no}>>>")
         combined.append(mmd)
-    
+
+    # 출력 파일 경로 결정
+    if sample_path:
+        # 테스트/대화형 모드: 샘플 폴더에 저장
+        output_file = sample_path / "result.paged.mmd"
+    else:
+        # 서버 모드: 루트 폴더에 저장
+        output_file = Path("result.paged.mmd")
+
     # 저장
-    Path("result.paged.mmd").write_text("\n".join(combined), encoding="utf-8")
-    
+    output_file.write_text("\n".join(combined), encoding="utf-8")
+
     end_time = time.time()
     duration = end_time - start_time
-    
-    print(f"[OK] result.paged.mmd 생성 완료!")
+
+    print(f"[OK] {output_file} 생성 완료!")
     print(f"[OK] 총 소요 시간: {duration:.2f}초")
     print(f"[OK] 평균 페이지당: {duration/num_pages:.2f}초")
 
 if __name__ == "__main__":
     main()
-
-
-##레전드 변경사항
