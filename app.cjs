@@ -961,12 +961,41 @@ const server = http.createServer((req, res) => {
         // Python PDF 생성기 호출
         const result = await runPythonPDFGenerator(examData);
 
-        // 생성된 PDF 파일 확인
+        // 생성된 PDF 파일 확인 (파일 시스템 동기화를 위한 대기)
         const pdfPath = 'build/exam.pdf';
+
+        // 파일이 완전히 쓰여질 때까지 대기 (최대 5초)
+        let attempts = 0;
+        let pdfStats = null;
+        while (attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          if (fs.existsSync(pdfPath)) {
+            pdfStats = fs.statSync(pdfPath);
+            console.log(`📄 PDF 파일 크기: ${pdfStats.size} bytes (시도 ${attempts + 1}/10)`);
+
+            // 파일 크기가 1KB 이상이면 정상적으로 생성된 것으로 간주
+            if (pdfStats.size > 1000) {
+              break;
+            }
+          }
+          attempts++;
+        }
+
         if (fs.existsSync(pdfPath)) {
+          const pdfStats = fs.statSync(pdfPath);
+
+          if (pdfStats.size < 1000) {
+            throw new Error(`PDF 파일이 비어있거나 손상되었습니다 (크기: ${pdfStats.size} bytes)`);
+          }
+
+          console.log(`✅ PDF 파일 읽기 시작 (크기: ${pdfStats.size} bytes)`);
+
           // PDF 파일을 base64로 인코딩하여 반환
           const pdfBuffer = fs.readFileSync(pdfPath);
           const pdfBase64 = pdfBuffer.toString('base64');
+
+          console.log(`✅ Base64 인코딩 완료 (길이: ${pdfBase64.length})`);
 
           res.writeHead(200, {
             'Content-Type': 'application/json; charset=utf-8'
@@ -1784,12 +1813,41 @@ const server = http.createServer((req, res) => {
         // Python PDF 생성기 호출
         const result = await runPythonPDFGenerator(examData);
 
-        // 생성된 PDF 파일 확인
+        // 생성된 PDF 파일 확인 (파일 시스템 동기화를 위한 대기)
         const pdfPath = 'build/exam.pdf';
+
+        // 파일이 완전히 쓰여질 때까지 대기 (최대 5초)
+        let attempts = 0;
+        let pdfStats = null;
+        while (attempts < 10) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+
+          if (fs.existsSync(pdfPath)) {
+            pdfStats = fs.statSync(pdfPath);
+            console.log(`📄 PDF 파일 크기: ${pdfStats.size} bytes (시도 ${attempts + 1}/10)`);
+
+            // 파일 크기가 1KB 이상이면 정상적으로 생성된 것으로 간주
+            if (pdfStats.size > 1000) {
+              break;
+            }
+          }
+          attempts++;
+        }
+
         if (fs.existsSync(pdfPath)) {
+          const pdfStats = fs.statSync(pdfPath);
+
+          if (pdfStats.size < 1000) {
+            throw new Error(`PDF 파일이 비어있거나 손상되었습니다 (크기: ${pdfStats.size} bytes)`);
+          }
+
+          console.log(`✅ PDF 파일 읽기 시작 (크기: ${pdfStats.size} bytes)`);
+
           // PDF 파일을 base64로 인코딩하여 반환
           const pdfBuffer = fs.readFileSync(pdfPath);
           const pdfBase64 = pdfBuffer.toString('base64');
+
+          console.log(`✅ Base64 인코딩 완료 (길이: ${pdfBase64.length})`);
 
           res.writeHead(200, {
             'Content-Type': 'application/json; charset=utf-8'
