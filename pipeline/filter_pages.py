@@ -2,7 +2,7 @@
 # 입력:  result.paged.mmd 또는 result_paged.mmd
 # 출력:  result.paged.filtered.mmd
 from __future__ import annotations
-import re, unicodedata
+import re, unicodedata, argparse
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -180,18 +180,127 @@ def classify_page(pno:int, raw_lines:list[str])->Stat:
     return Stat(pno, len(raw_lines), question_ends, solution_score,
                 question_score, score_hits, ans_table, True, "KEEP_DEFAULT")
 
+# ----------------- 샘플 찾기 -----------------
+def find_sample_pdfs():
+    """history 폴더에서 샘플 폴더들을 찾기"""
+    history_dir = Path("history")
+    if not history_dir.exists():
+        return []
+
+    sample_dirs = []
+    for sample_dir in history_dir.iterdir():
+        if sample_dir.is_dir() and sample_dir.name.startswith("sample"):
+            sample_dirs.append(sample_dir)
+
+    # 샘플 이름의 숫자 기준으로 정렬 (sample1, sample2, ..., sample10, ...)
+    def get_sample_number(path):
+        import re
+        match = re.search(r'sample(\d+)', path.name)
+        return int(match.group(1)) if match else 0
+
+    return sorted(sample_dirs, key=get_sample_number)
+
+def select_sample_interactive():
+    """대화형으로 샘플 선택"""
+    import sys
+    sample_dirs = find_sample_pdfs()
+
+    if not sample_dirs:
+        print("❌ history 폴더에서 샘플 폴더를 찾을 수 없습니다.")
+        sys.exit(1)
+
+    print("\n📁 사용 가능한 샘플:")
+    print("=" * 50)
+    for idx, sample_dir in enumerate(sample_dirs, 1):
+        print(f"  {idx}. {sample_dir.name}")
+    print("=" * 50)
+
+    while True:
+        try:
+            choice = input("\n선택할 샘플 번호를 입력하세요 (0=종료): ").strip()
+            if choice == '0':
+                print("종료합니다.")
+                sys.exit(0)
+
+            choice_num = int(choice)
+            if 1 <= choice_num <= len(sample_dirs):
+                selected = sample_dirs[choice_num - 1].name
+                print(f"✅ '{selected}' 선택됨\n")
+                return selected
+            else:
+                print(f"⚠️ 1~{len(sample_dirs)} 사이의 번호를 입력하세요.")
+        except ValueError:
+            print("⚠️ 숫자를 입력하세요.")
+        except KeyboardInterrupt:
+            print("\n\n종료합니다.")
+            sys.exit(0)
+
 # ----------------- 메인 -----------------
 def main():
-    # 입력 결정
-    src=None
-    for cand in ("output/result.paged.mmd","output/result_paged.mmd","result.paged.mmd","result_paged.mmd"):
-        p=Path(cand)
-        if p.exists(): src=p; break
-    if not src:
-        raise SystemExit("output/result.paged.mmd / result.paged.mmd 파일을 찾을 수 없습니다.")
+    parser = argparse.ArgumentParser(description="문제 페이지 필터링 스크립트")
+    parser.add_argument("--sample", type=str, help="history 폴더의 샘플 번호 (예: sample1)")
+
+    args = parser.parse_args()
+
+    # 모드 결정
+    if args.sample:
+        # 테스트 모드: --sample 옵션 사용
+        sample_path = Path(f"history/{args.sample}")
+        if not sample_path.exists():
+            raise SystemExit(f"샘플 폴더가 존재하지 않습니다: {sample_path}")
+
+        src = None
+        for cand in ("result.paged.mmd", "result_paged.mmd"):
+            p = sample_path / cand
+            if p.exists():
+                src = p
+                break
+
+        if not src:
+            raise SystemExit(f"{sample_path} 폴더에 result.paged.mmd 파일을 찾을 수 없습니다.")
+
+        # 출력도 같은 샘플 폴더에 저장
+        output_path = sample_path / "result.paged.filtered.mmd"
+    else:
+        # 서버 모드 또는 대화형 모드
+        # 대화형 모드인지 확인 (stdin이 터미널인지)
+        import sys
+        if sys.stdin.isatty():
+            # 대화형 모드: 샘플 선택
+            selected_sample = select_sample_interactive()
+            sample_path = Path(f"history/{selected_sample}")
+            if not sample_path.exists():
+                raise SystemExit(f"샘플 폴더가 존재하지 않습니다: {sample_path}")
+
+            src = None
+            for cand in ("result.paged.mmd", "result_paged.mmd"):
+                p = sample_path / cand
+                if p.exists():
+                    src = p
+                    break
+
+            if not src:
+                raise SystemExit(f"{sample_path} 폴더에 result.paged.mmd 파일을 찾을 수 없습니다.")
+
+            output_path = sample_path / "result.paged.filtered.mmd"
+        else:
+            # 서버 모드: 기본 경로 사용
+            src = None
+            for cand in ("output/result.paged.mmd", "output/result_paged.mmd", "result.paged.mmd", "result_paged.mmd"):
+                p = Path(cand)
+                if p.exists():
+                    src = p
+                    break
+
+            if not src:
+                raise SystemExit("output/result.paged.mmd / result.paged.mmd 파일을 찾을 수 없습니다.")
+
+            output_dir = Path("output")
+            output_dir.mkdir(exist_ok=True)
+            output_path = output_dir / "result.paged.filtered.mmd"
 
     pages = split_pages(src.read_text(encoding="utf-8"))
-    kept=[]
+    kept = []
     for pno, lines in pages:
         st = classify_page(pno, lines)
 
@@ -211,12 +320,11 @@ def main():
     if not kept:
         print("[!] 모든 페이지가 제거됨 → 원본 유지")
         for pno, lines in pages:
-            kept.append(f"<<<PAGE {pno}>>>"); kept.extend(lines)
+            kept.append(f"<<<PAGE {pno}>>>")
+            kept.extend(lines)
 
-    output_dir = Path("output")
-    output_dir.mkdir(exist_ok=True)
-    Path("output/result.paged.filtered.mmd").write_text("\n".join(kept), encoding="utf-8")
-    print("[OK] output/result.paged.filtered.mmd 생성")
+    output_path.write_text("\n".join(kept), encoding="utf-8")
+    print(f"[OK] {output_path} 생성")
 
 if __name__ == "__main__":
     main()

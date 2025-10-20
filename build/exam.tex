@@ -1,0 +1,63 @@
+\documentclass[10.5pt]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{fontspec}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{multicol}
+\usepackage{fancyhdr}
+\usepackage[many]{tcolorbox}
+\usepackage[a4paper, top=16mm, bottom=20mm, left=13mm, right=13mm]{geometry}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0pt}
+\IfFontExistsTF{Noto Sans KR}{\setmainfont{Noto Sans KR}}{\setmainfont{Malgun Gothic}}
+\definecolor{examBlue}{HTML}{245BD1}
+\definecolor{ruleGray}{gray}{0.6}
+\pagestyle{fancy}
+\fancyhf{}
+\setlength{\headheight}{22pt}
+\setlength{\headsep}{8pt}
+\setlength{\footskip}{28pt}
+\makeatletter
+\renewcommand{\headrule}{\hbox to\headwidth{\color{examBlue}\leaders\hrule height \headrulewidth\hfill}}
+\renewcommand{\footrule}{\hbox to\headwidth{\color{ruleGray}\leaders\hrule height \footrulewidth\hfill}}
+\makeatother
+\renewcommand{\headrulewidth}{0.8pt}
+\renewcommand{\footrulewidth}{0.4pt}
+\fancyhead[L]{고1}\fancyhead[C]{모의고사}\fancyhead[R]{시험지}\fancyfoot[L]{수학학습실}\fancyfoot[C]{\thepage}\fancyfoot[R]{https://www.math114.net}
+
+\setlength{\columnsep}{9mm}
+\setlength{\columnseprule}{0.5pt}
+\setlist[enumerate,1]{label=\textcolor{examBlue}{\Large\bfseries\arabic*.}, leftmargin=*, itemsep=0.2em, topsep=0em, parsep=0pt}
+\begin{document}
+
+\thispagestyle{fancy}
+\vspace*{-6mm}
+\noindent{\bfseries\Large 수학학원명}\hfill{\bfseries 모의고사}
+\begin{center}{\bfseries\LARGE 시험지}\end{center}
+{\color{examBlue}\rule{\linewidth}{0.9pt}}
+\vspace{2mm}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabularx}{\linewidth}{@{}lX lX lX lX@{}}
+이름 & \hrulefill & 날짜 & \hrulefill & 시간 & \hrulefill & 단원 & \hrulefill \\
+\end{tabularx}
+\vspace{8mm}
+\begin{multicols}{2}
+\begin{enumerate}
+\item \leavevmode\begin{minipage}[t]{\linewidth}
+\par\vspace{12\baselineskip}
+\end{minipage}
+\item \leavevmode\begin{minipage}[t]{\linewidth}
+\par\vspace{12\baselineskip}
+\end{minipage}
+\item \leavevmode\begin{minipage}[t]{\linewidth}
+\par\vspace{12\baselineskip}
+\end{minipage}
+\item \leavevmode\begin{minipage}[t]{\linewidth}
+\par\vspace{12\baselineskip}
+\end{minipage}
+\item \leavevmode\begin{minipage}[t]{\linewidth}
+\par\vspace{12\baselineskip}
+\end{minipage}
+\end{enumerate}\end{multicols}\end{document}

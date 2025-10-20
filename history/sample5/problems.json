@@ -1,0 +1,1538 @@
+[
+  {
+    "id": 1,
+    "classification": "start-end",
+    "content": [
+      "1. 부등식 $3 x+2 \\leq x+6 \\leq 2 x+10$ 의 해가 $\\alpha \\leq x \\leq \\beta$ 일 때, $\\alpha+\\beta$ 의 값은? [4.7점]",
+      "(1) -6",
+      "(2) -5",
+      "(3) -4",
+      "(4) -3",
+      "(5) -2"
+    ],
+    "page": 1
+  },
+  {
+    "id": 2,
+    "classification": "start-end",
+    "content": [
+      "2. 연립부등식 $\\left\\{\\begin{array}{l}x^{2}+3 x-1<9 \\\\ x^{2}-a x<0\\end{array}\\right.$ 의 해를 $\\alpha<x<\\beta$ 라 하자. $\\beta-\\alpha$ 의 값이 최대일 때, $a$ 의 최댓값은? [4.9점]",
+      "(1) -8",
+      "(2) -5",
+      "(3) -2",
+      "(4) 1",
+      "(5) 4"
+    ],
+    "page": 1
+  },
+  {
+    "id": 3,
+    "classification": "start-end",
+    "content": [
+      "3. 삼각형의 세 변 중 두 변의 길이가 각각 $4, x$ 이고 둘레의 길이가 10 인 삼각형이 예각삼각형이 되도록 하는 $x$ 의 범위가 $\\alpha<x<\\beta$ 일 때, $\\beta-\\alpha$ 의 값은? [5.0점]",
+      "(1) $\\frac{5}{3}$",
+      "(2) 2",
+      "(3) $\\frac{7}{3}$",
+      "(4) $\\frac{8}{3}$",
+      "(5) 3"
+    ],
+    "page": 1
+  },
+  {
+    "id": 4,
+    "classification": "end-end",
+    "content": [
+      "",
+      "\\section*{4. 모든 실수 $x$ 에 대하여 부등식}",
+      "$2|x+1|+|x-1| \\leq x^{2}+k$ 가 성립할 때, $k$ 의 최솟값은? [5.1점]",
+      "(1) $\\frac{11}{4}$",
+      "(2) 3",
+      "(3) $\\frac{13}{4}$",
+      "(4) $\\frac{7}{2}$",
+      "(5) $\\frac{15}{4}$"
+    ],
+    "page": null
+  },
+  {
+    "id": 5,
+    "classification": "start-end",
+    "content": [
+      "5. 양수 $a, b$ 에 대하여 연립부등식 $\\left\\{\\begin{array}{l}2 x^{2}+5 x-3 \\leq 0 \\\\ x^{2}-a x+b<0\\end{array}\\right.$ 의 해가 없고, 연립부등식 $\\left\\{\\begin{array}{l}x^{2}-4 x+3>0 \\\\ b x^{2}-a x+1 \\geq 0\\end{array}\\right.$ 의 해가 $x>3$ 또는 $x \\leq \\frac{1}{4}$ 일 때, $a+b$ 의 최솟값은? [5.2점]",
+      "(1) $\\frac{13}{2}$",
+      "(2) $\\frac{15}{2}$",
+      "(3) $\\frac{17}{2}$",
+      "(4) $\\frac{19}{2}$",
+      "(5) $\\frac{21}{2}$"
+    ],
+    "page": 2
+  },
+  {
+    "id": 6,
+    "classification": "start-end",
+    "content": [
+      "6. 두 학생 $\\mathrm{A}, \\mathrm{B}$ 를 포함한 4 명의 학생이 줄을 설 때, A 와 B 가 서로 이웃하도록 줄을 서는 경우의 수는? [4.8점]",
+      "(1) 12",
+      "(2) 15",
+      "(3) 18",
+      "(4) 21",
+      "(5) 24"
+    ],
+    "page": 2
+  },
+  {
+    "id": 7,
+    "classification": "start-end",
+    "content": [
+      "7. 서로 다른 종류의 국어 참고서 4 권과 서로 다른 종류의 수학 참고서 3 권이 있다. 두 과목의 참고서 7 권 중에서 각 과목별로 적어도 한 권씩 총 3 권을 구매하는 경우의 수는? [4.9점]",
+      "(1) 28",
+      "(2) 30",
+      "(3) 32",
+      "(4) 34",
+      "(5) 36"
+    ],
+    "page": 2
+  },
+  {
+    "id": 8,
+    "classification": "start-end",
+    "content": [
+      "8. 그림과 같은 8 개의 빈칸에 $2,2^{2}, 2^{3}, 2^{4}, 2^{5}, 2^{6}, 2^{7}, 2^{8}$ 을 하나씩 써넣으려고 한다. 1 열, 2 열, 3 열, 4 열의 수의 합을 각각 $a_{1}, a_{2}, a_{3}, a_{4}$ 라 할 때, $a_{1}<a_{2}<a_{3}<a_{4}$ 이 되도록 빈칸을 채우는 경우의 수는?",
+      "[5.2점]",
+      "",
+      "\\begin{tabular}{|c|c|c|c|}",
+      "\\hline & & & \\\\",
+      "\\hline & & & \\\\",
+      "\\hline \\multicolumn{1}{c}{ 1열 2열 3열 4열 } &",
+      "\\end{tabular}",
+      "(1) 1320",
+      "(2) 1440",
+      "(3) 1560",
+      "(4) 1680",
+      "(5) 1800"
+    ],
+    "page": 2
+  },
+  {
+    "id": 9,
+    "classification": "start-end",
+    "content": [
+      "9. 숫자 $1,2,3,4$ 가 각각 하나씩 적힌 검은 바둑돌 4 개와 흰 바둑돌 4 개가 있다. 다음 조건을 만족시키도록 8 개의 바둑돌을 일렬로 나열하는 경우의 수는? [5.3점]",
+      "(가) 검은 바둑돌끼리는 적힌 숫자가 클수록 오른쪽에 나열한다.",
+      "(나) 검은 바둑돌 사이에는 적어도 하나의 흰 바둑돌이 존재한다.",
+      "(다) 검은 바둑돌 중 왼쪽에서 $n$ 번째 검은 바둑돌과 $(n+1)$ 번째 검은 바둑돌 사이에 있는 흰 바둑돌에 적힌 수의 합은 $2 n+1$ 보다 작다. ( $n=1,2,3$ )",
+      "(1) 32",
+      "(2) 34",
+      "(3) 36",
+      "(4) 38",
+      "(5) 40"
+    ],
+    "page": 3
+  },
+  {
+    "id": 10,
+    "classification": "start-end",
+    "content": [
+      "10. 행렬 $A=\\left(\\begin{array}{lll}1 & 2 & 0 \\\\ 0 & 1 & 2 \\\\ 2 & 0 & 1\\end{array}\\right)$ 에 대하여 다음 중 옳지 않은 것은?",
+      "(단, $a_{i j}$ 는 행렬 $A$ 의 $(i, j)$ 성분이다.)",
+      "(1) $3 \\times 3$ 행렬이다.",
+      "(2) $a_{12}=a_{23}$ 이다.",
+      "(3) $i>j$ 이면 $a_{i j}>a_{j i}$ 이다.",
+      "(4) 제 2 열의 성분의 합은 3 이다.",
+      "(5) $i=j$ 이면 $a_{i j}=1$ 이다."
+    ],
+    "page": 3
+  },
+  {
+    "id": 11,
+    "classification": "start-end",
+    "content": [
+      "11. $\\left(\\begin{array}{ll}x+2 y & 0 \\\\ 3 x y+5 & 2\\end{array}\\right)=\\left(\\begin{array}{cc}y+3 & 0 \\\\ -7 & 2 x+y\\end{array}\\right)$ 일 때, 실수 $x, y$ 에 대하여 $x^{2}+y^{2}$ 의 값은?",
+      "(1) 15",
+      "(2) 16",
+      "(3) 17",
+      "(4) 18",
+      "(5) 19"
+    ],
+    "page": 3
+  },
+  {
+    "id": 12,
+    "classification": "start-end",
+    "content": [
+      "12. 두 행렬 $A=\\left(\\begin{array}{rr}1 & 2 \\\\ 3 & -1\\end{array}\\right), B=\\left(\\begin{array}{rr}-1 & 0 \\\\ 2 & 1\\end{array}\\right)$ 에 대하여 행렬 $\\left(\\begin{array}{rr}3 & 4 \\\\ 4 & -3\\end{array}\\right)$ 을 $x A+y B$ 의 꼴로 나타낼 때, 실수 $x, y$ 의 합 $x+y$ 의 값은?",
+      "(1) -1",
+      "(2) 1",
+      "(3) 2",
+      "(4) 3",
+      "(5) 4"
+    ],
+    "page": 3
+  },
+  {
+    "id": 13,
+    "classification": "start-end",
+    "content": [
+      "13. 행렬 $A=\\left(\\begin{array}{rr}1 & -1 \\\\ 0 & 1\\end{array}\\right)$ 에 대하여 행렬 $A^{3}$ 은?",
+      "(1) $\\left(\\begin{array}{rr}1 & -3 \\\\ 0 & 1\\end{array}\\right)$",
+      "(2) $\\left(\\begin{array}{rr}1 & 0 \\\\ -3 & 1\\end{array}\\right)$",
+      "(3) $\\left(\\begin{array}{rr}1 & -1 \\\\ -1 & 1\\end{array}\\right)$",
+      "(4) $\\left(\\begin{array}{rr}-1 & 1 \\\\ 1 & -1\\end{array}\\right)$",
+      "(5) $\\left(\\begin{array}{rr}3 & -3 \\\\ 0 & 3\\end{array}\\right)$"
+    ],
+    "page": 4
+  },
+  {
+    "id": 14,
+    "classification": "start-end",
+    "content": [
+      "14. 행렬 $A=\\left(\\begin{array}{rr}1 & -2 \\\\ 0 & 2\\end{array}\\right)$ 에 대하여 $(A+E)\\left(A^{2}-A+E\\right)$ 는?",
+      "(1) $\\left(\\begin{array}{rr}1 & -2 \\\\ 0 & 8\\end{array}\\right)$",
+      "(2) $\\left(\\begin{array}{rr}1 & -2 \\\\ 0 & 9\\end{array}\\right)$",
+      "(3) $\\left(\\begin{array}{cc}2 & -14 \\\\ 0 & 8\\end{array}\\right)$",
+      "(4) $\\left(\\begin{array}{cc}2 & -14 \\\\ 0 & 9\\end{array}\\right)$",
+      "(5) $\\left(\\begin{array}{rr}2 & -1 \\\\ 0 & 8\\end{array}\\right)$"
+    ],
+    "page": 4
+  },
+  {
+    "id": 15,
+    "classification": "start-end",
+    "content": [
+      "15. 이차정사각행렬 $A, B$ 에 대하여 다음 중 옳지 않은 것은?",
+      "(1) $(A+B)^{2}-(A-B)^{2}=2(A B+B A)$",
+      "(2) $(A B)^{2}=A B A B$",
+      "(3) $(A+E)(A-E)=A^{2}-E$",
+      "(4) $(A-2 E)^{2}=A^{2}-4 A+4$",
+      "(5) $(A+B)(A-B)=A^{2}-A B+B A-B^{2}$"
+    ],
+    "page": 4
+  },
+  {
+    "id": 16,
+    "classification": "start-end",
+    "content": [
+      "16. 이차정사각행렬 $A$ 가 $A\\binom{1}{0}=\\binom{-1}{1}, A\\binom{0}{1}=\\binom{1}{2}$ 를 만족시킬 때, $A\\binom{2}{3}$ 과 같은 행렬은?",
+      "(1) $\\binom{1}{2}$",
+      "(2) $\\binom{1}{4}$",
+      "(3) $\\binom{1}{8}$",
+      "(4) $\\binom{2}{3}$",
+      "(5) $\\binom{2}{5}$"
+    ],
+    "page": 4
+  },
+  {
+    "id": 17,
+    "classification": "start-end",
+    "content": [
+      "17. 두 이차정사각행렬 $A, B$ 가 $A+B=2 E, A B=O$ 를 만족시킬 때, $A^{2}+B^{2}$ 을 간단히 한것은?",
+      "(1) $E$",
+      "(2) $2 E$",
+      "(3) $4 E$",
+      "(4) $6 E$",
+      "(5) $8 E$"
+    ],
+    "page": 5
+  },
+  {
+    "id": 18,
+    "classification": "end-end",
+    "content": [
+      "",
+      "\\section*{서술형}",
+      "18. 이차부등식 $x^{2}+a x+4 \\geq-x^{2}+6 x+a-k$ 가 모든 실수 $x$ 에 대하여 성립하게 하는 정수 $a$ 의 개수가 19 일 때, 가능한 모든 정수 $k$ 의 값의 합을 구하시오. [5점]"
+    ],
+    "page": null
+  },
+  {
+    "id": 19,
+    "classification": "start-end",
+    "content": [
+      "19. 그림과 같이 8 개의 영역으로 나뉜 그림을 서로 다른 5 가지 색을 이용하여 칠하려고 한다. 8 개의 영역에 같은 색을 중복하여 이용해도 좋으나 인접한 영역은 서로 다른 색으로 칠할 때, 색을 칠하는 경우의 수는 $n \\times 5$ !이다. $n$ 의 값을 구하시오. [4점]",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_28e246d3095939763d4ag-1.jpg?height=397&width=523&top_left_y=633&top_left_x=1072)"
+    ],
+    "page": 5
+  },
+  {
+    "id": 20,
+    "classification": "start-end",
+    "content": [
+      "20. 그림과 같은 7 개의 좌석에 3 쌍의 커플이 모두 앉으려고 한다. 커플끼리는 같은 행의 이웃한 자리에 앉거나 같은 열에 앉아야 한다고 할 때, 좌석에 앉는 경우의 수를 구하시오. [5점]"
+    ],
+    "page": 5
+  },
+  {
+    "id": 21,
+    "classification": "start-end",
+    "content": [
+      "21. 그림은 각 지점사이의 일방 통행로를 화살표로 나타낸 것이다. 행렬 $A$ 의 $(i, j)$ 성분 $a_{i j}$ 를 $i$ 지점에서 $j$ 지점으로 가는 길의 개수로 정의할 때, 행렬 $A=\\left(a_{i j}\\right)$ 를 구하여라. (단, $i, j=1,2,3$ )",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_dc0f22abbafb253ea7e3g-1.jpg?height=272&width=372&top_left_y=604&top_left_x=165)"
+    ],
+    "page": 6
+  },
+  {
+    "id": 22,
+    "classification": "start-end",
+    "content": [
+      "22. $A=\\left(\\begin{array}{rr}1 & 1 \\\\ -1 & 0\\end{array}\\right)$ 일 때, $A+A^{2}+A^{3}+A^{4}+A^{5}$ 의 모든 성분의 합을 구하시오."
+    ],
+    "page": 6
+  },
+  {
+    "id": 23,
+    "classification": "start-end",
+    "content": [
+      "1.3 이상의 자연수 $x$ 에 대하여 세 수 $x-2, x-1, x$ 가 예각삼각형의 세 변의 길이가 되도록 하는 자연수 $x$ 의 최솟값은? [4.1점]",
+      "(1) 3",
+      "(2) 4",
+      "(3) 5",
+      "(4) 6",
+      "(5) 7"
+    ],
+    "page": 12
+  },
+  {
+    "id": 24,
+    "classification": "start-end",
+    "content": [
+      "2. 사차방정식 $x^{4}-4 x^{3}+x-4=0$ 의 한 허근을 $\\alpha$ 라고 할 때, $\\alpha^{2023}+\\alpha^{2022}+\\alpha^{2021}$ 의 값은? [4.8점]",
+      "(1) -2",
+      "(2) -1",
+      "(3) 0",
+      "(4) 1",
+      "(5) 2"
+    ],
+    "page": 12
+  },
+  {
+    "id": 25,
+    "classification": "start-end",
+    "content": [
+      "3. $x$ 에 대한 연립이차부등식 $\\left\\{\\begin{array}{l}x^{2}-8 x+12 \\geq 0 \\\\ |x-k|<3\\end{array}\\right.$ 을 만족시키는 모든 정수 $x$ 의 개수가 2 가 되도록 하는 모든 정수 $k$ 의 값의 합은? [4.9점]",
+      "(1) 3",
+      "(2) 6",
+      "(3) 9",
+      "(4) 12",
+      "(5) 15"
+    ],
+    "page": 12
+  },
+  {
+    "id": 26,
+    "classification": "start-end",
+    "content": [
+      "4. 연립이차방정식 $\\left\\{\\begin{array}{l}y+3=2|2 x-y| \\\\ 2 x^{2}-y-4=|2 x-y|\\end{array}\\right.$ 의 해가 $\\left\\{\\begin{array}{l}x=x_{1} \\\\ y=y_{1}\\end{array}\\right.$ 또는 $\\left\\{\\begin{array}{l}x=x_{2} \\\\ y=y_{2}\\end{array}\\right.$ 또는 $\\left\\{\\begin{array}{l}x=x_{3} \\\\ y=y_{3}\\end{array}\\right.$ 또는 $\\left\\{\\begin{array}{l}x=x_{4} \\\\ y=y_{4}\\end{array}\\right.$ 일 때, $x_{1}+x_{2}+x_{3}+x_{4}+y_{1}+y_{2}+y_{3}+y_{4}$ 의 값은? (단, $x_{1}, x_{2}, x_{3}$, $x_{4}, y_{1}, y_{2}, y_{3}, y_{4}$ 는 모두 서로 다른 실수이다.) [5.0점]",
+      "(1) $\\frac{1}{3}$",
+      "(2) 1",
+      "(3) $\\frac{65-3 \\sqrt{29}}{6}$",
+      "(4) $\\frac{65+3 \\sqrt{29}}{6}$",
+      "(5) $\\frac{64}{3}$"
+    ],
+    "page": 12
+  },
+  {
+    "id": 27,
+    "classification": "start-end",
+    "content": [
+      "5. $4!+0!+{ }_{10} \\mathrm{C}_{8}+{ }_{4} \\mathrm{P}_{0}$ 의 값은? [3.5점]",
+      "(1) 71",
+      "(2) 72",
+      "(3) 73",
+      "(4) 74",
+      "(5) 75"
+    ],
+    "page": 13
+  },
+  {
+    "id": 28,
+    "classification": "start-end",
+    "content": [
+      "6. 같은 공 5 개를 같은 상자 5 개에 나누어 담는 경우의 수는?(단, 빈 상자가 생기는 경우를 포함한다.) [3.6점]",
+      "(1) 6",
+      "(2) 7",
+      "(3) 8",
+      "(4) 9",
+      "(5) 10"
+    ],
+    "page": 13
+  },
+  {
+    "id": 29,
+    "classification": "start-end",
+    "content": [
+      "7. 학생 6 명 중에서 청소 반장 1 명을 포함하여 청소 당번 3 명을 뽑는 경우의 수는? [3.8점]",
+      "(1) 60",
+      "(2) 66",
+      "(3) 72",
+      "(4) 78",
+      "(5) 84"
+    ],
+    "page": 13
+  },
+  {
+    "id": 30,
+    "classification": "start-end",
+    "content": [
+      "8. 가영, 나영이를 포함한 5 명의 학생을 한 줄로 세울 때, 가영이와 나영이가 양 끝에 서는 경우의 수는? [3.6점]",
+      "(1) 8",
+      "(2) 10",
+      "(3) 12",
+      "(4) 14",
+      "(5) 16"
+    ],
+    "page": 13
+  },
+  {
+    "id": 31,
+    "classification": "start-end",
+    "content": [
+      "9. 일렬로 나열되어 있는 8 개의 의자에 4 명의 학생이 앉을 때, 2 명만 이웃하여 앉는 경우의 수는? [3.8점]",
+      "(1) 180",
+      "(2) 360",
+      "(3) 540",
+      "(4) 720",
+      "(5) 900"
+    ],
+    "page": 14
+  },
+  {
+    "id": 32,
+    "classification": "start-end",
+    "content": [
+      "10. 남학생 3 명, 여학생 8 명인 한 반에서 짝피구 선수를 구성하려고 한다. 짝피구 선수는 2 명씩 짝이 되어 있는 5 쌍 총 10 명이 필요하다. 출전하는 남학생은 반드시 여학생과 짝을 해야 할 때, 선수를 구성하는 경우의 수는? [4.0점]",
+      "(1) 7360",
+      "(2) 7460",
+      "(3) 7560",
+      "(4) 7660",
+      "(5) 7760"
+    ],
+    "page": 14
+  },
+  {
+    "id": 33,
+    "classification": "start-end",
+    "content": [
+      "11. 그림과 같이 흰 공 3 개와 숫자 $1,2,3$ 이 하나씩 적힌 검은 공 3 개와 문자 $\\mathrm{A}, \\mathrm{B}, \\mathrm{C}, \\mathrm{D}, \\mathrm{E}, \\mathrm{F}$ 가 하나씩 적힌 가로 3 칸, 세로 2 칸짜리 보관함이 있다.",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_54b38d871f165eb5c9bfg-1.jpg?height=106&width=403&top_left_y=553&top_left_x=1289)",
+      "$1 \\quad 2 \\quad 3$",
+      "",
+      "\\begin{tabular}{|c|c|c|}",
+      "\\hline$A$ & $B$ & $C$ \\\\",
+      "\\hline$D$ & $E$ & $F$ \\\\",
+      "\\hline",
+      "\\end{tabular}",
+      "",
+      "다음 조건을 만족시키도록 6 개의 공을 모두 보관함에 넣는 경우의 수는? (단, 흰 공끼리는 서로 구별하지 않는다.) [4.1점]",
+      "",
+      "\\section*{[보기]}",
+      "(가) 한 칸에 한 개의 공만 넣는다.",
+      "(나) 흰 공을 넣은 칸과 인접한 칸에는 적어도 한 개의 검은 공을 넣는다. (대각 방향의 칸은 인접한 칸이 아니다. 예를 들어 A 가 적힌 칸과 인접한 칸은 $\\mathrm{B}, \\mathrm{D}$ 뿐이고, E 는 인접한 칸이 아니다.)",
+      "(1) 96",
+      "(2) 100",
+      "(3) 104",
+      "(4) 108",
+      "(5) 112"
+    ],
+    "page": 14
+  },
+  {
+    "id": 34,
+    "classification": "start-end",
+    "content": [
+      "12. 5 명의 학생이 각자의 이름표가 하나씩 담긴 상자에서 이름표를 임의로 1 개씩 뽑을 때, 어느 누구도 자신의 이름표를 뽑지 않고 어떤 2 명도 서로의 이름표를 선택하지 않는 경우의 수는?",
+      "(단, 뽑는 순서는 고려하지 않는다.) [4.1점]",
+      "(1) 8",
+      "(2) 12",
+      "(3) 24",
+      "(4) 72",
+      "(5) 96"
+    ],
+    "page": 15
+  },
+  {
+    "id": 35,
+    "classification": "start-end",
+    "content": [
+      "13. 흰 공 4 개, 빨간 공 3 개, 검은 공 2 개를 세 명의 학생이 각각 3 개씩 나누어 가지려고 한다. 흰 공은 1 점, 빨간 공은 3 점, 검은 공은 4 점으로 점수를 계산한다.",
+      "예를 들어 한 학생이 흰 공 2 개, 빨간 공 1 개를 가졌다면 이 학생의 점수는 5 점이다.",
+      "두 명 이상의 점수가 같으면 무승부라고 할 때, 무승부가 되는 경우의 수는? (단, 같은 색의 공끼리는 서로 구별하지 않는다.) [4.3점]",
+      "(1) 11",
+      "(2) 12",
+      "(3) 13",
+      "(4) 14",
+      "(5) 15"
+    ],
+    "page": 15
+  },
+  {
+    "id": 36,
+    "classification": "start-end",
+    "content": [
+      "14. 행렬 $A=\\left(a_{i j}\\right)$ 의 $(i, j)$ 성분 $a_{i j}$ 가 $a_{i j}=i^{2}-j+1$ 일 때, 행렬 $A$ 는? (단, $i=1,2, j=1,2,3$ )",
+      "(1) $\\left(\\begin{array}{rr}1 & 4 \\\\ 0 & 3 \\\\ -1 & 2\\end{array}\\right)$",
+      "(2) $\\left(\\begin{array}{rr}1 & 0 \\\\ 4 & 3 \\\\ -1 & 2\\end{array}\\right)$",
+      "(3) $\\left(\\begin{array}{lll}3 & 4 & 2 \\\\ 0 & 1 & 8\\end{array}\\right)$",
+      "(4) $\\left(\\begin{array}{rrr}3 & 5 & 1 \\\\ 0 & -1 & 2\\end{array}\\right)$ (5) $\\left(\\begin{array}{rrr}1 & 0 & -1 \\\\ 4 & 3 & 2\\end{array}\\right)$"
+    ],
+    "page": 15
+  },
+  {
+    "id": 37,
+    "classification": "start-end",
+    "content": [
+      "15. 두 행렬 $A=\\left(\\begin{array}{rr}a & -1 \\\\ 2 & 3\\end{array}\\right), B=\\left(\\begin{array}{rr}2 & b \\\\ 1 & -1\\end{array}\\right)$ 에 대하여 $A B=B A$ 를 만족시키는 실수 $a, b$ 의 합 $a+b$ 의 값은?",
+      "(1) 3",
+      "(2) 5",
+      "(3) 7",
+      "(4) $\\frac{17}{2}$",
+      "(5) $\\frac{19}{2}$"
+    ],
+    "page": 15
+  },
+  {
+    "id": 38,
+    "classification": "start-end",
+    "content": [
+      "16. 행렬 $A=\\left(\\begin{array}{ll}2 & 0 \\\\ 0 & 1\\end{array}\\right)$ 에 대하여 $E+A^{3}+A^{5}=\\left(\\begin{array}{ll}a & b \\\\ c & d\\end{array}\\right)$ 일 때, $a+b+c+d$ 의 값은?",
+      "(1) 11",
+      "(2) 30",
+      "(3) 33",
+      "(4) 44",
+      "(5) 55"
+    ],
+    "page": 16
+  },
+  {
+    "id": 39,
+    "classification": "start-end",
+    "content": [
+      "17. 행렬 $A=\\left(\\begin{array}{rr}2 & 1 \\\\ -1 & -1\\end{array}\\right)$ 에 대하여 행렬 $A^{4}+2 A^{3}+4 A-E$ 는?",
+      "(1) $\\left(\\begin{array}{rr}-11 & 8 \\\\ 25 & 1\\end{array}\\right)$",
+      "(2) $\\left(\\begin{array}{cr}8 & 11 \\\\ -15 & 4\\end{array}\\right)$",
+      "(3) $\\left(\\begin{array}{cc}4 & -8 \\\\ 8 & -20\\end{array}\\right)$",
+      "(4) $\\left(\\begin{array}{cc}25 & 11 \\\\ 8 & -4\\end{array}\\right)$",
+      "(5) $\\left(\\begin{array}{rr}25 & 11 \\\\ -11 & -8\\end{array}\\right)$"
+    ],
+    "page": 16
+  },
+  {
+    "id": 40,
+    "classification": "end-end",
+    "content": [
+      "",
+      "\\section*{서술형}",
+      "18. $x$ 에 대한 연립일차부등식 $7 \\leq a x-4 \\leq 6 x+2$ 를 만족시키는 정수 $x$ 의 개수가 1 이상 4 이하가 되도록 하는 모든 정수 $a$ 의 값의 합을 구하시오. [5.0점]"
+    ],
+    "page": null
+  },
+  {
+    "id": 41,
+    "classification": "start-end",
+    "content": [
+      "19. $x$ 에 대한 이차부등식 $\\left(2 a^{2}-3 a-35\\right) x^{2}-17 x-2>0$ 을 만족시키는 $|x| \\leq 30$ 인 서로 다른 정수 $x$ 의 개수가 60 이 되도록 하는 모든 정수 $a$ 의 개수를 구하시오. (단, $-300 \\leq a \\leq 300$ 이다.) [5.1점]"
+    ],
+    "page": 16
+  },
+  {
+    "id": 42,
+    "classification": "start-end",
+    "content": [
+      "20. 다음 그림과 같이 평행한 두 직선 위에 점 9 개가 있다. 이 중에 점 4 개를 꼭짓점으로 하는 사각형의 개수를 구하시오.",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_137ed7ae528539d2a638g-1.jpg?height=44&width=746&top_left_y=479&top_left_x=193)",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_137ed7ae528539d2a638g-1.jpg?height=44&width=746&top_left_y=690&top_left_x=193)"
+    ],
+    "page": 17
+  },
+  {
+    "id": 43,
+    "classification": "start-end",
+    "content": [
+      "21. 8 개의 숫자 $1,1,2,2,3,3,4,4$ 를 아래의 그림과 같이 8 칸으로 나누어진 직사각형의 각 칸에 한 개씩 써넣으려고 한다. 각 행에 있는 네 수의 합이 서로 같은 경우의 수를 구하시오. [6점]",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_137ed7ae528539d2a638g-1.jpg?height=95&width=409&top_left_y=1660&top_left_x=382)",
+      "",
+      "1행 $\\Rightarrow$",
+      "",
+      "2행 $\\Rightarrow$",
+      "",
+      "\\begin{tabular}{|l|l|l|l|}",
+      "\\hline & & & \\\\",
+      "\\hline & & & \\\\",
+      "\\hline",
+      "\\end{tabular}"
+    ],
+    "page": 17
+  },
+  {
+    "id": 44,
+    "classification": "start-end",
+    "content": [
+      "22. 두 행렬 $A=\\left(\\begin{array}{rr}1 & -4 \\\\ -2 & 1\\end{array}\\right), B=\\left(\\begin{array}{rr}-1 & 0 \\\\ -2 & -1\\end{array}\\right)$ 에 대하여 $2 B-X=X-(A+B)$ 를 만족시키는 행렬 $X$ 의 모든 성분의 합을 구하시오."
+    ],
+    "page": 17
+  },
+  {
+    "id": 45,
+    "classification": "start-end",
+    "content": [
+      "1. 부등식 $|x+4|+|x-4| \\leq 8$ 을 만족시키는 정수 $x$ 의 개수는?",
+      "[3.0점]",
+      "(1) 6",
+      "(2) 7",
+      "(3) 8",
+      "(4) 9",
+      "(5) 10"
+    ],
+    "page": 22
+  },
+  {
+    "id": 46,
+    "classification": "start-end",
+    "content": [
+      "2. $x$ 에 대한 사차방정식",
+      "\\[",
+      "x^{4}+(3 a+8) x^{3}+(4 a+9) x^{2}+(a+2) x=0",
+      "\\]",
+      "",
+      "의 서로 다른 실근의 개수가 2 가 되도록 하는 실수 $a$ 의 값은? [3.5점]",
+      "(1) -2",
+      "(2) -1",
+      "(3) 0",
+      "(4) 1",
+      "(5) 2"
+    ],
+    "page": 22
+  },
+  {
+    "id": 47,
+    "classification": "start-end",
+    "content": [
+      "3. $x$ 에 대한 삼차방정식 $x^{3}-2 x^{2}+k x-10 x+2 k-4=0$ 이 1 보다 작은 서로 다른 두 실근과 1 보다 큰 한 근을 갖도록 하는 자연수 $k$ 의 값으로 될 수 없는 것은? [3.7점]",
+      "(1) 1",
+      "(2) 2",
+      "(3) 3",
+      "(4) 4",
+      "(5) 5"
+    ],
+    "page": 22
+  },
+  {
+    "id": 48,
+    "classification": "start-end",
+    "content": [
+      "4. 최고차항의 계수가 $a$ 인 이차다항식 $P(x)$ 가 다음 <조건>을 만족시킬 때, $P(1)$ 의 값은? (단, $a$ 는 상수이다.) [3.9점]",
+      "(가) 부등식 $P(x) \\geq x$ 의 해는 $x=2$ 이다.",
+      "(나) 방정식 $P(x)=-5 a x-1$ 은 중근을 갖는다.",
+      "(1) $-\\frac{1}{3}$",
+      "(2) $\\frac{2}{3}$",
+      "(3) $-\\frac{1}{5}$",
+      "(4) $\\frac{6}{5}$",
+      "(5) $\\frac{1}{5}$"
+    ],
+    "page": 22
+  },
+  {
+    "id": 49,
+    "classification": "start-end",
+    "content": [
+      "5. 최고차항의 계수가 양수인 이차함수 $y=f(x)$ 의 그래프와 $x$ 축의 교점의 $x$ 좌표가 $-2,6$ 이다. 부등식 $f(|k-x|) \\leq 0$ 의 해가 $\\left\\{\\begin{array}{l}x \\leq 2 k^{2}+k-2 \\\\ x \\geq-k^{2}-k+2\\end{array}\\right.$ 일 때, 부등식 $f\\left(\\frac{k}{2}-x\\right)<0$ 의 해는 $\\alpha<x<\\beta$ 이다. $\\alpha \\times \\beta$ 의 값은? (단, $k$ 는 상수이다.) [4.2점]",
+      "(1) -18",
+      "(2) -15",
+      "(3) -12",
+      "(4) 15",
+      "(5) 18"
+    ],
+    "page": 23
+  },
+  {
+    "id": 50,
+    "classification": "start-end",
+    "content": [
+      "6. $x$ 에 대한 사차방정식 $x^{4}-2 q x^{3}-13 p x^{2}-p^{2} q x-p^{3}=0$ 은 중근 $\\alpha, \\beta(\\alpha<\\beta)$ 를 갖는다. $\\alpha^{2}-\\beta^{2}=-12$ 일 때, 연립부등식 $\\left\\{\\begin{array}{l}p q(x-\\alpha)(x-2 \\beta) \\geq 0 \\\\ x^{2}-2 n x-2 x+n^{2}+2 n \\geq 0\\end{array}\\right.$ 을 만족시키는 정수해의 개수가 6 이 되도록 하는 모든 자연수 $n$ 의 값의 합은?",
+      "(단, $p, q \\neq 0$ 인 실수이다.) [4.5점]",
+      "(1) 20",
+      "(2) 24",
+      "(3) 27",
+      "(4) 28",
+      "(5) 36"
+    ],
+    "page": 23
+  },
+  {
+    "id": 51,
+    "classification": "start-end",
+    "content": [
+      "7. 5 명의 학생을 일렬로 세우는 경우의 수는? [3.0점]",
+      "(1) 2",
+      "(2) 6",
+      "(3) 24",
+      "(4) 120",
+      "(5) 720"
+    ],
+    "page": 23
+  },
+  {
+    "id": 52,
+    "classification": "start-end",
+    "content": [
+      "8. 어느 모임에서 둥글게 모여 앉아 놀이를 하는데 이 놀이의 규칙은 다음과 같다.",
+      "(규칙1) 한 사람씩 돌아가면서 자연수 1 부터 차례로 수를 말한다.",
+      "(규칙2) 3 의 배수 또는 일의 자리의 수가 $3,6,9$ 인 수가 나오면 수를 말하는 대신 손뼉을 친다.",
+      "",
+      "이 놀이를 할 때, 100 미만인 자연수 중에서 손뼉을 쳐야 하는 자연수의 개수는? [3.3점]",
+      "(1) 45",
+      "(2) 48",
+      "(3) 51",
+      "(4) 54",
+      "(5) 57"
+    ],
+    "page": 23
+  },
+  {
+    "id": 53,
+    "classification": "start-end",
+    "content": [
+      "9. 다항식 $(a+b+c)(d+e)(x+y+z)$ 를 전개하였을 때, 모든 항의 개수를 $p, x$ 를 포함한 항의 개수를 $q$ 라 할 때, $p+q$ 의 값은? [3.4점]",
+      "(1) 24",
+      "(2) 26",
+      "(3) 28",
+      "(4) 30",
+      "(5) 32"
+    ],
+    "page": 24
+  },
+  {
+    "id": 54,
+    "classification": "start-end",
+    "content": [
+      "10. 그림과 같이 정오각형 ACEGI 위에 점 10 개가 있다. 이 중에서 점 4 개를 꼭짓점으로 하는 사각형의 개수는? [3.6점]",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_b4011ba5fe79ed8f0a29g-1.jpg?height=489&width=517&top_left_y=1192&top_left_x=211)",
+      "(1) 100",
+      "(2) 125",
+      "(3) 150",
+      "(4) 175",
+      "(5) 200"
+    ],
+    "page": 24
+  },
+  {
+    "id": 55,
+    "classification": "start-end",
+    "content": [
+      "11. 그림과 같이 크기가 같은 6 개의 정사각형에 1 부터 6 까지의 자연수가 하나씩 적혀 있다.",
+      "",
+      "\\begin{tabular}{|c|c|c|}",
+      "\\hline 1 & 2 & 3 \\\\",
+      "\\hline 4 & 5 & 6 \\\\",
+      "\\hline",
+      "\\end{tabular}",
+      "",
+      "서로 다른 4 가지 색의 일부 또는 전부를 사용하여 다음 조건을 만족시키도록 6 개의 정사각형에 색을 칠하는 경우의 수는? [4.1점]",
+      "(가) 변을 공유하는 두 정사각형에는 서로 다른 색을 칠한다.",
+      "(나) 한 정사각형에 한 가지 색만을 칠한다.",
+      "(1) 378",
+      "(2) 420",
+      "(3) 504",
+      "(4) 546",
+      "(5) 588"
+    ],
+    "page": 24
+  },
+  {
+    "id": 56,
+    "classification": "start-end",
+    "content": [
+      "12. 서로 같은 검은색 모자 5 개와 서로 같은 하얀색 모자 7 개를 아래 그림과 같이 1 부터 12 까지의 자연수가 적혀 있는 12 개의 칸으로 이루어진 보관함에 빈칸 없이 채우려고 한다. 보관함에서 적어도 하나의 가로줄 또는 하나의 세로줄이 같은 색의 모자로 채워지는 경우의 수는? (단, 보관함 한 칸에는 하나의 모자만 넣을 수 있다.) [4.4점]",
+      "",
+      "\\begin{tabular}{|c|c|c|c|}",
+      "\\hline 1 & 2 & 3 & 4 \\\\",
+      "\\hline 5 & 6 & 7 & 8 \\\\",
+      "\\hline 9 & 10 & 11 & 12 \\\\",
+      "\\hline",
+      "\\end{tabular}",
+      "(1) 548",
+      "(2) 552",
+      "(3) 556",
+      "(4) 560",
+      "(5) 564"
+    ],
+    "page": 25
+  },
+  {
+    "id": 57,
+    "classification": "start-end",
+    "content": [
+      "13. 그림은 세 나라 $\\mathrm{P}_{1}, \\mathrm{P}_{2}, \\mathrm{P}_{3}$ 사이의 국제 통신망을 화살표로 나타낸 것이다.",
+      "행렬 $A$ 의 $(i, j)$ 성분을 $\\mathrm{P}_{\\mathrm{i}}$ 나라에서 $\\mathrm{P}_{\\mathrm{j}}$ 나라로 직접 보내는 통신망의 개수로 정의할 때, 행렬 $A$ 는? (단, $i=j$ 일 때, $(i, j)$ 성분은 0 이고, 화살표 방향으로만 통신이 가능하다.)",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_fcaa22ae43518664dff6g-1.jpg?height=278&width=324&top_left_y=1665&top_left_x=176)",
+      "(1) $\\left(\\begin{array}{lll}0 & 1 & 0 \\\\ 2 & 0 & 1 \\\\ 2 & 0 & 0\\end{array}\\right)$",
+      "(2) $\\left(\\begin{array}{lll}0 & 2 & 2 \\\\ 1 & 0 & 0 \\\\ 0 & 0 & 1\\end{array}\\right)$",
+      "(3) $\\left(\\begin{array}{lll}0 & 1 & 0 \\\\ 2 & 0 & 0 \\\\ 2 & 0 & 1\\end{array}\\right)$",
+      "(4) $\\left(\\begin{array}{lll}0 & 2 & 0 \\\\ 1 & 0 & 0 \\\\ 0 & 1 & 0\\end{array}\\right)$",
+      "(5) $\\left(\\begin{array}{lll}0 & 2 & 2 \\\\ 1 & 0 & 0 \\\\ 0 & 1 & 0\\end{array}\\right)$"
+    ],
+    "page": 25
+  },
+  {
+    "id": 58,
+    "classification": "start-end",
+    "content": [
+      "14. 두 행렬 $A=\\left(\\begin{array}{rr}-1 & 1 \\\\ 2 & 0\\end{array}\\right), B=\\left(\\begin{array}{ll}4 & 5 \\\\ 4 & 6\\end{array}\\right)$ 에 대하여 행렬 $X, Y$ 가 $2 X+Y=A, X-Y=B$ 를 만족시킬 때, 행렬 $X+Y$ 는?",
+      "(1) $\\left(\\begin{array}{ll}2 & 1 \\\\ 0 & 2\\end{array}\\right)$",
+      "(2) $\\left(\\begin{array}{rr}2 & 1 \\\\ 0 & -2\\end{array}\\right)$",
+      "(3) $\\left(\\begin{array}{rr}-2 & 0 \\\\ -1 & -2\\end{array}\\right)$",
+      "(4) $\\left(\\begin{array}{rr}-2 & -1 \\\\ 0 & -2\\end{array}\\right)$",
+      "(5) $\\left(\\begin{array}{rr}-2 & 1 \\\\ 0 & 2\\end{array}\\right)$"
+    ],
+    "page": 25
+  },
+  {
+    "id": 59,
+    "classification": "start-end",
+    "content": [
+      "15. 두 행렬 $A=\\left(\\begin{array}{ll}1 & 2 \\\\ 0 & 1\\end{array}\\right), B=\\left(\\begin{array}{ll}1 & 0 \\\\ 3 & 1\\end{array}\\right)$ 에 대하여 행렬 $B^{4}-A^{4}$ 의 모든 성분의 합은?",
+      "(1) 1",
+      "(2) 2",
+      "(3) 3",
+      "(4) 4",
+      "(5) 5"
+    ],
+    "page": 25
+  },
+  {
+    "id": 60,
+    "classification": "start-end",
+    "content": [
+      "16. 두 행렬 $A=\\left(\\begin{array}{ll}3 & 2 \\\\ 1 & 5\\end{array}\\right), B=\\left(\\begin{array}{ll}x & 1 \\\\ y & 2\\end{array}\\right)$ 에 대하여 $(A-B)^{2}=A^{2}-2 A B+B^{2}$ 이 성립할 때, 실수 $x, y$ 의 값을 정할 때, $x+y$ 의 값은?",
+      "(1) -2",
+      "(2) -1",
+      "(3) 0",
+      "(4) $\\frac{1}{2}$",
+      "(5) $\\frac{3}{2}$"
+    ],
+    "page": 26
+  },
+  {
+    "id": 61,
+    "classification": "start-end",
+    "content": [
+      "17.이차정사각행렬 $A, B$ 에 대하여 다음 중 옳은 것은?",
+      "(1) $A^{3}=A^{5}=E$ 이면 $A=E$ 이다.",
+      "(2) $A B=O, A \\neq O$ 이면 $B=O$ 이다.",
+      "(3) $A^{2}=O$ 이면 $A=O$ 이다.",
+      "(4) $A^{2}=E$ 이면 $A=E$ 또는 $A=-E$ 이다.",
+      "(5) $A B=O$ 이면 $B A=O$ 이다."
+    ],
+    "page": 26
+  },
+  {
+    "id": 62,
+    "classification": "start-end",
+    "content": [
+      "18. 아래 [표 1]은 알파 상점과 오메가 상점에서의 빵과 우유의 개당 가격을 나타낸 것이고, [표 2]는 이코와 사코가 구입할 빵과 우유의 개수를 나타낸 것이다.",
+      "",
+      "\\begin{table}",
+      "\\begin{tabular}{|c|c|c|}",
+      "\\hline & 빵 & 우유 \\\\",
+      "\\hline 알파 상점 & 700 원 & 400 원 \\\\",
+      "\\hline 오메가 상점 & 500 원 & 450 원 \\\\",
+      "\\hline",
+      "\\end{tabular}",
+      "\\captionsetup{labelformat=empty}",
+      "\\caption{[丑 1]}",
+      "\\end{table}",
+      "",
+      "\\begin{table}",
+      "\\begin{tabular}{c|c|c|}",
+      "\\hline & 이코 & 사코 \\\\",
+      "\\hline 빵 & 2개 & 5개 \\\\",
+      "\\hline 우유 & 3개 & 4개 \\\\",
+      "\\hline",
+      "\\end{tabular}",
+      "\\captionsetup{labelformat=empty}",
+      "\\caption{[丑 2]}",
+      "\\end{table}",
+      "$A=\\left(\\begin{array}{ll}700 & 400 \\\\ 500 & 450\\end{array}\\right), B=\\left(\\begin{array}{ll}2 & 5 \\\\ 3 & 4\\end{array}\\right)$ 라 할 때, 행렬 $A B$ 의 $(1,2)$ 성분이 의미하는 것은?",
+      "(1) 알파 상점에서의 이코의 지불 금액",
+      "(2) 알파 상점에서의 사코의 지불 금액",
+      "(3) 오메가 상점에서의 이코의 지불 금액",
+      "(4) 오메가 상점에서의 사코의 지불 금액",
+      "(5) 알파 상점과 오메가 상점에서의 이코의 지불 금액의 총합"
+    ],
+    "page": 26
+  },
+  {
+    "id": 63,
+    "classification": "start-end",
+    "content": [
+      "19. 계수가 모두 정수인 삼차방정식 $x^{3}+a x^{2}+b x+c=0$ 의 근을 $\\alpha=p+q i$ 꼴이라 할 때, $p^{2}+q^{2}=1$ 이고, 실근은 모두 양의 실수로 존재한다. 이때 가능한 $a-b-c$ 의 값을 풀이 과정과 함께 구하시오.",
+      "(단, $p, q$ 는 실수이고, $i=\\sqrt{-1}$ 이다.) [10.0점]"
+    ],
+    "page": 27
+  },
+  {
+    "id": 64,
+    "classification": "start-end",
+    "content": [
+      "20. 1 부터 7 까지의 숫자가 하나씩 적혀 있는 7 장의 카드가 있다. 이 7 장의 카드를 모두 일렬로 나열할 때, 서로 이웃한 2 장의 카드에 적혀 있는 수의 곱이 12 가 되지 않도록 카드를 나열하는 경우의 수를 풀이과정과 함께 서술하시오. [10점, 부분점수 있음]"
+    ],
+    "page": 27
+  },
+  {
+    "id": 65,
+    "classification": "start-end",
+    "content": [
+      "21. 행렬 $A=\\left(\\begin{array}{rrr}-1 & 2 & 3 \\\\ 1 & 0 & 2 \\\\ 3 & 1 & -2\\end{array}\\right)$ 에 대하여 다음 물음에 답하시오.",
+      "(1) $(1,3)$ 성분과 $(3,2)$ 성분의 합을 구하시오.",
+      "(2) $A=\\left(a_{i j}\\right)$ 라 할 대, $a_{12}+a_{21}-a_{33}$ 의 값을 구하시오.",
+      "(3) 행렬 $A$ 의 $(i, j)$ 성분 $a_{i j}$ 에 대하여 $i+j=4$ 를 만족시키는",
+      "모든 성분의 합을 구하시오."
+    ],
+    "page": 27
+  },
+  {
+    "id": 66,
+    "classification": "start-end",
+    "content": [
+      "22. 두 이차정사각행렬 $A, B$ 에 대하여",
+      "$A+B=\\left(\\begin{array}{rr}0 & 2 \\\\ 4 & -3\\end{array}\\right), A B+B A=\\left(\\begin{array}{rr}10 & -5 \\\\ -10 & 20\\end{array}\\right)$ 일 때, 행렬 $A^{2}+B^{2}$ 을 구하시오."
+    ],
+    "page": 27
+  },
+  {
+    "id": 67,
+    "classification": "start-end",
+    "content": [
+      "1. 연립부등식 $\\left\\{\\begin{array}{l}2 x-3<7 \\\\ 2(x+2) \\geq 3 x+1\\end{array}\\right.$ 을 만족시키는 $x$ 의 값 중 가장 큰 정수는? [3.5점]",
+      "(1) 1",
+      "(2) 2",
+      "(3) 3",
+      "(4) 4",
+      "(5) 5"
+    ],
+    "page": 32
+  },
+  {
+    "id": 68,
+    "classification": "start-end",
+    "content": [
+      "2. 연립방정식 $\\left\\{\\begin{array}{l}2 x^{2}+3 x y-2 y^{2}=0 \\\\ x^{2}+y^{2}=5\\end{array}\\right.$ 를 만족시키는 $x, y$ 에 대하여 $x+y$ 의 최댓값은? [4.0점]",
+      "(1) 1",
+      "(2) 2",
+      "(3) 3",
+      "(4) 4",
+      "(5) 5"
+    ],
+    "page": 32
+  },
+  {
+    "id": 69,
+    "classification": "start-end",
+    "content": [
+      "3. 일차부등식 $|x-1|+|x+1| \\leq 4$ 를 만족하는 정수 $x$ 의 개수는?",
+      "[4.3점]",
+      "(1) 1",
+      "(2) 2",
+      "(3) 3",
+      "(4) 4",
+      "(5) 5"
+    ],
+    "page": 32
+  },
+  {
+    "id": 70,
+    "classification": "start-end",
+    "content": [
+      "4. 자연수 $k$ 에 대하여 연립부등식",
+      "\\[",
+      "\\left\\{\\begin{array}{l}",
+      "x^{2}-2(k+2) x-2 k-5 \\leq 0 \\\\",
+      "x^{2}-(k+5) x+2 k+6 \\geq 0",
+      "\\end{array}\\right.",
+      "\\]",
+      "",
+      "을 만족시키는 정수 $x$ 의 개수를 $f(k)$ 라 하자. 이때, $f\\left(k^{2}\\right)=128$ 을 만족시키는 $k$ 의 값은? [5.0점]",
+      "(1) 11",
+      "(2) 12",
+      "(3) 13",
+      "(4) 14",
+      "(5) 15"
+    ],
+    "page": 32
+  },
+  {
+    "id": 71,
+    "classification": "start-end",
+    "content": [
+      "5 . 남학생 4 명과 여학생 2 명을 일렬로 세울 때 남학생이 양 끝에 서는 경우의 수를 $m$, 여학생이 이웃하게 서는 경우의 수를 $n$ 이라 하자. $m-n$ 의 값은? [4점]",
+      "(1) 24",
+      "(2) 30",
+      "(3) 36",
+      "(4) 42",
+      "(5) 48"
+    ],
+    "page": 33
+  },
+  {
+    "id": 72,
+    "classification": "start-end",
+    "content": [
+      "6. 5 개의 숫자 $0,2,4,6,8$ 중에서 서로 다른 4 개의 숫자를 택하여 네 자리 자연수를 만들려고 한다. 작은 수부터 차례대로 나열했을 때, 61 번째에 오는 수는? [4.1점]",
+      "(1) 4286",
+      "(2) 4608",
+      "(3) 6284",
+      "(4) 6402",
+      "(5) 8024"
+    ],
+    "page": 33
+  },
+  {
+    "id": 73,
+    "classification": "start-end",
+    "content": [
+      "7. 서로 다른 3 개의 주사위를 던져서 나오는 눈의 수를 각각 $a, b, c$ 라 할 때, $a^{2} b c+a b^{2} c+a b c^{2}$ 의 값이 홀수가 되는 경우의 수는? [4.1점]",
+      "(1) 9",
+      "(2) 27",
+      "(3) 36",
+      "(4) 45",
+      "(5) 54"
+    ],
+    "page": 33
+  },
+  {
+    "id": 74,
+    "classification": "start-end",
+    "content": [
+      "8. 그림과 같이 구분된 4 개의 영역을 서로 다른 5 가지 색 중 일부를 사용하여 칠하려고 한다. 한 가지 색을 여러 번 사용해도 좋으나 이웃한 영역은 서로 다른 색으로 칠하여 구분할 때, 칠하는 경우의 수는?",
+      "[4.3점]",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_1bdbb737dc436bc9ac98g-1.jpg?height=366&width=418&top_left_y=1531&top_left_x=1283)",
+      "(1) 24",
+      "(2) 48",
+      "(3) 96",
+      "(4) 120",
+      "(5) 144"
+    ],
+    "page": 33
+  },
+  {
+    "id": 75,
+    "classification": "start-end",
+    "content": [
+      "9. 백의 자리, 십의 자리, 일의 자리의 숫자 중 어느 두 숫자의 합이 나머지 한 숫자의 2 배이고, 숫자 0,9 를 포함하지 않는 세 자리 자연수의 개수는? [4.5점]",
+      "(1) 72",
+      "(2) 80",
+      "(3) 92",
+      "(4) 109",
+      "(5) 121"
+    ],
+    "page": 34
+  },
+  {
+    "id": 76,
+    "classification": "start-end",
+    "content": [
+      "10. 두 행렬 $A=\\left(\\begin{array}{ll}2 & -1 \\\\ 1 & -4\\end{array}\\right), B=\\left(\\begin{array}{ll}1 & 2 \\\\ 0 & 3\\end{array}\\right)$ 에 대하여 $2(X-A)=3 X+2 B$ 를 만족시키는 행렬 $X$ 는?",
+      "(1) $\\left(\\begin{array}{rr}0 & -2 \\\\ -2 & 2\\end{array}\\right)$",
+      "(2) $\\left(\\begin{array}{rr}6 & -3 \\\\ -1 & 2\\end{array}\\right)$",
+      "(3) $\\left(\\begin{array}{ll}6 & 0 \\\\ 2 & 0\\end{array}\\right)$",
+      "(4) $\\left(\\begin{array}{rr}-6 & -2 \\\\ -2 & 2\\end{array}\\right)$",
+      "(5) $\\left(\\begin{array}{rr}-6 & -2 \\\\ 0 & 0\\end{array}\\right)$"
+    ],
+    "page": 34
+  },
+  {
+    "id": 77,
+    "classification": "start-end",
+    "content": [
+      "11. 행렬 $A=\\left(\\begin{array}{rr}1 & 0 \\\\ -1 & 1\\end{array}\\right)$ 에 대하여 행렬 $A^{20}$ 의 모든 성분의 합은?",
+      "(1) -20",
+      "(2) -19",
+      "(3) -18",
+      "(4) -17",
+      "(5) -16"
+    ],
+    "page": 34
+  },
+  {
+    "id": 78,
+    "classification": "start-end",
+    "content": [
+      "12. 두 행렬 $A=\\left(\\begin{array}{cc}x^{2} & 1 \\\\ 1 & 2 x\\end{array}\\right), B=\\left(\\begin{array}{cc}3 & 1 \\\\ 1 & y^{2}\\end{array}\\right)$ 에 대하여 $(A+B)(A-B)=A^{2}-B^{2}$ 이 성립할 때, 점 $P(x, y)$ 가 그리는 도형의 넓이는?",
+      "(1) $\\pi$",
+      "(2) $2 \\pi$",
+      "(3) $3 \\pi$",
+      "(4) $4 \\pi$",
+      "(5) $5 \\pi$"
+    ],
+    "page": 34
+  },
+  {
+    "id": 79,
+    "classification": "start-end",
+    "content": [
+      "13. 다음 풀이 과정에서 잘못된 부분은?",
+      "\\[",
+      "\\begin{aligned}",
+      "& A^{2}=E \\\\",
+      "& A^{2}-E=O \\\\",
+      "& A^{2}-E^{2}=O \\\\",
+      "& (A+E)(A-E)=O \\\\",
+      "& A+E=O \\text { 또는 } A-E=O \\\\",
+      "& \\therefore A=-E \\text { 또는 } A=E",
+      "\\end{aligned}",
+      "\\]"
+    ],
+    "page": 35
+  },
+  {
+    "id": 80,
+    "classification": "start-end",
+    "content": [
+      "14. 두 이차정사각행렬 $A, B$ 가 $A+B=E, A B=O$ 를 만족시킬 때,",
+      "$A^{2011}+A^{2010} B+A^{2009} B^{2}+\\cdots+A B^{2010}+B^{2011}$ 을 간단히 하면?",
+      "(1) $A$",
+      "(2) $B$",
+      "(3) $E$",
+      "(4) $2 E$",
+      "(5) $O$"
+    ],
+    "page": 35
+  },
+  {
+    "id": 81,
+    "classification": "start-end",
+    "content": [
+      "15. 행렬 $A=\\left(\\begin{array}{ll}0 & -1 \\\\ a & -2\\end{array}\\right)$ 에 대하여 $(A-k E)^{2}=O$ 가 성립할 때, $a+k$ 의 값은? (단, $a, k$ 는 실수)",
+      "(1) 0",
+      "(2) 1",
+      "(3) 2",
+      "(4) 3",
+      "(5) 4"
+    ],
+    "page": 35
+  },
+  {
+    "id": 82,
+    "classification": "start-end",
+    "content": [
+      "16. 두 이차정사각행렬 $A, B$ 에 대하여 다음 중 옳은 것은?",
+      "(1) $A^{2}=O$ 이면 $A=O$ 이다.",
+      "(2) $(A B)^{3}=A^{3} B^{3}$",
+      "(3) $A^{2}-A+E=O$ 이면 $A^{6}=E$ 이다.",
+      "(4) $A^{2}=E$ 이면 $A=E$ 또는 $A=-E$ 이다.",
+      "(5) $A^{k}=A^{m}=A^{n}=E$ 를 만족시키는 서로 다른 자연수 $k, m, n$ 이"
+    ],
+    "page": 35
+  },
+  {
+    "id": 83,
+    "classification": "end-end",
+    "content": [
+      "존재하면 $A=E$ 이다.",
+      "<<<PAGE 36>>>",
+      "\\section*{서술형}",
+      "17. 모든 실수 $x$ 에 대하여 이차부등식 $x^{2}-2 k x \\geq-3 k-4$ 이 항상 성립하도록 하는 실수 $k$ 의 값의 범위를 구하시오. [7점]"
+    ],
+    "page": null
+  },
+  {
+    "id": 84,
+    "classification": "start-end",
+    "content": [
+      "18. 음이 아닌 정수 $x, y$ 에 대하여 $x+y \\leq 4$ 을 만족시키는 순서쌍 $(x, y)$ 의 개수를 구하시오. [7점]"
+    ],
+    "page": 36
+  },
+  {
+    "id": 85,
+    "classification": "start-end",
+    "content": [
+      "19. 그림과 같이 가로의 길이가 15 cm , 세로의 길이가 6 cm 인 직사각형이 있다. 직사각형의 가로와 세로에 평행한 선분을 동일한 간격으로 각각 3 개, 4 개 그었을 때, 그림에서 찾을 수 있는 크고 작은 직사각형 중 넓이가 $9 \\mathrm{~cm}^{2}$ 이상인 직사각형의 개수를 구하시오. [7점]",
+      "",
+      "\\begin{tabular}{|l|l|l|l|l|}",
+      "\\hline & & & & \\\\",
+      "\\hline & & & & \\\\",
+      "\\hline & & & & \\\\",
+      "\\hline & & & & \\\\",
+      "\\hline",
+      "\\end{tabular}"
+    ],
+    "page": 36
+  },
+  {
+    "id": 86,
+    "classification": "start-end",
+    "content": [
+      "20. 어느 상점에서 5 가지 종류의 빵과 3 가지 종류의 떡 중 세 종류의 간식을 박스에 담아 판매한다. 명덕이와 명순이가 다음 조건에 따라 간식 박스를 구입하려고 할 때, 가능한 경우의 수를 구하시오. [8점]",
+      "(가) 각 박스는 적어도 하나 이상의 떡을 포함한 서로 다른 세 종류로 구성한다.",
+      "(나) 두 사람이 각각 구성한 박스의 간식은 한 종류만 일치한다."
+    ],
+    "page": 36
+  },
+  {
+    "id": 87,
+    "classification": "start-end",
+    "content": [
+      "21. 행렬 $A=\\left(a_{i j}\\right)$ 의 $(i, j)$ 성분 $a_{i j}$ 를",
+      "$\\begin{cases}i>j \\text { 이면 } & a_{i j}=i+j \\\\ i=j \\text { 이면 } & a_{i j}=i j \\\\ i<j \\text { 이면 } & a_{i j}=i-j\\end{cases}$",
+      "로 정의할 때, 이차정사각행렬 $A$ 를 구하시오."
+    ],
+    "page": 37
+  },
+  {
+    "id": 88,
+    "classification": "start-end",
+    "content": [
+      "22. 두 이차정사각행렬 $A, B$ 가",
+      "$(A+B)^{2}=\\left(\\begin{array}{ll}3 & 1 \\\\ 2 & 1\\end{array}\\right), A^{2}+B^{2}=\\left(\\begin{array}{rr}2 & -1 \\\\ 3 & 1\\end{array}\\right)$ 을 만족시킬 때, 행렬 $(A-B)^{2}$ 의 모든 성분의 합을 구하시오."
+    ],
+    "page": 37
+  },
+  {
+    "id": 89,
+    "classification": "start-end",
+    "content": [
+      "1. 연립방정식 $\\left\\{\\begin{array}{l}x+y=7 \\\\ x^{2}+y^{2}=25\\end{array}\\right.$ 를 풀면? [3.1점]",
+      "(1) $\\left\\{\\begin{array}{l}x=1 \\\\ y=6\\end{array}\\right.$ 또는 $\\left\\{\\begin{array}{l}x=6 \\\\ y=1\\end{array}\\right.$",
+      "(2) $\\left\\{\\begin{array}{l}x=2 \\\\ y=5\\end{array}\\right.$ 또는 $\\left\\{\\begin{array}{l}x=5 \\\\ y=2\\end{array}\\right.$",
+      "(3) $\\left\\{\\begin{array}{l}x=3 \\\\ y=4\\end{array}\\right.$ 또는 $\\left\\{\\begin{array}{l}x=4 \\\\ y=3\\end{array}\\right.$",
+      "(4) $\\left\\{\\begin{array}{l}x=-1 \\\\ y=8\\end{array}\\right.$ 또는 $\\left\\{\\begin{array}{l}x=8 \\\\ y=-1\\end{array}\\right.$",
+      "(5) $\\left\\{\\begin{array}{l}x=-2 \\\\ y=9\\end{array}\\right.$ 또는 $\\left\\{\\begin{array}{l}x=9 \\\\ y=-2\\end{array}\\right.$"
+    ],
+    "page": 41
+  },
+  {
+    "id": 90,
+    "classification": "start-end",
+    "content": [
+      "2. 연립부등식 $\\left\\{\\begin{array}{l}x-5>-2 \\\\ 2 x-2 \\geq 3 x-1\\end{array}\\right.$ 을 풀면? [3.3점]",
+      "(1) $x=-2$",
+      "(2) 모든 실수",
+      "(3) 해가 없다",
+      "(4) $1 \\leq x \\leq 4$",
+      "(5) $x \\neq 1$ 인 모든 실수"
+    ],
+    "page": 41
+  },
+  {
+    "id": 91,
+    "classification": "start-end",
+    "content": [
+      "3. 이차부등식 $-x^{2}+5 x-4 \\geq 0$ 을 풀면? [3.3점]",
+      "(1) $x=-2$",
+      "(2) 모든 실수",
+      "(3) 해가 없다",
+      "(4) $1 \\leq x \\leq 4$",
+      "(5) $x \\neq 1$ 인 모든 실수"
+    ],
+    "page": 41
+  },
+  {
+    "id": 92,
+    "classification": "start-end",
+    "content": [
+      "4. 이차부등식 $x^{2}-2 x+1>0$ 을 풀면? [3.3점]",
+      "(1) $x=-2$",
+      "(2) 모든 실수",
+      "(3) 해가 없다",
+      "(4) $1 \\leq x \\leq 4$",
+      "(5) $x \\neq 1$ 인 모든 실수"
+    ],
+    "page": 41
+  },
+  {
+    "id": 93,
+    "classification": "start-end",
+    "content": [
+      "5. 이차부등식 $-x^{2}-4 x \\geq 4$ 를 풀면? [3.3점]",
+      "(1) $x=-2$",
+      "(2) 모든 실수",
+      "(3) 해가 없다",
+      "(4) $1 \\leq x \\leq 4$",
+      "(5) $x \\neq 1$ 인 모든 실수"
+    ],
+    "page": 42
+  },
+  {
+    "id": 94,
+    "classification": "start-end",
+    "content": [
+      "6. 이차부등식 $x^{2}+5 x+9>0$ 을 풀면? [3.3점]",
+      "(1) $x=-2$",
+      "(2) 모든 실수",
+      "(3) 해가 없다",
+      "(4) $1 \\leq x \\leq 4$",
+      "(5) $x \\neq 1$ 인 모든 실수"
+    ],
+    "page": 42
+  },
+  {
+    "id": 95,
+    "classification": "start-end",
+    "content": [
+      "7. 부등식 $\\left|x^{2}-4 x\\right| \\geq\\left|x^{2}-4 x+6\\right|$ 에서 해의 최댓값을 $M$, 최솟값을 $m$ 이라 할 때, $M-m$ 의 값은? [4.4점]",
+      "(1) 1",
+      "(2) 2",
+      "(3) 3",
+      "(4) 4",
+      "(5) 5"
+    ],
+    "page": 42
+  },
+  {
+    "id": 96,
+    "classification": "start-end",
+    "content": [
+      "8. 이차부등식 $x^{2}+k x+1>0$ 의 해가 모든 실수일 때, 실수 $k$ 의 값의 범위를 구하면? [3.8점]",
+      "(1) $0<k<1$",
+      "(2) $-2<k<1$",
+      "(3) $-2<k<0$",
+      "(4) $-2<k<2$",
+      "(5) $-1<k<2$"
+    ],
+    "page": 42
+  },
+  {
+    "id": 97,
+    "classification": "start-end",
+    "content": [
+      "9. 이차부등식 $a x^{2}-b x+c>0$ 의 해가 $p<x<q$ 일 때, 다음 중 이차부등식 $c x^{2}+b x+a>0$ 의 해는? (단, $p>0$ ) [4.5점]",
+      "(1) $-\\frac{1}{p}<x<-\\frac{1}{q}$",
+      "(2) $x>-\\frac{1}{q}$ 또는 $x<-\\frac{1}{p}$",
+      "(3) $-q<x<-p$",
+      "(4) $x>\\frac{1}{p}$ 또는 $x<\\frac{1}{q}$",
+      "(5) $\\frac{1}{q}<x<\\frac{1}{p}$"
+    ],
+    "page": 43
+  },
+  {
+    "id": 98,
+    "classification": "start-end",
+    "content": [
+      "10. 계수가 실수인 삼차방정식 $x^{3}+a x^{2}+b x-3=0$ 이 한 실근과 두 허근 $\\alpha,-\\alpha^{2}$ 을 가질 때, $a+b$ 의 값은? [4.7점]",
+      "(1) -2",
+      "(2) -1",
+      "(3) 0",
+      "(4) 1",
+      "(5) 2"
+    ],
+    "page": 43
+  },
+  {
+    "id": 99,
+    "classification": "start-end",
+    "content": [
+      "11. 함수 $f(x)=2 x^{2}-2 x-24$ 에 대하여 부등식 $2 f(x)+|f(x)|-15 x-18 \\leq 0$ 을 만족시키는 정수 $x$ 의 개수는? [5.1점]",
+      "(1) 8",
+      "(2) 9",
+      "(3) 10",
+      "(4) 11",
+      "(5) 12"
+    ],
+    "page": 43
+  },
+  {
+    "id": 100,
+    "classification": "start-end",
+    "content": [
+      "12. $x$ 에 대한 세 다항식 $A(x)=x^{2}+3 x+5$,",
+      "$B(x)=\\frac{p}{q} x+r, C(x)=-2 x^{2}-4 x+5$ 에 대하여 세 연립부등식",
+      "$\\left\\{\\begin{array}{l}A(x)<B(x) \\\\ A(x)<C(x)\\end{array},\\left\\{\\begin{array}{l}A(x)<C(x) \\\\ B(x)<C(x)\\end{array},\\left\\{\\begin{array}{l}A(x)<B(x) \\\\ B(x)<C(x)\\end{array}\\right.\\right.\\right.$",
+      "의 해가 모두 존재하고, 세 연립부등식의 해가 모두 일치한다.",
+      "이때 $p+q+r$ 의 값은? (단, $|p|$ 와 $|q|$ 는 서로소인 자연수이며, $0<q$ 이다.) [5.5점]",
+      "(1) 10",
+      "(2) 8",
+      "(3) 6",
+      "(4) 4",
+      "(5) 2"
+    ],
+    "page": 43
+  },
+  {
+    "id": 101,
+    "classification": "start-end",
+    "content": [
+      "13. 어느 전시 기획자가 서로 다른 미술 작품 5 개를 전시실에 일렬로 나열하려고 한다. 작품 5 개 중에서 2 개만 동일한 작가의 작품일 때, 동일한 작가의 작품 2 개를 서로 이웃하게 나열하는 모든 경우의 수는?",
+      "[3.6점]",
+      "(1) 12",
+      "(2) 24",
+      "(3) 27",
+      "(4) 48",
+      "(5) 54"
+    ],
+    "page": 44
+  },
+  {
+    "id": 102,
+    "classification": "start-end",
+    "content": [
+      "14. 서로 다른 케이크 5 개와 서로 다른 음료 3 잔 중에서 케이크 2 개와 음료 2 잔을 택하는 모든 경우의 수는? [3.8점]",
+      "(1) 10",
+      "(2) 20",
+      "(3) 30",
+      "(4) 40",
+      "(5) 50"
+    ],
+    "page": 44
+  },
+  {
+    "id": 103,
+    "classification": "start-end",
+    "content": [
+      "15. $x, y$ 가 자연수일 때, 부등식 $x+y \\leq 4$ 를 만족시키는 순서쌍 $(x, y)$ 의 개수는? [3.9점]",
+      "(1) 6",
+      "(2) 7",
+      "(3) 8",
+      "(4) 9",
+      "(5) 10"
+    ],
+    "page": 44
+  },
+  {
+    "id": 104,
+    "classification": "start-end",
+    "content": [
+      "16. 96 의 양의 약수의 개수는? [4.0점]",
+      "(1) 5",
+      "(2) 8",
+      "(3) 9",
+      "(4) 12",
+      "(5) 16"
+    ],
+    "page": 44
+  },
+  {
+    "id": 105,
+    "classification": "start-end",
+    "content": [
+      "17. 오른쪽 그림과 같이 직선 2 개 위에 각각 점 3 개가 있다. 서로 다른 점 6 개 중에서 점 4 개를 꼭짓점으로 하는 서로 다른 사각형의 개수는?",
+      "[4.2점]",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_353dbd9b8b37f719af01g-1.jpg?height=58&width=429&top_left_y=593&top_left_x=162)",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_353dbd9b8b37f719af01g-1.jpg?height=84&width=423&top_left_y=707&top_left_x=168)",
+      "(1) 7",
+      "(2) 8",
+      "(3) 9",
+      "(4) 10",
+      "(5) 11"
+    ],
+    "page": 45
+  },
+  {
+    "id": 106,
+    "classification": "start-end",
+    "content": [
+      "18. $x$ 에 대한 이차방정식 ${ }_{n} \\mathrm{C}_{5} x^{2}-{ }_{n} \\mathrm{C}_{6} x+3{ }_{n} \\mathrm{C}_{4}=0$ 의 두 근을 $\\alpha, \\beta$ 라 하자. $\\alpha \\beta=5$ 일 때, $\\alpha+\\beta$ 의 값은? [4.4점]",
+      "(1) $\\frac{1}{3}$",
+      "(2) $\\frac{1}{4}$",
+      "(3) $\\frac{1}{5}$",
+      "(4) $\\frac{1}{6}$",
+      "(5) $\\frac{1}{7}$"
+    ],
+    "page": 45
+  },
+  {
+    "id": 107,
+    "classification": "start-end",
+    "content": [
+      "19. $(c+h+e+r)(r+y)(c+o+k+e)$ 를 전개하였을 때, 서로 다른 항의 개수는? (단, 동류항은 서로 같은 항으로 본다.) [4.6점]",
+      "(1) 28",
+      "(2) 29",
+      "(3) 30",
+      "(4) 31",
+      "(5) 32"
+    ],
+    "page": 45
+  },
+  {
+    "id": 108,
+    "classification": "start-end",
+    "content": [
+      "20. 오른쪽 그림과 같이 여섯 개의 영역으로 나누어진 도형이 있다. 각 영역에 빨간색, 노란색, 초록색, 파란색 중 한 가지 색을 칠하는데, 인접한 영역은 서로 다른 색을 칠하여 구별하려고 한다. 네 가지 색을 모두 사용하여 칠할 수 있는 방법의 수는?",
+      "(단, 같은 색을 여러 번 사용할 수 있다.) [5.2점]",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_9593387ee9ade9ea61b2g-1.jpg?height=648&width=489&top_left_y=696&top_left_x=159)",
+      "(1) 336",
+      "(2) 360",
+      "(3) 384",
+      "(4) 408",
+      "(5) 432"
+    ],
+    "page": 46
+  },
+  {
+    "id": 109,
+    "classification": "start-end",
+    "content": [
+      "21. $A=\\left(\\begin{array}{rr}3 & 0 \\\\ -1 & 4\\end{array}\\right), B=\\left(\\begin{array}{cc}11 & -2 \\\\ 3 & 16\\end{array}\\right)$ 일 때, $3 A+2 X=B$ 를 만족시키는 행렬 $X$ 의 모든 성분의 합은?",
+      "(1) 4",
+      "(2) 5",
+      "(3) 6",
+      "(4) 7",
+      "(5) 8"
+    ],
+    "page": 46
+  },
+  {
+    "id": 110,
+    "classification": "start-end",
+    "content": [
+      "22. $\\left(\\begin{array}{ll}a & 1 \\\\ 0 & 0\\end{array}\\right)\\left(\\begin{array}{ll}b & 1 \\\\ 2 & b\\end{array}\\right)=\\left(\\begin{array}{rr}3 & -3 \\\\ 0 & 0\\end{array}\\right)$ 일 때, 실수 $a, b$ 에 대하여 $a^{3}+b^{3}$ 의 값은?",
+      "(1) -10",
+      "(2) -14",
+      "(3) -18",
+      "(4) -22",
+      "(5) -26"
+    ],
+    "page": 46
+  },
+  {
+    "id": 111,
+    "classification": "start-end",
+    "content": [
+      "23. 다음 방정식의 해를 복소수의 범위에서 모두 구하시오. [2.0점]",
+      "\\[",
+      "x^{4}+4 x^{2}-5=0",
+      "\\]"
+    ],
+    "page": 47
+  },
+  {
+    "id": 112,
+    "classification": "start-end",
+    "content": [
+      "24. 삼차방정식 $x^{3}+2(a-1) x^{2}+\\left(b^{2}-4 a\\right) x-2 b^{2}=0$ 이 서로 다른 세 실근을 갖고 세 근의 합이 12 가 되도록 하는 두 정수 $a, b$ 가 존재한다. 이때, 가능한 모든 순서쌍 $(a, b)$ 의 개수를 구하는 과정과 답을 서술하시오. [5.0점]"
+    ],
+    "page": 47
+  },
+  {
+    "id": 113,
+    "classification": "start-end",
+    "content": [
+      "25. $1 \\leq r \\leq n$ 일 때, 다음 등식이 성립함을 보이는 과정을 자세히 서술하시오. [2.0점]",
+      "\\[",
+      "{ }_{n} \\mathrm{P}_{r}=n \\times{ }_{n-1} \\mathrm{P}_{r-1}",
+      "\\]"
+    ],
+    "page": 47
+  },
+  {
+    "id": 114,
+    "classification": "start-end",
+    "content": [
+      "26. 민서, 서진, 윤서, 예은, 지현, 나영, 민지 7 명의 학생을 다음과 같이 의자에 앉힐 때, 조건 (가)~(마)를 모두 만족시키도록 앉히는 모든 경우의 수를 구하는 과정을 자세히 서술하시오. [5.0점]",
+      "![](https://cdn.mathpix.com/cropped/2025_10_07_ccd7e49c9de1b2a57d51g-1.jpg?height=209&width=706&top_left_y=1235&top_left_x=1106)",
+      "(가) 윤서는 두 번째 자리에 앉을 수 없다.",
+      "(나) 다섯 번째 자리에는 윤서와 나영이는 앉을 수 없다.",
+      "(다) 일곱 번째 자리에는 윤서, 예은, 지현이는 앉을 수 없다.",
+      "(라) 윤서가 여섯 번째 자리에 앉는다면, 서진이는 무조건 윤서 옆에 앉는다.",
+      "(마) 윤서가 네 번째 자리에 앉으면, 민지는 일곱 번째 자리에 앉는다."
+    ],
+    "page": 47
+  },
+  {
+    "id": 115,
+    "classification": "start-end",
+    "content": [
+      "27. 두 이차정사각행렬 $A, B$ 가",
+      "$A-B=\\left(\\begin{array}{ll}1 & 0 \\\\ 2 & 3\\end{array}\\right), A^{2}+B^{2}=\\left(\\begin{array}{rr}-2 & 1 \\\\ 0 & 1\\end{array}\\right)$ 을 만족시킬 때, 행렬 $A B+B A$ 의 모든 성분의 합을 구하시오."
+    ],
+    "page": 48
+  }
+]

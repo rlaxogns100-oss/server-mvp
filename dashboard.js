@@ -49,6 +49,22 @@ function renderMarkdownTable(text) {
   });
 }
 
+// condition 블록에 줄바꿈 추가
+function formatConditionText(text) {
+  if (!text) return '';
+
+  // 기존 \n을 <br/>로 변환
+  let result = text.replace(/\n/g, '<br/>');
+
+  // (가), (나), (다) 형태 앞에 줄바꿈 추가 (이미 <br/>가 없는 경우에만)
+  result = result.replace(/([^>])([(（])\s*([가-힣])\s*([)）])/g, '$1<br/>$2$3$4');
+
+  // ㄱ., ㄴ., ㄷ. 형태 앞에 줄바꿈 추가 (이미 <br/>가 없는 경우에만)
+  result = result.replace(/([^>])([ㄱ-ㅎ])\s*\./g, '$1<br/>$2.');
+
+  return result;
+}
+
 /* ---- State ---- */
 window.__USAGE__ = window.__USAGE__ || { used: 0, capacity: 15*GB };
 if (!window.__FS__) {
@@ -547,36 +563,24 @@ async function uploadToServer(file) {
     if (result.success) {
       // 최종 상태는 SSE에서 이미 업데이트됨
 
-      // 새로운 문제 데이터를 PROBLEMS_DATA에 추가
-      const fileName = file.name.replace(/\.pdf$/i, '') + '_structured.json';
-      PROBLEMS_DATA[fileName] = result.problems;
+      // 1. problems 데이터를 PROBLEMS_DATA에 저장 (dataSource 키 사용)
+      const dataSource = `db_file_${result.fileId}`;
+      window.PROBLEMS_DATA = window.PROBLEMS_DATA || {};
+      window.PROBLEMS_DATA[dataSource] = result.problems || [];
 
-      // 파일 시스템에 새 파일 추가
-      const myFilesFolder = getNodeByPathKey('내 파일') || currentFolder();
-      const raw = file.name.replace(/\.pdf$/i, '');
-      let name = raw;
-      let n = 1;
-      while((myFilesFolder.children||[]).some(ch=>ch.name===name)) {
-        name = `${raw} (${n++})`;
+      // 2. 파일 목록 새로고침
+      if (window.loadMyFiles) {
+        await window.loadMyFiles();
       }
 
-      const size = file.size || 5*1024*1024;
-      (myFilesFolder.children = myFilesFolder.children || []).push({
-        name: name,
-        type: 'file',
-        size: size,
-        dataSource: fileName
-      });
+      // 3. 자동으로 새 탭 열기 (파일명 사용)
+      if (window.createTab && result.problems) {
+        setTimeout(() => {
+          createTab(dataSource, result.filename || file.name);
+        }, 300);
+      }
 
-      __USAGE__.used += size;
-      renderDirectory();
-
-      // 새 탭으로 자동 열기
-      setTimeout(() => {
-        createTab(fileName, name);
-      }, 500);
-
-      alert(`파일 처리 완료!\n${result.problems.length}개의 문제가 추출되었습니다.`);
+      alert(`파일 처리 완료!\n${result.problemCount || 0}개의 문제가 추출되었습니다.`);
 
     } else {
       throw new Error(result.error || '알 수 없는 오류');
@@ -1017,6 +1021,19 @@ function createExamProblemElement(examProblem) {
         img.style.height = 'auto';
         imgDiv.appendChild(img);
         pbody.appendChild(imgDiv);
+      } else if(block.type === 'condition') {
+        const conditionDiv = document.createElement('div');
+        conditionDiv.className = 'condition-block';
+        if(Array.isArray(block.content)) {
+          block.content.forEach(cond => {
+            const condDiv = document.createElement('div');
+            condDiv.innerHTML = formatConditionText(cond);
+            conditionDiv.appendChild(condDiv);
+          });
+        } else {
+          conditionDiv.innerHTML = formatConditionText(block.content);
+        }
+        pbody.appendChild(conditionDiv);
       }
     });
   }
@@ -1197,10 +1214,23 @@ function createProblemElement(problem) {
         img.style.height = 'auto';
         imgDiv.appendChild(img);
         pbody.appendChild(imgDiv);
+      } else if(block.type === 'condition') {
+        const conditionDiv = document.createElement('div');
+        conditionDiv.className = 'condition-block';
+        if(Array.isArray(block.content)) {
+          block.content.forEach(cond => {
+            const condDiv = document.createElement('div');
+            condDiv.innerHTML = formatConditionText(cond);
+            conditionDiv.appendChild(condDiv);
+          });
+        } else {
+          conditionDiv.innerHTML = formatConditionText(block.content);
+        }
+        pbody.appendChild(conditionDiv);
       }
     });
   }
-  
+
   // 선택지 추가 (비어있지 않은 경우에만)
   if(problem.options && Array.isArray(problem.options) && problem.options.length > 0) {
     const optionsDiv = document.createElement('div');
@@ -1259,11 +1289,11 @@ function initDashboard(){
   window.addEventListener('resize', updateResizeHandlePosition);
   
   // 버튼 이벤트를 즉시 연결 (지연 없음)
-  const generateBtn = document.getElementById('generateExamBtn');
+  const generateBtn = document.getElementById('generatePdfBtn');
   const downloadBtn = document.getElementById('downloadImagesBtn');
   const clearBtn = document.getElementById('clearExam');
 
-  if (generateBtn) generateBtn.addEventListener('click', generateExamPDF);
+  if (generateBtn) generateBtn.addEventListener('click', generatePdf);
   if (downloadBtn) downloadBtn.addEventListener('click', downloadImages);
   if (clearBtn) clearBtn.addEventListener('click', clearExam);
 
@@ -1273,8 +1303,8 @@ function initDashboard(){
   }, 100);
 }
 
-/* ---- PDF 생성 (Python 화면 캡쳐 버전) ---- */
-async function generateExamPDF() {
+/* ---- PDF 생성 (LaTeX 기반) ---- */
+async function generatePdf() {
   if (examProblems.length === 0) {
     alert('시험지에 문항이 없습니다. 먼저 문항을 선택해주세요.');
     return;
@@ -1282,45 +1312,47 @@ async function generateExamPDF() {
 
   // 즉시 모달 표시
   showProgressOverlay();
-  updateModalProgress(0, '준비 중...', 'Python 화면 캡쳐를 준비하고 있습니다...');
+  updateModalProgress(0, '준비 중...', 'PDF 생성을 준비하고 있습니다...');
 
   try {
     // UI 업데이트 보장
     await sleep(10);
 
-    // A4 미리보기 영역 확인
-    const examContainer = document.getElementById('examProblems');
-    if (!examContainer) {
-      throw new Error('시험지 미리보기 영역을 찾을 수 없습니다.');
-    }
-
-    updateModalProgress(10, '캡쳐 설정 중...', '현재 페이지 URL과 캡쳐 영역을 설정합니다...');
+    updateModalProgress(10, '문제 데이터 준비 중...', '선택된 문제들을 서버로 전송합니다...');
     await sleep(100);
 
-    // Python 캡쳐를 위한 설정 데이터
-    const captureData = {
-      url: window.location.href,
-      areas: [
-        {
-          selector: '#examProblems',
-          name: 'exam_content'
-        }
-      ]
+    // 문제 데이터 준비
+    console.log('🔍 examProblems 배열:', examProblems);
+    console.log('🔍 examProblems 길이:', examProblems.length);
+    
+    const examData = {
+      problems: examProblems.map(problem => {
+        console.log('🔍 개별 문제 데이터:', problem);
+        console.log('🔍 problem.data:', problem.data);
+        return {
+          id: problem.id,
+          page: problem.data?.page || null,
+          content_blocks: problem.data?.content_blocks || [],
+          options: problem.data?.options || []
+        };
+      })
     };
+    
+    console.log('🔍 최종 examData:', examData);
 
-    updateModalProgress(25, 'Python 서버로 전송', '화면 캡쳐 요청을 서버로 전송합니다...');
+    updateModalProgress(25, '서버로 전송 중...', 'PDF 생성 요청을 서버로 전송합니다...');
     await sleep(200);
 
-    // Python 화면 캡쳐 API 호출
-    const response = await fetch('/api/capture-pdf', {
+    // PDF 생성 API 호출
+    const response = await fetch('/api/generate-pdf', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
       },
-      body: JSON.stringify(captureData)
+      body: JSON.stringify(examData)
     });
 
-    updateModalProgress(50, 'Python 화면 캡쳐 중...', 'Selenium으로 브라우저 화면을 캡쳐하고 있습니다...');
+    updateModalProgress(50, 'PDF 생성 중...', 'LaTeX로 PDF를 생성하고 있습니다...');
     await sleep(500);
 
     if (!response.ok) {
@@ -1334,7 +1366,7 @@ async function generateExamPDF() {
     const result = await response.json();
 
     if (!result.success) {
-      throw new Error(result.error || '화면 캡쳐 PDF 생성에 실패했습니다');
+      throw new Error(result.error || 'PDF 생성에 실패했습니다');
     }
 
     updateModalProgress(95, '파일 저장 중...', 'PDF 파일을 브라우저에 저장 중...');
@@ -1356,7 +1388,7 @@ async function generateExamPDF() {
 
     // 파일명 생성
     const now = new Date();
-    const fileName = `수학시험지_캡쳐_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.pdf`;
+    const fileName = `수학시험지_${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}_${String(now.getHours()).padStart(2, '0')}${String(now.getMinutes()).padStart(2, '0')}.pdf`;
 
     a.download = fileName;
     document.body.appendChild(a);
