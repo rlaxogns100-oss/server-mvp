@@ -503,25 +503,42 @@ def select_sample_interactive():
 
 
 def main():
-    """메인 함수 - 테스트 모드"""
-    print("LLM Structure Script 시작 (테스트 모드)")
+    """메인 함수 - 서버 모드 / 테스트 모드 자동 판단"""
     total_start_time = time.time()
 
-    # 하드코딩된 사용자 정보
-    user_id = "68dc0958ae87ae4a4885212b"  # 김태훈 선생님 ID
-    parent_path = "내 파일"  # 기본 폴더
+    # 환경 변수 확인 (서버에서 호출 시)
+    user_id = os.getenv('USER_ID')
+    filename = os.getenv('FILENAME')
+    parent_path = os.getenv('PARENT_PATH')
 
-    # 대화형 샘플 선택
-    selected_sample = select_sample_interactive()
+    # 서버 모드 vs 테스트 모드 판단
+    if user_id:
+        # 서버 모드
+        print("LLM Structure Script 시작 (서버 모드)")
+        input_file = "output/problems.json"
+        parent_path = parent_path or "내 파일"
 
-    # 파일 경로 설정
-    input_file = selected_sample / "problems.json"
-    filename = f"{selected_sample.name}.json"
+        if not Path(input_file).exists():
+            print(f"입력 파일이 존재하지 않습니다: {input_file}")
+            return
+    else:
+        # 테스트 모드 (터미널에서 직접 실행)
+        print("LLM Structure Script 시작 (테스트 모드)")
 
-    # 입력 파일 존재 확인
-    if not input_file.exists():
-        print(f"입력 파일이 존재하지 않습니다: {input_file}")
-        return
+        # 하드코딩된 사용자 정보
+        user_id = "68dc0958ae87ae4a4885212b"  # 김태훈 선생님 ID
+        parent_path = "내 파일"  # 기본 폴더
+
+        # 대화형 샘플 선택
+        selected_sample = select_sample_interactive()
+
+        # 파일 경로 설정
+        input_file = selected_sample / "problems.json"
+        filename = f"{selected_sample.name}.json"
+
+        if not input_file.exists():
+            print(f"입력 파일이 존재하지 않습니다: {input_file}")
+            return
 
     # 문제 로드
     problems = load_problems_json(str(input_file))

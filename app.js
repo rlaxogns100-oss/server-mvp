@@ -183,6 +183,7 @@ function bindMyFiles() {
     window.PROBLEMS_DATA[dataSource] = problems.map((problem, index) => ({
       // 현재 저장되는 필드만 사용
       id: problem.id || (index + 1),
+      _id: problem._id, // MongoDB _id 추가
       page: problem.page,
       options: problem.options || [],
       content_blocks: problem.content_blocks || []
