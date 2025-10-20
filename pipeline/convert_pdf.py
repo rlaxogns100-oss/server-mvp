@@ -260,8 +260,10 @@ def main():
         # 테스트/대화형 모드: 샘플 폴더에 저장
         output_file = sample_path / "result.paged.mmd"
     else:
-        # 서버 모드: 루트 폴더에 저장
-        output_file = Path("result.paged.mmd")
+        # 서버 모드: output 폴더에 저장
+        output_dir = Path("output")
+        output_dir.mkdir(exist_ok=True)
+        output_file = output_dir / "result.paged.mmd"
 
     # 저장
     output_file.write_text("\n".join(combined), encoding="utf-8")
