@@ -943,7 +943,7 @@ const server = http.createServer((req, res) => {
         const result = await runPythonPDFGenerator(examData);
 
         // 생성된 PDF 파일 확인
-        const pdfPath = 'output/generated_exam.pdf';
+        const pdfPath = 'build/exam.pdf';
         if (fs.existsSync(pdfPath)) {
           // PDF 파일을 base64로 인코딩하여 반환
           const pdfBuffer = fs.readFileSync(pdfPath);
@@ -1766,7 +1766,7 @@ const server = http.createServer((req, res) => {
         const result = await runPythonPDFGenerator(examData);
 
         // 생성된 PDF 파일 확인
-        const pdfPath = 'output/generated_exam.pdf';
+        const pdfPath = 'build/exam.pdf';
         if (fs.existsSync(pdfPath)) {
           // PDF 파일을 base64로 인코딩하여 반환
           const pdfBuffer = fs.readFileSync(pdfPath);
@@ -1920,6 +1920,10 @@ const server = http.createServer((req, res) => {
                 userId: new ObjectId(userId)
               }).sort({ id: 1 }).toArray();
               console.log(`✅ MongoDB에서 문제 ${problems.length}개 로드 완료`);
+              if (problems.length > 0) {
+                console.log(`   첫 번째 문제 _id: ${problems[0]._id}`);
+                console.log(`   첫 번째 문제 전체:`, JSON.stringify(problems[0], null, 2).substring(0, 300));
+              }
             }
           }
         } catch (error) {
@@ -1998,21 +2002,33 @@ const server = http.createServer((req, res) => {
 // Python PDF 생성기 함수
 async function runPythonPDFGenerator(examData) {
   const startTime = Date.now();
-  const scriptPath = path.resolve(__dirname, 'pipeline/generate_pdf.py');
+  const scriptPath = path.resolve(__dirname, 'pipeline/make_pdf.py');
 
   return new Promise((resolve, reject) => {
-    console.log('Python PDF 생성 스크립트 실행 중...');
+    console.log('Python 테스트 PDF 생성 스크립트 실행 중...');
+    console.log('examData:', JSON.stringify(examData, null, 2));
 
-    // 임시 파일에 시험지 데이터 저장
-    const tempFilePath = 'temp_exam_data.json';
-    try {
-      fs.writeFileSync(tempFilePath, JSON.stringify(examData, null, 2), 'utf8');
-    } catch (error) {
-      reject(new Error(`임시 파일 생성 실패: ${error.message}`));
-      return;
+    // examData.problems에서 _id 추출 (안전하게)
+    const problemIds = [];
+    if (examData.problems && Array.isArray(examData.problems)) {
+      for (const p of examData.problems) {
+        if (p._id) {
+          problemIds.push(p._id.toString());
+        }
+      }
     }
 
-    const pythonProcess = spawn('python', [scriptPath], {
+    console.log(`📝 추출된 문제 ID: ${problemIds.length}개`);
+    if (problemIds.length > 0) {
+      console.log(`   ${problemIds.join(', ')}`);
+    }
+
+    // Python 실행 인자 확인
+    const pythonArgs = [scriptPath, ...problemIds];
+    console.log(`🐍 Python 실행 명령어:`, 'python', pythonArgs);
+
+    // test_pdf.py에 문제 ID들을 커맨드라인 인자로 전달
+    const pythonProcess = spawn('python', pythonArgs, {
       cwd: process.cwd(),
       env: { ...process.env },
       stdio: ['ignore', 'pipe', 'pipe']
@@ -2033,18 +2049,9 @@ async function runPythonPDFGenerator(examData) {
 
     pythonProcess.on('close', (code) => {
       const totalTime = Date.now() - startTime;
-      
-      // 임시 파일 정리
-      if (fs.existsSync(tempFilePath)) {
-        try {
-          fs.unlinkSync(tempFilePath);
-        } catch (e) {
-          console.warn('임시 파일 삭제 실패:', e.message);
-        }
-      }
 
       if (code === 0) {
-        console.log('Python PDF 생성 완료');
+        console.log('Python 테스트 PDF 생성 완료');
         resolve({ stdout, totalTime });
       } else {
         console.error(`Python PDF 생성 스크립트 실행 실패: 종료 코드 ${code}`);
@@ -2055,16 +2062,6 @@ async function runPythonPDFGenerator(examData) {
     pythonProcess.on('error', (err) => {
       const totalTime = Date.now() - startTime;
       console.error('Python PDF 생성 프로세스 오류:', err.message);
-
-      // 임시 파일 정리
-      if (fs.existsSync(tempFilePath)) {
-        try {
-          fs.unlinkSync(tempFilePath);
-        } catch (e) {
-          console.warn('임시 파일 삭제 실패:', e.message);
-        }
-      }
-
       reject(new Error(`spawn failed (${totalTime}ms): ${err.message}`));
     });
   });

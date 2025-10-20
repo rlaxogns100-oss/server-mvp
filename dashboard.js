@@ -860,6 +860,9 @@ function addProblemToExam(uniqueProblemId, problemData) {
     return;
   }
   
+  console.log('🔍 문제 추가 중:', uniqueProblemId, problemData);
+  console.log('🔍 problemData._id:', problemData?._id);
+  
   const examProblem = {
     id: examProblemCounter++,
     uniqueId: uniqueProblemId,
@@ -868,6 +871,7 @@ function addProblemToExam(uniqueProblemId, problemData) {
   };
   
   examProblems.push(examProblem);
+  console.log('🔍 examProblems 업데이트됨:', examProblems);
   renderExamProblems();
   updateExamStats();
 }
@@ -1329,16 +1333,22 @@ async function generatePdf() {
       problems: examProblems.map(problem => {
         console.log('🔍 개별 문제 데이터:', problem);
         console.log('🔍 problem.data:', problem.data);
+        console.log('🔍 problem.data._id:', problem.data?._id);
+        
+        // _id가 없으면 경고 메시지 출력
+        if (!problem.data?._id) {
+          console.warn('⚠️ 문제에 _id가 없습니다:', problem);
+          console.warn('⚠️ problem.data 구조:', JSON.stringify(problem.data, null, 2));
+        }
+        
         return {
-          id: problem.id,
-          page: problem.data?.page || null,
-          content_blocks: problem.data?.content_blocks || [],
-          options: problem.data?.options || []
+          _id: problem.data?._id
         };
-      })
+      }).filter(problem => problem._id) // _id가 있는 문제만 필터링
     };
     
     console.log('🔍 최종 examData:', examData);
+    console.log('🔍 필터링된 문제 수:', examData.problems.length);
 
     updateModalProgress(25, '서버로 전송 중...', 'PDF 생성 요청을 서버로 전송합니다...');
     await sleep(200);
