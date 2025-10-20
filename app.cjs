@@ -1883,10 +1883,14 @@ const server = http.createServer((req, res) => {
         console.log(`✅ PDF 변환 완료 - 소요시간: ${((pdfEndTime - pdfStartTime) / 1000).toFixed(2)}초`);
         console.log(`📝 변환된 텍스트 길이: ${extractedText.length.toLocaleString()} 문자`);
 
-        // 원본 파일 저장
+        // 원본 파일 저장 (Python 스크립트가 output 폴더에 저장하므로 중복 저장 제거)
         console.log('\n💾 원본 파일 저장...');
         sendProgress(sessionId, 45, '텍스트 저장 중...');
         const saveStartTime = Date.now();
+        // output 폴더가 없으면 생성
+        if (!fs.existsSync('output')) {
+          fs.mkdirSync('output', { recursive: true });
+        }
         const originalPath = 'output/result.paged.mmd';
         fs.writeFileSync(originalPath, extractedText, 'utf8');
         const saveEndTime = Date.now();
