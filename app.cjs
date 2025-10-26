@@ -217,15 +217,15 @@ async function convertPdfToText(pdfPath, sessionId = null) {
     pythonProcess.on('close', (code) => {
       if (code === 0) {
         console.log('Python PDF 변환 완료');
-        
-        // result.paged.mmd 파일 읽기
+
+        // output/result.paged.mmd 파일 읽기
         try {
-          const resultPath = 'result.paged.mmd';
+          const resultPath = 'output/result.paged.mmd';
           if (fs.existsSync(resultPath)) {
             const result = fs.readFileSync(resultPath, 'utf8');
             resolve(result);
           } else {
-            reject(new Error('변환 결과 파일을 찾을 수 없습니다.'));
+            reject(new Error('변환 결과 파일을 찾을 수 없습니다: ' + resultPath));
           }
         } catch (error) {
           reject(new Error(`결과 파일 읽기 실패: ${error.message}`));
