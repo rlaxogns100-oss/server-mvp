@@ -734,23 +734,23 @@ function getCurrentFileSelectedProblems() {
 // 전역으로 노출
 window.getCurrentFileSelectedProblems = getCurrentFileSelectedProblems;
 
-function toggleProblemSelection(problemId) {
+function toggleProblemSelection(problem_id) {
   const currentFileSelected = getCurrentFileSelectedProblems();
-  
-  // 파일별 고유 ID 생성 (파일명:문항ID)
-  const uniqueProblemId = `${activeTabId}:${problemId}`;
-  
-  if (currentFileSelected.has(problemId)) {
+
+  // 파일별 고유 ID 생성 (파일명:MongoDB_id)
+  const uniqueProblemId = `${activeTabId}:${problem_id}`;
+
+  if (currentFileSelected.has(problem_id)) {
     // 선택 해제
-    currentFileSelected.delete(problemId);
+    currentFileSelected.delete(problem_id);
     removeProblemFromExam(uniqueProblemId);
   } else {
     // 선택 추가
-    currentFileSelected.add(problemId);
-    
+    currentFileSelected.add(problem_id);
+
     // 현재 활성 탭의 문제 데이터에서 해당 문항 찾기
     if (activeTabId && PROBLEMS_DATA[activeTabId]) {
-      const problemData = PROBLEMS_DATA[activeTabId].find(p => p.id === problemId);
+      const problemData = PROBLEMS_DATA[activeTabId].find(p => p._id === problem_id);
       if (problemData) {
         addProblemToExam(uniqueProblemId, problemData);
       }
@@ -1125,12 +1125,12 @@ function displayProblems(problems) {
   // 문제들을 2열로 분배
   problems.forEach((problem, index) => {
     const problemElement = createProblemElement(problem);
-    
-    // 현재 파일의 선택 상태 복원
-    if (currentFileSelected.has(problem.id)) {
+
+    // 현재 파일의 선택 상태 복원 (_id 사용)
+    if (currentFileSelected.has(problem._id)) {
       problemElement.classList.add('selected');
     }
-    
+
     if(index % 2 === 0) {
       column1.appendChild(problemElement);
     } else {
@@ -1153,15 +1153,15 @@ window.displayProblems = displayProblems;
 function createProblemElement(problem) {
   const div = document.createElement('div');
   div.className = 'problem';
-  div.dataset.problem = problem.id;
-  
+  div.dataset.problem = problem._id; // MongoDB _id 사용 (고유 식별자)
+
   // 클릭 이벤트 추가
   div.addEventListener('click', () => {
-    toggleProblemSelection(problem.id);
+    toggleProblemSelection(problem._id); // _id 전달
     div.classList.toggle('selected');
   });
-  
-  // 문제 번호
+
+  // 문제 번호 (표시용으로는 problem.id 사용)
   const pnum = document.createElement('div');
   pnum.className = 'pnum';
   pnum.textContent = problem.id + '.';
