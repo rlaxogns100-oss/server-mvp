@@ -691,6 +691,39 @@ const server = http.createServer((req, res) => {
   }
 
   if (req.method === 'GET' && req.url === '/') {
+    // 방문자 추적
+    (async () => {
+      try {
+        if (db) {
+          const visitData = {
+            timestamp: new Date(),
+            ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress,
+            userAgent: req.headers['user-agent'] || 'Unknown',
+            userId: null // 익명 방문자
+          };
+
+          // Cookie에서 userId 추출 시도
+          const cookies = req.headers.cookie;
+          if (cookies) {
+            const sessionMatch = cookies.match(/sessionId=([^;]+)/);
+            if (sessionMatch) {
+              const sessionId = sessionMatch[1];
+              const session = await db.collection('sessions').findOne({ sessionId });
+              if (session && session.userId) {
+                visitData.userId = session.userId;
+              }
+            }
+          }
+
+          await db.collection('visits').insertOne(visitData);
+          console.log(`📊 방문 기록: ${visitData.ip} (userId: ${visitData.userId || '익명'})`);
+        }
+      } catch (error) {
+        console.error('방문자 추적 오류:', error);
+        // 추적 실패해도 페이지는 정상 제공
+      }
+    })();
+
     // Serve index.html
     const indexPath = path.join(__dirname, 'index.html');
     fs.readFile(indexPath, 'utf8', (err, data) => {
@@ -2110,6 +2143,204 @@ const server = http.createServer((req, res) => {
         }
       }
     });
+
+  // ===== 관리자 페이지 =====
+  } else if (req.method === 'GET' && req.url === '/admin') {
+    // 관리자 페이지 제공
+    const adminHtml = fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf8');
+    res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+    res.end(adminHtml);
+
+  } else if (req.method === 'POST' && req.url === '/api/admin/auth') {
+    // 관리자 인증
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', () => {
+      const { password } = JSON.parse(body);
+      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+      if (password === ADMIN_PASSWORD) {
+        res.writeHead(200, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({ success: true }));
+      } else {
+        res.writeHead(401, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({ success: false, message: '비밀번호가 올바르지 않습니다.' }));
+      }
+    });
+
+  } else if (req.method === 'GET' && req.url === '/api/admin/stats') {
+    // 관리자 통계 API
+    const adminPassword = req.headers['x-admin-password'];
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+    if (adminPassword !== ADMIN_PASSWORD) {
+      res.writeHead(401, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({ error: '인증이 필요합니다.' }));
+      return;
+    }
+
+    try {
+      if (!db) {
+        res.writeHead(500, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({ error: 'Database not connected' }));
+        return;
+      }
+
+      // 오늘 날짜 (자정)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      // 7일 전
+      const sevenDaysAgo = new Date();
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+      // 기본 통계
+      const totalUsers = await db.collection('users').countDocuments();
+      const todayUsers = await db.collection('users').countDocuments({
+        createdAt: { $gte: today }
+      });
+
+      const totalConversions = await db.collection('files').countDocuments();
+      const todayConversions = await db.collection('files').countDocuments({
+        uploadDate: { $gte: today }
+      });
+
+      const totalProblems = await db.collection('problems').countDocuments();
+      const avgProblemsPerFile = totalConversions > 0 ? Math.round(totalProblems / totalConversions) : 0;
+
+      // 방문자 통계 (visits 컬렉션이 있다면)
+      let todayVisitors = 0;
+      let activeUsers = 0;
+      try {
+        todayVisitors = await db.collection('visits').countDocuments({
+          timestamp: { $gte: today }
+        });
+
+        // 최근 24시간 내 활동 사용자
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        activeUsers = await db.collection('visits').distinct('userId', {
+          timestamp: { $gte: oneDayAgo }
+        }).then(arr => arr.length);
+      } catch (e) {
+        // visits 컬렉션이 없으면 0으로 표시
+      }
+
+      // 최근 7일 변환 추이
+      const conversionTrendData = await db.collection('files').aggregate([
+        { $match: { uploadDate: { $gte: sevenDaysAgo } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$uploadDate" } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]).toArray();
+
+      // 최근 7일 가입 추이
+      const userTrendData = await db.collection('users').aggregate([
+        { $match: { createdAt: { $gte: sevenDaysAgo } } },
+        {
+          $group: {
+            _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+            count: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]).toArray();
+
+      // 7일치 레이블 생성
+      const labels = [];
+      for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        labels.push(d.toISOString().split('T')[0]);
+      }
+
+      // 데이터 매핑
+      const conversionData = labels.map(label => {
+        const found = conversionTrendData.find(item => item._id === label);
+        return found ? found.count : 0;
+      });
+
+      const userData = labels.map(label => {
+        const found = userTrendData.find(item => item._id === label);
+        return found ? found.count : 0;
+      });
+
+      // 최근 가입자 (최근 10명)
+      const recentUsers = await db.collection('users')
+        .find({})
+        .sort({ createdAt: -1 })
+        .limit(10)
+        .toArray();
+
+      // TOP 사용자 (변환 수 기준)
+      const topUsers = await db.collection('files').aggregate([
+        {
+          $group: {
+            _id: "$userId",
+            conversionCount: { $sum: 1 }
+          }
+        },
+        { $sort: { conversionCount: -1 } },
+        { $limit: 10 },
+        {
+          $lookup: {
+            from: "users",
+            localField: "_id",
+            foreignField: "_id",
+            as: "userInfo"
+          }
+        },
+        { $unwind: { path: "$userInfo", preserveNullAndEmptyArrays: true } }
+      ]).toArray();
+
+      const response = {
+        stats: {
+          totalUsers,
+          todayUsers,
+          totalConversions,
+          todayConversions,
+          totalProblems,
+          avgProblemsPerFile,
+          todayVisitors,
+          activeUsers
+        },
+        charts: {
+          conversionTrend: {
+            labels: labels.map(l => l.substring(5)), // MM-DD 형식
+            data: conversionData
+          },
+          userTrend: {
+            labels: labels.map(l => l.substring(5)),
+            data: userData
+          }
+        },
+        tables: {
+          recentUsers: recentUsers.map(u => ({
+            name: u.name || 'N/A',
+            email: u.email || 'N/A',
+            role: u.role || 'student',
+            createdAt: new Date(u.createdAt).toLocaleDateString('ko-KR')
+          })),
+          topUsers: topUsers.map(item => ({
+            name: item.userInfo?.name || 'Unknown',
+            email: item.userInfo?.email || 'N/A',
+            conversionCount: item.conversionCount
+          }))
+        }
+      };
+
+      res.writeHead(200, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify(response));
+
+    } catch (error) {
+      console.error('관리자 통계 API 오류:', error);
+      res.writeHead(500, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({ error: '통계 데이터를 불러오는 중 오류가 발생했습니다.' }));
+    }
+
   } else {
     res.writeHead(404, {'Content-Type': 'text/html; charset=utf-8'});
     res.end('<h1>404 - 페이지를 찾을 수 없습니다</h1>');
