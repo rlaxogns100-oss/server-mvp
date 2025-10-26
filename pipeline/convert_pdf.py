@@ -131,16 +131,14 @@ def process_pages_parallel(pdf_path: Path, headers: dict, max_workers: int = 3) 
                 results.append(result)
                 completed_count += 1
 
-                # 진행상황 및 예상 시간 출력
+                # 진행상황 및 예상 시간 출력 (1페이지마다)
                 elapsed_time = time.time() - start_time
                 avg_time_per_page = elapsed_time / completed_count
                 remaining_pages = total_pages - completed_count
                 estimated_remaining_time = avg_time_per_page * remaining_pages
 
-                # 10페이지마다 또는 마지막 페이지에 진행상황 출력
-                if completed_count % 10 == 0 or completed_count == total_pages:
-                    percentage = int((completed_count / total_pages) * 100)
-                    print(f"[PDF진행] {completed_count}/{total_pages} 페이지 ({percentage}%) - 예상 남은 시간: {int(estimated_remaining_time)}초")
+                percentage = int((completed_count / total_pages) * 100)
+                print(f"[PDF진행] {completed_count}/{total_pages} 페이지 ({percentage}%) - 예상 남은 시간: {int(estimated_remaining_time)}초")
 
             except Exception as e:
                 print(f"[ERROR] 페이지 {page_idx + 1} 처리 실패: {e}")

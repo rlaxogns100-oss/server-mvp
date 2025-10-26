@@ -35,13 +35,51 @@
     <header class="topbar">
       <div class="brand">
         <div class="logo">Z</div>
-        <div><div class="t1">제로타이핑</div><div class="t2">클릭만으로 만드는 학습지</div></div>
+        <div>
+          <div class="t1">
+            제로타이핑
+            <span style="
+              font-size: 10px;
+              font-weight: 700;
+              color: #fff;
+              background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+              padding: 2px 6px;
+              border-radius: 4px;
+              margin-left: 6px;
+              vertical-align: middle;
+            ">BETA</span>
+          </div>
+          <div class="t2">클릭만으로 만드는 학습지</div>
+        </div>
       </div>
-      <div class="search">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M21 21l-4.3-4.3M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15z" stroke="#64748b" stroke-width="2" stroke-linecap="round"/></svg>
-        <input id="globalSearch" placeholder="학습지명, 태그, 출제자로 검색" autocomplete="off" disabled />
-        <span class="kbd">/</span>
-      </div>
+      <a href="https://docs.google.com/forms/d/e/1FAIpQLScjQxJ_eOTmK74hgGkGCkqUaBz9cbGIku11_CbRAiXBUzfhSQ/viewform?usp=publish-editor"
+         target="_blank"
+         class="feedback-button"
+         style="
+           display: flex;
+           align-items: center;
+           gap: 8px;
+           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+           color: white;
+           padding: 10px 20px;
+           border-radius: 8px;
+           text-decoration: none;
+           font-weight: 600;
+           font-size: 14px;
+           transition: all 0.3s ease;
+           box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+           max-width: 450px;
+           flex: 1;
+         "
+         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)'"
+         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>제로타이핑 평가하고 한 달 무료 이용권 받기 🎁</span>
+      </a>
           <div class="user" id="userSection">
             <!-- 초기 버튼들 -->
             <div class="auth-buttons" id="authButtons">
