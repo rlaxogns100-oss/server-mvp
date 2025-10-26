@@ -290,11 +290,21 @@ def build_pdf(tex_path):
         except Exception as e:
             print(f"기존 PDF 삭제 실패: {e}")
 
+    # xelatex를 build 디렉토리에서 실행하도록 설정
+    # 이렇게 하면 이미지 경로가 제대로 작동함 (images/xxx.jpg -> build/images/xxx.jpg)
+    tex_filename = tex_path.name
+
     cmds = []
     if shutil.which("tectonic"):
-        cmds.append(["tectonic", "-Zshell-escape", "-o", str(BUILD), str(tex_path)])
+        cmds.append({
+            "cmd": ["tectonic", "-Zshell-escape", tex_filename],
+            "cwd": BUILD
+        })
     if shutil.which("xelatex"):
-        cmds.append(["xelatex", "-interaction=nonstopmode", "-output-directory", str(BUILD), str(tex_path)])
+        cmds.append({
+            "cmd": ["xelatex", "-interaction=nonstopmode", tex_filename],
+            "cwd": BUILD
+        })
 
     if not cmds:
         print("❌ LaTeX 엔진(tectonic/xelatex)이 없습니다.")
@@ -304,10 +314,12 @@ def build_pdf(tex_path):
         return
 
     ok = False
-    for cmd in cmds:
-        print(f"🔧 실행: {' '.join(cmd)}")
+    for cmd_info in cmds:
+        cmd = cmd_info["cmd"]
+        cwd = cmd_info["cwd"]
+        print(f"🔧 실행: {' '.join(cmd)} (작업 디렉토리: {cwd})")
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd)
 
             # stdout/stderr 출력 (디버깅용)
             if result.stdout:
