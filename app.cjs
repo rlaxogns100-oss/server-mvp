@@ -2179,7 +2179,8 @@ const server = http.createServer((req, res) => {
       return;
     }
 
-    try {
+    (async () => {
+      try {
       if (!db) {
         res.writeHead(500, {'Content-Type': 'application/json'});
         res.end(JSON.stringify({ error: 'Database not connected' }));
@@ -2335,11 +2336,12 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, {'Content-Type': 'application/json'});
       res.end(JSON.stringify(response));
 
-    } catch (error) {
-      console.error('관리자 통계 API 오류:', error);
-      res.writeHead(500, {'Content-Type': 'application/json'});
-      res.end(JSON.stringify({ error: '통계 데이터를 불러오는 중 오류가 발생했습니다.' }));
-    }
+      } catch (error) {
+        console.error('관리자 통계 API 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({ error: '통계 데이터를 불러오는 중 오류가 발생했습니다.' }));
+      }
+    })();
 
   } else {
     res.writeHead(404, {'Content-Type': 'text/html; charset=utf-8'});
