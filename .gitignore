@@ -3,4 +3,23 @@ node_modules/
 uploads/
 output/
 *.log
-.DS_StoreNUL
+.DS_Store
+
+# Build artifacts
+build/
+*.pdf
+*.tex
+*.aux
+
+# Python
+venv/
+__pycache__/
+*.pyc
+
+# Temporary files
+result.paged.mmd
+temp_exam_data.json
+
+# Old/backup files with sensitive data
+old/
+reference/
