@@ -278,6 +278,16 @@ def problem_to_tex(problem):
 
 def build_pdf(tex_path):
     """LaTeX 파일을 PDF로 컴파일"""
+    pdf_path = BUILD / "exam.pdf"
+
+    # 기존 PDF 파일 삭제 (이전 빌드 결과가 남아있으면 안됨)
+    if pdf_path.exists():
+        try:
+            pdf_path.unlink()
+            print(f"기존 PDF 파일 삭제: {pdf_path}")
+        except Exception as e:
+            print(f"기존 PDF 삭제 실패: {e}")
+
     cmds = []
     if shutil.which("tectonic"):
         cmds.append(["tectonic", "-Zshell-escape", "-o", str(BUILD), str(tex_path)])
@@ -285,31 +295,60 @@ def build_pdf(tex_path):
         cmds.append(["xelatex", "-interaction=nonstopmode", "-output-directory", str(BUILD), str(tex_path)])
 
     if not cmds:
-        print("LaTeX 엔진(tectonic/xelatex)이 없습니다. 빈 PDF 생성...")
-        # 빈 PDF 생성
-        pdf_path = BUILD / "exam.pdf"
-        pdf_path.write_bytes(b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/Resources <<\n/Font <<\n/F1 <<\n/Type /Font\n/Subtype /Type1\n/BaseFont /Helvetica\n>>\n>>\n>>\n/MediaBox [0 0 595 842]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n50 800 Td\n(LaTeX engine not found) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n0000000317 00000 n\ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n410\n%%EOF\n")
-        print("빈 PDF 생성됨 (LaTeX 엔진 필요)")
+        print("❌ LaTeX 엔진(tectonic/xelatex)이 없습니다.")
+        print("설치 방법:")
+        print("  Ubuntu/Debian: sudo apt-get install texlive-xetex texlive-fonts-recommended")
+        print("  macOS: brew install --cask mactex")
         return
 
     ok = False
     for cmd in cmds:
-        print(f"실행: {' '.join(cmd)}")
+        print(f"🔧 실행: {' '.join(cmd)}")
         try:
-            # encoding 오류 방지: stdout/stderr를 무시하고 returncode만 체크하지 않음
-            result = subprocess.run(cmd, capture_output=True)
-            # PDF가 생성되었으면 성공 (returncode와 무관)
-            if (BUILD / "exam.pdf").exists():
-                ok = True
-                print(f"PDF 생성 성공: {BUILD / 'exam.pdf'}")
-                break
+            result = subprocess.run(cmd, capture_output=True, text=True, encoding='utf-8', errors='replace')
+
+            # stdout/stderr 출력 (디버깅용)
+            if result.stdout:
+                print(f"📄 LaTeX stdout:\n{result.stdout}")
+            if result.stderr:
+                print(f"⚠️  LaTeX stderr:\n{result.stderr}")
+
+            # returncode 확인
+            print(f"종료 코드: {result.returncode}")
+
+            # PDF 파일 존재 여부 및 크기 확인
+            if pdf_path.exists():
+                file_size = pdf_path.stat().st_size
+                print(f"📊 생성된 PDF 크기: {file_size} bytes")
+
+                # 최소 크기 체크 (1KB 이상이어야 정상)
+                if file_size > 1000:
+                    ok = True
+                    print(f"✅ PDF 생성 성공: {pdf_path}")
+                    break
+                else:
+                    print(f"❌ PDF 파일이 너무 작음 ({file_size} bytes) - 빌드 실패로 간주")
+                    # 잘못된 PDF 삭제
+                    pdf_path.unlink()
+            else:
+                print(f"❌ PDF 파일이 생성되지 않음: {pdf_path}")
+
+            # returncode가 0이 아니면 에러
+            if result.returncode != 0:
+                print(f"❌ LaTeX 컴파일 실패 (종료 코드: {result.returncode})")
+
         except Exception as e:
-            print(f"실행 오류: {e}")
+            print(f"❌ 실행 오류: {e}")
+            import traceback
+            traceback.print_exc()
 
     if not ok:
-        print("PDF 생성 실패 - 빈 PDF 생성")
-        pdf_path = BUILD / "exam.pdf"
-        pdf_path.write_bytes(b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/Resources <<\n/Font <<\n/F1 <<\n/Type /Font\n/Subtype /Type1\n/BaseFont /Helvetica\n>>\n>>\n>>\n/MediaBox [0 0 595 842]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n50 800 Td\n(PDF compilation failed) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n0000000317 00000 n\ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n410\n%%EOF\n")
+        print("❌ PDF 생성 실패 - 위 로그를 확인하세요")
+        print("일반적인 문제:")
+        print("  1. LaTeX 문법 오류")
+        print("  2. 폰트가 설치되지 않음")
+        print("  3. 이미지 파일을 찾을 수 없음")
+        print("  4. LaTeX 패키지가 설치되지 않음")
 
 def main():
     try:
@@ -368,15 +407,11 @@ def main():
         client.close()
 
     except Exception as e:
-        print(f"오류 발생: {e}")
-        # 에러 발생해도 빈 PDF 생성
-        try:
-            BUILD.mkdir(parents=True, exist_ok=True)
-            pdf_path = BUILD / "exam.pdf"
-            pdf_path.write_bytes(b"%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/Resources <<\n/Font <<\n/F1 <<\n/Type /Font\n/Subtype /Type1\n/BaseFont /Helvetica\n>>\n>>\n>>\n/MediaBox [0 0 595 842]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n50 800 Td\n(Error generating PDF) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f\n0000000009 00000 n\n0000000058 00000 n\n0000000115 00000 n\n0000000317 00000 n\ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n410\n%%EOF\n")
-            print("에러 PDF 생성 완료")
-        except:
-            pass
+        print(f"❌ 오류 발생: {e}")
+        import traceback
+        traceback.print_exc()
+        # 에러 발생 시 종료 코드 1로 종료
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
