@@ -504,12 +504,21 @@ def select_sample_interactive():
 
 def main():
     """메인 함수 - 서버 모드 / 테스트 모드 자동 판단"""
+    import argparse
+
     total_start_time = time.time()
 
-    # 환경 변수 확인 (서버에서 호출 시)
-    user_id = os.getenv('USER_ID')
-    filename = os.getenv('FILENAME')
-    parent_path = os.getenv('PARENT_PATH')
+    # 커맨드라인 인자 파싱
+    parser = argparse.ArgumentParser(description='LLM Structure Script')
+    parser.add_argument('--user-id', type=str, help='User ID (서버 모드)')
+    parser.add_argument('--filename', type=str, help='Filename (서버 모드)')
+    parser.add_argument('--parent-path', type=str, help='Parent path (서버 모드)')
+    args = parser.parse_args()
+
+    # 커맨드라인 인자 우선, 없으면 환경변수 확인
+    user_id = args.user_id or os.getenv('USER_ID')
+    filename = args.filename or os.getenv('FILENAME')
+    parent_path = args.parent_path or os.getenv('PARENT_PATH')
 
     # 서버 모드 vs 테스트 모드 판단
     if user_id:

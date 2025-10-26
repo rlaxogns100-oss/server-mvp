@@ -367,7 +367,6 @@ async function runPythonSplit() {
 async function runPythonLLMStructure(sessionId = null, userId = null, filename = 'problems.json') {
   const startTime = Date.now(); // ✅ 항상 먼저 선언
   const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
-  const scriptPath = path.resolve(__dirname, 'pipeline/llm_structure.py');
   return new Promise((resolve, reject) => {
     console.log('Python LLM structure 스크립트 실행 중...');
 
@@ -376,20 +375,21 @@ async function runPythonLLMStructure(sessionId = null, userId = null, filename =
       sendProgress(sessionId, 70, 'AI 구조화 준비 중...');
     }
 
-    // userId와 filename을 환경변수로 전달
+    // userId와 filename을 커맨드라인 인자로 전달 (한글 지원)
+    const args = ['pipeline/llm_structure.py'];
+    if (userId) {
+      args.push('--user-id', userId);
+    }
+    if (filename) {
+      args.push('--filename', filename);
+    }
+
     const env = {
       ...process.env,
       PYTHONUNBUFFERED: '1'
     };
-    if (userId) {
-      env.USER_ID = userId;
-    }
-    if (filename) {
-      env.FILENAME = filename;
-    }
 
-    const PYTHON_BIN = process.env.PYTHON_BIN || 'python3';
-    const pythonProcess = spawn(PYTHON_BIN, ['pipeline/llm_structure.py'], {
+    const pythonProcess = spawn(PYTHON_BIN, args, {
       cwd: process.cwd(),
       stdio: ['pipe', 'pipe', 'pipe'],
       env: env
