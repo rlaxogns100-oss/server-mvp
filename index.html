@@ -66,13 +66,13 @@
            text-decoration: none;
            font-weight: 600;
            font-size: 14px;
-           transition: all 0.3s ease;
+           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-           max-width: 450px;
-           flex: 1;
+           white-space: nowrap;
+           position: relative;
          "
-         onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(102, 126, 234, 0.4)'"
-         onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'">
+         onmouseover="this.style.transform='translateY(-4px) scale(1.02)'; this.style.boxShadow='0 8px 20px rgba(102, 126, 234, 0.5)'; this.style.background='linear-gradient(135deg, #7c8ff5 0%, #8b5dba 100%)'"
+         onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'; this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
           <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>

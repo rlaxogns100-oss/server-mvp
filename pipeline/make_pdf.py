@@ -272,8 +272,8 @@ def problem_to_tex(problem):
     if options:
         L.append(options_tex(options))
 
-    # 여백
-    L.append(r"\par\vspace{12\baselineskip}")
+    # 여백 (절반으로 축소)
+    L.append(r"\par\vspace{6\baselineskip}")
     L.append(r"\end{minipage}")
 
     return "\n".join(L)
