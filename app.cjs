@@ -211,13 +211,13 @@ async function convertPdfToText(pdfPath, sessionId = null) {
         if (progressMatch) {
           const [, current, total, percentage] = progressMatch;
 
-          // 전체 예상 시간은 처음 한 번만 계산 (1/3로 축소)
+          // 전체 예상 시간은 처음 한 번만 계산
           if (totalEstimatedTime === null) {
             const totalPages = parseInt(total);
             // 전체 파이프라인 예상 시간 (초 단위)
             const pdfTime = totalPages * 0.7;      // PDF 변환: 페이지당 0.7초
-            const filterTime = 10;                 // 필터링: 10초
-            const splitTime = totalPages * 0.15;   // 분할: 페이지당 0.15초
+            const filterTime = 0;                  // 필터링: 0초 (무시)
+            const splitTime = 0;                   // 분할: 0초 (무시)
             const llmTime = totalPages * 2;        // AI 구조화: 페이지당 2초
 
             totalEstimatedTime = Math.ceil((pdfTime + filterTime + splitTime + llmTime) / 60);
