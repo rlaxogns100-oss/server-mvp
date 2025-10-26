@@ -1294,11 +1294,9 @@ function initDashboard(){
   
   // 버튼 이벤트를 즉시 연결 (지연 없음)
   const generateBtn = document.getElementById('generatePdfBtn');
-  const downloadBtn = document.getElementById('downloadImagesBtn');
   const clearBtn = document.getElementById('clearExam');
 
   if (generateBtn) generateBtn.addEventListener('click', generatePdf);
-  if (downloadBtn) downloadBtn.addEventListener('click', downloadImages);
   if (clearBtn) clearBtn.addEventListener('click', clearExam);
 
   // DOM이 완전히 로드된 후 핸들 위치 재설정

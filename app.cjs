@@ -182,7 +182,7 @@ if (MONGODB_URI && MONGODB_DATABASE) {
 async function convertPdfToText(pdfPath, sessionId = null) {
   return new Promise((resolve, reject) => {
     console.log(`PDF 변환 시작 (Python): ${pdfPath}`);
-    
+
     // 진행상황 전송
     if (sessionId) {
       sendProgress(sessionId, 20, 'PDF 변환 중...');
@@ -197,6 +197,7 @@ async function convertPdfToText(pdfPath, sessionId = null) {
 
     let stdout = '';
     let stderr = '';
+    let totalEstimatedTime = null;  // 전체 예상 시간 (한 번만 계산)
 
     pythonProcess.stdout.on('data', (data) => {
       stdout += data.toString();
@@ -204,8 +205,32 @@ async function convertPdfToText(pdfPath, sessionId = null) {
       console.log('Python Convert stdout:', output);
 
       // 진행상황 파싱
-      if (sessionId && output.includes('페이지당')) {
-        sendProgress(sessionId, 40, 'PDF 변환 완료');
+      if (sessionId) {
+        // [PDF진행] 패턴 파싱: [PDF진행] 10/200 페이지 (5%) - 예상 남은 시간: 380초
+        const progressMatch = output.match(/\[PDF진행\]\s+(\d+)\/(\d+)\s+페이지\s+\((\d+)%\)\s+-\s+예상 남은 시간:\s+(\d+)초/);
+        if (progressMatch) {
+          const [, current, total, percentage] = progressMatch;
+
+          // 전체 예상 시간은 처음 한 번만 계산
+          if (totalEstimatedTime === null) {
+            const totalPages = parseInt(total);
+            // 전체 파이프라인 예상 시간 (초 단위)
+            const pdfTime = totalPages * 2;        // PDF 변환: 페이지당 2초
+            const filterTime = 30;                 // 필터링: 30초
+            const splitTime = totalPages * 0.5;    // 분할: 페이지당 0.5초
+            const llmTime = totalPages * 6;        // AI 구조화: 페이지당 6초
+
+            totalEstimatedTime = Math.ceil((pdfTime + filterTime + splitTime + llmTime) / 60);
+          }
+
+          const progress = 15 + Math.floor(parseInt(percentage) * 0.25); // 15%~40% 범위
+          sendProgress(sessionId, progress, `PDF 변환 중 ${current}/${total}페이지 | 전체 예상: 약 ${totalEstimatedTime}분`);
+        }
+
+        // 변환 완료 메시지
+        if (output.includes('페이지당')) {
+          sendProgress(sessionId, 40, 'PDF 변환 완료');
+        }
       }
     });
 
