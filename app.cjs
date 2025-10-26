@@ -220,11 +220,22 @@ async function convertPdfToText(pdfPath, sessionId = null) {
             const splitTime = 0;                   // 분할: 0초 (무시)
             const llmTime = totalPages * 2;        // AI 구조화: 페이지당 2초
 
-            totalEstimatedTime = Math.ceil((pdfTime + filterTime + splitTime + llmTime) / 60);
+            let totalSeconds = pdfTime + filterTime + splitTime + llmTime;
+
+            // 10초 미만이면 10초로 설정
+            if (totalSeconds < 10) totalSeconds = 10;
+
+            // 10초 단위로 버림
+            totalSeconds = Math.floor(totalSeconds / 10) * 10;
+
+            // 분과 초로 변환
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+            totalEstimatedTime = seconds > 0 ? `${minutes}분 ${seconds}초` : `${minutes}분`;
           }
 
           const progress = 15 + Math.floor(parseInt(percentage) * 0.25); // 15%~40% 범위
-          sendProgress(sessionId, progress, `PDF 변환 중 ${current}/${total}페이지 | 전체 예상: 약 ${totalEstimatedTime}분`);
+          sendProgress(sessionId, progress, `PDF 변환 중 ${current}/${total}페이지 | 전체 예상: 약 ${totalEstimatedTime}`);
         }
 
         // 변환 완료 메시지
