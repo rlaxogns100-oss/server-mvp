@@ -1098,10 +1098,10 @@ const server = http.createServer((req, res) => {
 
     req.on('end', async () => {
       try {
-        const { username, email, password, name, role } = JSON.parse(body);
+        const { username, email, password, role } = JSON.parse(body);
 
         // 입력 검증
-        if (!username || !email || !password || !name || !role) {
+        if (!username || !email || !password || !role) {
           res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
           res.end(JSON.stringify({
             success: false,
@@ -1175,7 +1175,6 @@ const server = http.createServer((req, res) => {
           username,
           email,
           password: hashedPassword,
-          name,
           role,
           createdAt: new Date(),
           updatedAt: new Date()
@@ -1191,7 +1190,6 @@ const server = http.createServer((req, res) => {
             id: result.insertedId,
             username: newUser.username,
             email: newUser.email,
-            name: newUser.name,
             role: newUser.role
           }
         }));
@@ -1282,7 +1280,6 @@ const server = http.createServer((req, res) => {
             id: user._id,
             username: user.username,
             email: user.email,
-            name: user.name,
             role: user.role
           }
         }));
@@ -2320,13 +2317,13 @@ const server = http.createServer((req, res) => {
         },
         tables: {
           recentUsers: recentUsers.map(u => ({
-            name: u.name || 'N/A',
+            username: u.username || 'N/A',
             email: u.email || 'N/A',
             role: u.role || 'student',
             createdAt: new Date(u.createdAt).toLocaleDateString('ko-KR')
           })),
           topUsers: topUsers.map(item => ({
-            name: item.userInfo?.name || 'Unknown',
+            username: item.userInfo?.username || 'Unknown',
             email: item.userInfo?.email || 'N/A',
             conversionCount: item.conversionCount
           }))

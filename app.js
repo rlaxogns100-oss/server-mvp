@@ -264,8 +264,8 @@ function bindAuth() {
     console.log('사용자 정보 표시:', user);
     if (elements.userInfo) {
       elements.userInfo.style.display = 'flex';
-      document.getElementById('userAvatar').textContent = user.name.charAt(0);
-      document.getElementById('userName').textContent = user.name;
+      document.getElementById('userAvatar').textContent = user.username.charAt(0);
+      document.getElementById('userName').textContent = user.username;
       document.getElementById('userRole').textContent = user.role === 'teacher' ? '선생님' : '학생';
     }
     if (elements.loginForm) elements.loginForm.style.display = 'none';
@@ -348,18 +348,27 @@ function bindAuth() {
       console.log('loginBtn 요소를 찾을 수 없음');
     }
 
+    // 역할 선택 버튼 처리
+    let selectedRole = null;
+    const roleBtns = document.querySelectorAll('.role-btn');
+    roleBtns.forEach(btn => {
+      btn.addEventListener('click', function() {
+        roleBtns.forEach(b => b.classList.remove('selected'));
+        this.classList.add('selected');
+        selectedRole = this.getAttribute('data-role');
+      });
+    });
+
     // 회원가입 처리
     if (elements.registerBtn) {
       console.log('registerBtn 요소 찾음');
       elements.registerBtn.addEventListener('click', async function(event) {
         event.preventDefault();
-        const name = document.getElementById('registerName').value;
         const username = document.getElementById('registerUsername').value;
         const email = document.getElementById('registerEmail').value;
         const password = document.getElementById('registerPassword').value;
-        const role = document.getElementById('registerRole').value;
 
-        if (!name || !username || !email || !password || !role) {
+        if (!username || !email || !password || !selectedRole) {
           alert('모든 필드를 입력해주세요.');
           return;
         }
@@ -368,7 +377,7 @@ function bindAuth() {
           const response = await fetch('/api/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name, username, email, password, role })
+            body: JSON.stringify({ username, email, password, role: selectedRole })
           });
           const data = await response.json();
 

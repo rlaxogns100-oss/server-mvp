@@ -110,6 +110,36 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   background: #e5e7eb !important;
 }
 
+/* 역할 선택 버튼 */
+.role-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.role-btn {
+  padding: 12px 16px !important;
+  background: #f3f4f6 !important;
+  color: var(--ink) !important;
+  border: 2px solid transparent !important;
+  border-radius: 8px !important;
+  font-size: 14px !important;
+  font-weight: 600 !important;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.role-btn:hover {
+  background: #e5e7eb !important;
+}
+
+.role-btn.selected {
+  background: var(--brand) !important;
+  color: white !important;
+  border-color: var(--brand) !important;
+}
+
 .user-info {
   display: flex;
   align-items: center;

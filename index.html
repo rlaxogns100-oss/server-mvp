@@ -222,15 +222,13 @@
   <!-- 회원가입 폼 -->
   <div class="auth-form" id="registerForm" style="display: none;">
     <h3>회원가입</h3>
-    <input type="text" id="registerName" placeholder="이름" />
     <input type="text" id="registerUsername" placeholder="사용자명" />
     <input type="email" id="registerEmail" placeholder="이메일" />
     <input type="password" id="registerPassword" placeholder="비밀번호" />
-    <select id="registerRole">
-      <option value="">역할 선택</option>
-      <option value="teacher">선생님</option>
-      <option value="student">학생</option>
-    </select>
+    <div class="role-selector">
+      <button type="button" class="role-btn" data-role="teacher">선생님</button>
+      <button type="button" class="role-btn" data-role="student">학생</button>
+    </div>
     <button id="registerBtn">회원가입</button>
     <button id="showLoginBtn" class="switch-btn">로그인</button>
   </div>

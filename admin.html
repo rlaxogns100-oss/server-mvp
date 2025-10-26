@@ -364,10 +364,10 @@
 
     function renderTables(tables) {
       // 최근 가입자
-      let html = '<table><thead><tr><th>이름</th><th>이메일</th><th>역할</th><th>가입일</th></tr></thead><tbody>';
+      let html = '<table><thead><tr><th>사용자명</th><th>이메일</th><th>역할</th><th>가입일</th></tr></thead><tbody>';
       tables.recentUsers.forEach(user => {
         html += `<tr>
-          <td>${user.name}</td>
+          <td>${user.username}</td>
           <td>${user.email}</td>
           <td><span class="badge ${user.role}">${user.role}</span></td>
           <td>${user.createdAt}</td>
@@ -377,11 +377,11 @@
       document.getElementById('recentUsers').innerHTML = html;
 
       // TOP 사용자
-      html = '<table><thead><tr><th>순위</th><th>이름</th><th>이메일</th><th>변환 수</th></tr></thead><tbody>';
+      html = '<table><thead><tr><th>순위</th><th>사용자명</th><th>이메일</th><th>변환 수</th></tr></thead><tbody>';
       tables.topUsers.forEach((user, idx) => {
         html += `<tr>
           <td><strong>${idx + 1}</strong></td>
-          <td>${user.name}</td>
+          <td>${user.username}</td>
           <td>${user.email}</td>
           <td><strong>${user.conversionCount}건</strong></td>
         </tr>`;
