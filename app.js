@@ -272,6 +272,24 @@ function bindAuth() {
     if (elements.registerForm) elements.registerForm.style.display = 'none';
     if (elements.authButtons) elements.authButtons.style.display = 'none';
     if (elements.modalOverlay) elements.modalOverlay.style.display = 'none';
+
+    // 대시보드 활성화
+    enableDashboard();
+  }
+
+  // 대시보드 활성화/비활성화
+  function enableDashboard() {
+    const dashboard = document.getElementById('dashboard');
+    const overlay = document.getElementById('loginRequiredOverlay');
+    if (dashboard) dashboard.classList.remove('disabled');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  function disableDashboard() {
+    const dashboard = document.getElementById('dashboard');
+    const overlay = document.getElementById('loginRequiredOverlay');
+    if (dashboard) dashboard.classList.add('disabled');
+    if (overlay) overlay.style.display = 'flex';
   }
 
   // 이벤트 리스너 등록
@@ -417,6 +435,7 @@ function bindAuth() {
 
         currentUser = null;
         hideAllForms();
+        disableDashboard();
 
         // 로그아웃 시 모든 열린 탭 닫기
         if (window.openTabs) {
@@ -464,6 +483,11 @@ function bindAuth() {
   // 초기화 실행
   setupEventListeners();
   hideAllForms();
-  
+
+  // 초기 로그인 상태 확인 - 로그인 안 되어 있으면 대시보드 비활성화
+  if (!currentUser) {
+    disableDashboard();
+  }
+
   console.log('인증 기능 초기화 완료');
 }

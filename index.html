@@ -102,6 +102,15 @@
       <!-- Left: Explorer -->
       <section class="explorer">
         <div class="ex-card ex-dashboard" id="dashboard">
+          <!-- 로그인 안내 오버레이 -->
+          <div class="login-required-overlay" id="loginRequiredOverlay" style="display: none;">
+            <div class="login-message">
+              <div class="login-icon">🔒</div>
+              <h3>로그인이 필요합니다</h3>
+              <p>파일을 업로드하고 관리하려면<br>로그인해주세요</p>
+              <button class="login-overlay-btn" onclick="document.getElementById('showLoginFormBtn').click()">로그인하기</button>
+            </div>
+          </div>
           <!-- 업로드 -->
           <div class="ex-upload" style="padding:12px 12px 4px">
             <div class="upload-tile" id="uploadTile">
