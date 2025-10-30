@@ -94,9 +94,31 @@ function renderContent(content) {
   return content;
 }
 
+// multer storage 설정 - 한글 파일명 인코딩 처리
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/');
+  },
+  filename: (req, file, cb) => {
+    // multer가 latin1으로 잘못 파싱한 파일명을 utf8로 재인코딩
+    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
+    // 재인코딩된 파일명을 file 객체에 저장
+    file.originalname = originalName;
+
+    // 디스크에는 타임스탬프로 저장 (충돌 방지)
+    const timestamp = Date.now();
+    const ext = path.extname(originalName);
+    cb(null, `${timestamp}${ext}`);
+  }
+});
+
 const upload = multer({
-  dest: 'uploads/',
+  storage: storage,
   fileFilter: (req, file, cb) => {
+    // 한글 파일명 재인코딩 (fileFilter는 filename보다 먼저 실행됨)
+    file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
+
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
