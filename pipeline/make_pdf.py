@@ -17,6 +17,8 @@ import shutil
 import hashlib
 import urllib.request
 from urllib.parse import urlparse
+import requests
+import json
 
 # UTF-8 인코딩 강제 설정 (Windows cp949 문제 해결)
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
@@ -146,6 +148,113 @@ def firstpage_big_header():
 
 def tail_after_enumerate():
     return r"\end{enumerate}\end{multicols}\end{document}"
+
+def tail_close_lists():
+    return r"\end{enumerate}\end{multicols}"
+
+def extract_problem_text(problem):
+    blocks = problem.get('content_blocks', []) or []
+    pieces = []
+    for b in blocks:
+        t = (b.get('type') or '').lower()
+        c = b.get('content') or ''
+        if t in ('text','condition','table','sub_text','sub_condition','sub_table'):
+            pieces.append(c)
+    if not pieces and problem.get('content'):
+        pieces.append(problem.get('content'))
+    # options (as hints)
+    opts = problem.get('options') or []
+    if opts:
+        pieces.append("선택지: " + " | ".join([str(o) for o in opts]))
+    return "\n".join(pieces)
+
+def fetch_answers_via_llm(problems):
+    api_key = os.getenv('DEEPSEEK_API_KEY')
+    if not api_key:
+        print('[INFO] DEEPSEEK_API_KEY가 설정되지 않아 정답지 생성을 건너뜁니다.')
+        return []
+
+    print('정답지 생성 중')
+
+    # Build compact prompt
+    items = []
+    for p in problems:
+        pid = p.get('id') or p.get('problemNumber') or 0
+        text = extract_problem_text(p)
+        items.append({"id": pid, "text": text})
+
+    system = (
+        "너는 수학 평가 보조자이다. 각 문항의 정답만 산출하라. "
+        "해설이나 중간 과정 없이 최종 정답만 제공한다. 선택지가 있으면 (1~5 또는 ①~⑤) 중에서 하나만 반환한다. "
+        "출력은 JSON 배열로, 각 항목은 {\"id\":문항번호, \"answer\":\"정답\"} 형식으로만 출력하라."
+    )
+    user_payload = {
+        "problems": items,
+        "output": "JSON array of {id, answer} only"
+    }
+
+    data = {
+        "model": "deepseek-chat",
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": json.dumps(user_payload, ensure_ascii=False)}
+        ],
+        "max_tokens": 1000,
+        "temperature": 0.1
+    }
+
+    try:
+        r = requests.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json"
+            },
+            json=data,
+            timeout=60
+        )
+        r.encoding = 'utf-8'
+        if r.status_code != 200:
+            print(f"[WARN] LLM 호출 실패: {r.status_code} {r.text[:120]}")
+            return []
+        content = r.json()['choices'][0]['message']['content'].strip()
+        # Remove markdown fencing if any
+        if content.startswith('```'):
+            content = content.split('\n',1)[1]
+            if content.endswith('```'):
+                content = content[:-3]
+        # Try parse JSON
+        try:
+            ans = json.loads(content)
+            if isinstance(ans, list):
+                return ans
+        except Exception:
+            pass
+        print('[WARN] LLM 응답 파싱 실패, 원문 일부:', content[:160])
+        return []
+    except Exception as e:
+        print('[WARN] LLM 호출 예외:', e)
+        return []
+
+def answers_page_tex(answers):
+    if not answers:
+        return ''
+    # Sort by id
+    try:
+        answers = sorted(answers, key=lambda x: int(str(x.get('id'))))
+    except Exception:
+        pass
+
+    L = []
+    L.append(r"\newpage")
+    L.append(r"\thispagestyle{fancy}")
+    L.append(r"\begin{center}{\bfseries 정답}\end{center}")
+    L.append(r"\begin{enumerate}[label=\arabic*., leftmargin=*, itemsep=0.2em, topsep=0em]")
+    for item in answers:
+        ans = str(item.get('answer', '')).strip()
+        L.append(r"\item " + ans)
+    L.append(r"\end{enumerate}")
+    return "\n".join(L)
 
 def content_block_to_tex(block):
     """content_block을 LaTeX로 변환"""
@@ -417,7 +526,16 @@ def main():
         for problem in problems:
             parts.append(problem_to_tex(problem))
 
-        parts.append(tail_after_enumerate())
+        # 문제 섹션 종료 (정답 페이지는 별도 페이지로)
+        parts.append(tail_close_lists())
+
+        # 정답 생성 (DB 저장 없음, 즉시 생성)
+        answers = fetch_answers_via_llm(problems)
+        if answers:
+            parts.append(answers_page_tex(answers))
+
+        # 문서 종료
+        parts.append(r"\end{document}")
 
         # UTF-8로 저장
         tex_path.write_text("\n".join(parts), encoding="utf-8")
