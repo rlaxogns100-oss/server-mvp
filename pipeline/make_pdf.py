@@ -131,6 +131,8 @@ def firstpage_big_header():
     L.append(r"\noindent{\bfseries\Large " + META["academy"] + r"}\hfill{\bfseries " + META["series"] + r"}")
     L.append(r"\begin{center}{\bfseries\LARGE " + META["exam"] + r"}\end{center}")
     L.append(r"{\color{examBlue}\rule{\linewidth}{0.9pt}}")
+    # 안내 문구 (첫 장 상단)
+    L.append(r"{\footnotesize 문항 추출기를 이용하여 제작한 시험지입니다. ztyping.com}")
     L.append(r"\vspace{2mm}")
     L.append(r"\renewcommand{\arraystretch}{1.35}")
     L.append(r"\begin{tabularx}{\linewidth}{@{}lX lX lX lX@{}}")
@@ -183,11 +185,15 @@ def content_block_to_tex(block):
             return "\n".join(lines)
 
         elif block_type == 'image':
-            # 이미지 URL을 다운로드하고 로컬 경로로 변환
+            # 이미지 URL을 다운로드하고 로컬 경로로 변환 (문단 분리 + 센터 정렬로 블록 요소화)
             local_path = fetch_image(content)
             if local_path:
                 rel = os.path.relpath(local_path, start=BUILD).replace("\\", "/")
-                return r"\includegraphics[width=0.8\linewidth]{" + rel + "}"
+                return (
+                    r"\par\medskip\begin{center}"
+                    + r"\includegraphics[width=0.8\linewidth]{" + rel + "}"
+                    + r"\end{center}\par\medskip"
+                )
             else:
                 return f"[이미지 로드 실패: {content[:50]}]"
 
@@ -222,11 +228,15 @@ def content_block_to_tex(block):
             return "\n".join(lines)
 
         elif block_type == 'sub_image':
-            # 이미지 URL을 다운로드하고 로컬 경로로 변환 (앞에 여백 추가)
+            # 이미지 URL을 다운로드하고 로컬 경로로 변환 (앞에 여백 추가, 센터 정렬)
             local_path = fetch_image(content)
             if local_path:
                 rel = os.path.relpath(local_path, start=BUILD).replace("\\", "/")
-                return r"\vspace{1em}" + "\n" + r"\includegraphics[width=0.8\linewidth]{" + rel + "}"
+                return (
+                    r"\vspace{1em}\begin{center}"
+                    + r"\includegraphics[width=0.8\linewidth]{" + rel + "}"
+                    + r"\end{center}"
+                )
             else:
                 return r"\vspace{1em}" + "\n" + f"[이미지 로드 실패: {content[:50]}]"
 
