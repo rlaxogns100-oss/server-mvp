@@ -112,7 +112,7 @@ r"""\documentclass[10.5pt]{article}
 """ +
 ("\\fancyhead[L]{}"
  "\\fancyhead[C]{}"
- "\\fancyhead[R]{문항 추출기를 이용하여 제작한 시험지입니다. https://tzyping.com}"
+ "\\fancyhead[R]{\\vspace*{-6pt}\\textcolor{ruleGray}{\\small 문항 추출기를 이용하여 제작한 시험지입니다. https://tzyping.com}}"
  "\\fancyfoot[L]{}"
  "\\fancyfoot[C]{\\thepage}"
  "\\fancyfoot[R]{https://tzyping.com}\n") +
