@@ -94,21 +94,46 @@ function renderContent(content) {
   return content;
 }
 
+// 파일명 정규화: mojibake 감지 시에만 latin1→utf8 변환 후 NFC 정규화
+function normalizeFilename(name) {
+  if (!name) return name;
+  const toNFC = (s) => (typeof s.normalize === 'function' ? s.normalize('NFC') : s);
+
+  // 흔한 모지바케 패턴들: Ã, Â, �(U+FFFD)
+  const looksMojibake = /[ÃÂ�]/.test(name);
+
+  // latin1→utf8 재해석 후보
+  let converted;
+  try {
+    converted = Buffer.from(name, 'latin1').toString('utf8');
+  } catch (_) {
+    converted = name;
+  }
+
+  // 한글(자모/완성형) 개수 비교로 품질 판단
+  const countCJK = (s) => (s && s.match(/[\u3131-\u318E\uAC00-\uD7A3\u1100-\u11FF]/g) || []).length;
+  const cjkOriginal = countCJK(name);
+  const cjkConverted = countCJK(converted);
+
+  if (looksMojibake || cjkConverted > cjkOriginal) {
+    return toNFC(converted);
+  }
+  return toNFC(name);
+}
+
 // multer storage 설정 - 한글 파일명 인코딩 처리
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     cb(null, 'uploads/');
   },
   filename: (req, file, cb) => {
-    // multer가 latin1으로 잘못 파싱한 파일명을 utf8로 재인코딩
-    const originalName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-
-    // 재인코딩된 파일명을 file 객체에 저장
-    file.originalname = originalName;
+    // 파일명 정규화는 여기서 한 번만 수행
+    const normalizedName = normalizeFilename(file.originalname);
+    file.originalname = normalizedName;
 
     // 디스크에는 타임스탬프로 저장 (충돌 방지)
     const timestamp = Date.now();
-    const ext = path.extname(originalName);
+    const ext = path.extname(normalizedName);
     cb(null, `${timestamp}${ext}`);
   }
 });
@@ -116,9 +141,6 @@ const storage = multer.diskStorage({
 const upload = multer({
   storage: storage,
   fileFilter: (req, file, cb) => {
-    // 한글 파일명 재인코딩 (fileFilter는 filename보다 먼저 실행됨)
-    file.originalname = Buffer.from(file.originalname, 'latin1').toString('utf8');
-
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
     } else {
