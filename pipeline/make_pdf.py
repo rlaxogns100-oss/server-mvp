@@ -110,9 +110,9 @@ r"""\documentclass[10.5pt]{article}
 \renewcommand{\headrulewidth}{0.8pt}
 \renewcommand{\footrulewidth}{0.4pt}
 """ +
-("\\fancyhead[L]{"+META["grade"]+"}"
- "\\fancyhead[C]{"+META["series"]+"}"
- "\\fancyhead[R]{"+META["exam"]+"}"
+("\\fancyhead[L]{}"
+ "\\fancyhead[C]{}"
+ "\\fancyhead[R]{문항 추출기를 이용하여 제작한 시험지입니다. https://tzyping.com}"
  "\\fancyfoot[L]{"+META["footer_left"]+"}"
  "\\fancyfoot[C]{\\thepage}"
  "\\fancyfoot[R]{"+META["footer_right"]+"}\n") +
@@ -131,8 +131,6 @@ def firstpage_big_header():
     L.append(r"\noindent{\bfseries\Large " + META["academy"] + r"}\hfill{\bfseries " + META["series"] + r"}")
     L.append(r"\begin{center}{\bfseries\LARGE " + META["exam"] + r"}\end{center}")
     L.append(r"{\color{examBlue}\rule{\linewidth}{0.9pt}}")
-    # 안내 문구 (첫 장 상단)
-    L.append(r"{\footnotesize 문항 추출기를 이용하여 제작한 시험지입니다. ztyping.com}")
     L.append(r"\vspace{2mm}")
     L.append(r"\renewcommand{\arraystretch}{1.35}")
     L.append(r"\begin{tabularx}{\linewidth}{@{}lX lX lX lX@{}}")
