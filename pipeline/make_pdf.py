@@ -113,9 +113,9 @@ r"""\documentclass[10.5pt]{article}
 ("\\fancyhead[L]{}"
  "\\fancyhead[C]{}"
  "\\fancyhead[R]{문항 추출기를 이용하여 제작한 시험지입니다. https://tzyping.com}"
- "\\fancyfoot[L]{"+META["footer_left"]+"}"
+ "\\fancyfoot[L]{}"
  "\\fancyfoot[C]{\\thepage}"
- "\\fancyfoot[R]{"+META["footer_right"]+"}\n") +
+ "\\fancyfoot[R]{https://tzyping.com}\n") +
 r"""
 \setlength{\columnsep}{9mm}
 \setlength{\columnseprule}{0.5pt}
