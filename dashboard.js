@@ -1557,7 +1557,9 @@ async function downloadImages() {
 // ====== PDF 설정 모달 ======
 let pdfSettings = {
   template: 'exam1',
-  answerType: 'answers'
+  includeAnswers: true,
+  includeExplanations: false,
+  includeDetailedExplanations: false
 };
 
 function openSettingsModal() {
@@ -1573,13 +1575,19 @@ function openSettingsModal() {
     }
   });
   
-  document.querySelectorAll('.answer-option').forEach(option => {
-    if (option.dataset.answerType === pdfSettings.answerType) {
-      option.classList.add('selected');
-    } else {
-      option.classList.remove('selected');
-    }
-  });
+  // 정답/해설 옵션 초기화
+  const answersOption = document.querySelector('[data-answer-type="answers"]');
+  const explanationsOption = document.querySelector('[data-answer-type="explanations"]');
+  const detailedOption = document.querySelector('[data-answer-type="detailed"]');
+  const noneOption = document.querySelector('[data-answer-type="none"]');
+  
+  if (answersOption) answersOption.classList.toggle('selected', pdfSettings.includeAnswers);
+  if (explanationsOption) explanationsOption.classList.toggle('selected', pdfSettings.includeExplanations);
+  if (detailedOption) detailedOption.classList.toggle('selected', pdfSettings.includeDetailedExplanations);
+  if (noneOption) {
+    const isNone = !pdfSettings.includeAnswers && !pdfSettings.includeExplanations && !pdfSettings.includeDetailedExplanations;
+    noneOption.classList.toggle('selected', isNone);
+  }
   
   overlay.style.display = 'flex';
   
@@ -1619,13 +1627,48 @@ function openSettingsModal() {
     };
   });
   
-  // 정답/해설 옵션 클릭 이벤트
-  document.querySelectorAll('.answer-option').forEach(option => {
-    option.onclick = () => {
-      document.querySelectorAll('.answer-option').forEach(o => o.classList.remove('selected'));
-      option.classList.add('selected');
+  // 정답/해설 옵션 클릭 이벤트 (중복 선택 가능 로직)
+  if (answersOption) {
+    answersOption.onclick = () => {
+      // 없음 선택 해제
+      if (noneOption) noneOption.classList.remove('selected');
+      // 정답 토글
+      answersOption.classList.toggle('selected');
     };
-  });
+  }
+  
+  if (explanationsOption) {
+    explanationsOption.onclick = () => {
+      // 없음 선택 해제
+      if (noneOption) noneOption.classList.remove('selected');
+      // 자세한 해설 선택 해제 (상호 배타적)
+      if (detailedOption) detailedOption.classList.remove('selected');
+      // 해설 토글
+      explanationsOption.classList.toggle('selected');
+    };
+  }
+  
+  if (detailedOption) {
+    detailedOption.onclick = () => {
+      // 없음 선택 해제
+      if (noneOption) noneOption.classList.remove('selected');
+      // 해설 선택 해제 (상호 배타적)
+      if (explanationsOption) explanationsOption.classList.remove('selected');
+      // 자세한 해설 토글
+      detailedOption.classList.toggle('selected');
+    };
+  }
+  
+  if (noneOption) {
+    noneOption.onclick = () => {
+      // 모든 옵션 선택 해제
+      if (answersOption) answersOption.classList.remove('selected');
+      if (explanationsOption) explanationsOption.classList.remove('selected');
+      if (detailedOption) detailedOption.classList.remove('selected');
+      // 없음 선택
+      noneOption.classList.add('selected');
+    };
+  }
 }
 
 function closeSettingsModal() {
@@ -1643,10 +1686,13 @@ function applySettings() {
   }
   
   // 선택된 정답/해설 옵션 저장
-  const selectedAnswer = document.querySelector('.answer-option.selected');
-  if (selectedAnswer) {
-    pdfSettings.answerType = selectedAnswer.dataset.answerType;
-  }
+  const answersOption = document.querySelector('[data-answer-type="answers"]');
+  const explanationsOption = document.querySelector('[data-answer-type="explanations"]');
+  const detailedOption = document.querySelector('[data-answer-type="detailed"]');
+  
+  pdfSettings.includeAnswers = answersOption && answersOption.classList.contains('selected');
+  pdfSettings.includeExplanations = explanationsOption && explanationsOption.classList.contains('selected');
+  pdfSettings.includeDetailedExplanations = detailedOption && detailedOption.classList.contains('selected');
   
   console.log('✅ PDF 설정 적용:', pdfSettings);
   
