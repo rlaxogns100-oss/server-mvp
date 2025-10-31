@@ -140,6 +140,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({
   storage: storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
   fileFilter: (req, file, cb) => {
     if (file.mimetype === 'application/pdf') {
       cb(null, true);
@@ -2005,6 +2006,12 @@ const server = http.createServer((req, res) => {
     const uploadSingle = upload.single('pdf');
     uploadSingle(req, res, async (err) => {
       if (err) {
+        // 파일 크기 제한 초과 시 413 반환
+        if (err.code === 'LIMIT_FILE_SIZE') {
+          res.writeHead(413, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({ success: false, message: '업로드 용량 제한(10MB)을 초과했습니다.' }));
+          return;
+        }
         res.writeHead(400, {'Content-Type': 'text/html; charset=utf-8'});
         res.end(`
           <html>
