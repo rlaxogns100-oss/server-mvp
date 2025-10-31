@@ -1556,11 +1556,8 @@ async function downloadImages() {
 
 // ====== PDF 설정 모달 ======
 let pdfSettings = {
-  template: 'default',
-  includeAnswers: true,
-  includeExplanations: false,
-  separateAnswerPage: false,
-  blankMode: false
+  template: 'exam1',
+  answerType: 'answers'
 };
 
 function openSettingsModal() {
@@ -1576,10 +1573,13 @@ function openSettingsModal() {
     }
   });
   
-  document.getElementById('includeAnswers').checked = pdfSettings.includeAnswers;
-  document.getElementById('includeExplanations').checked = pdfSettings.includeExplanations;
-  document.getElementById('separateAnswerPage').checked = pdfSettings.separateAnswerPage;
-  document.getElementById('blankMode').checked = pdfSettings.blankMode;
+  document.querySelectorAll('.answer-option').forEach(option => {
+    if (option.dataset.answerType === pdfSettings.answerType) {
+      option.classList.add('selected');
+    } else {
+      option.classList.remove('selected');
+    }
+  });
   
   overlay.style.display = 'flex';
   
@@ -1610,31 +1610,21 @@ function openSettingsModal() {
   // 템플릿 카드 클릭 이벤트
   document.querySelectorAll('.template-card').forEach(card => {
     card.onclick = () => {
+      // disabled 카드는 선택 불가
+      if (card.classList.contains('disabled')) {
+        return;
+      }
       document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected');
     };
   });
   
-  // 체크박스 상호 배타적 처리 (정답/해설 옵션)
-  const answerCheckboxes = [
-    document.getElementById('includeAnswers'),
-    document.getElementById('includeExplanations'),
-    document.getElementById('separateAnswerPage'),
-    document.getElementById('blankMode')
-  ];
-  
-  answerCheckboxes.forEach(checkbox => {
-    if (checkbox) {
-      checkbox.onclick = () => {
-        if (checkbox.checked) {
-          answerCheckboxes.forEach(cb => {
-            if (cb && cb !== checkbox) {
-              cb.checked = false;
-            }
-          });
-        }
-      };
-    }
+  // 정답/해설 옵션 클릭 이벤트
+  document.querySelectorAll('.answer-option').forEach(option => {
+    option.onclick = () => {
+      document.querySelectorAll('.answer-option').forEach(o => o.classList.remove('selected'));
+      option.classList.add('selected');
+    };
   });
 }
 
@@ -1647,16 +1637,16 @@ function closeSettingsModal() {
 
 function applySettings() {
   // 선택된 템플릿 저장
-  const selectedTemplate = document.querySelector('.template-card.selected');
+  const selectedTemplate = document.querySelector('.template-card.selected:not(.disabled)');
   if (selectedTemplate) {
     pdfSettings.template = selectedTemplate.dataset.template;
   }
   
-  // 정답/해설 옵션 저장
-  pdfSettings.includeAnswers = document.getElementById('includeAnswers').checked;
-  pdfSettings.includeExplanations = document.getElementById('includeExplanations').checked;
-  pdfSettings.separateAnswerPage = document.getElementById('separateAnswerPage').checked;
-  pdfSettings.blankMode = document.getElementById('blankMode').checked;
+  // 선택된 정답/해설 옵션 저장
+  const selectedAnswer = document.querySelector('.answer-option.selected');
+  if (selectedAnswer) {
+    pdfSettings.answerType = selectedAnswer.dataset.answerType;
+  }
   
   console.log('✅ PDF 설정 적용:', pdfSettings);
   
@@ -1666,15 +1656,17 @@ function applySettings() {
   // 설정 적용 피드백
   const settingsBtn = document.getElementById('settingsBtn');
   if (settingsBtn) {
-    const originalText = settingsBtn.innerHTML;
-    settingsBtn.innerHTML = '✓';
+    const originalHTML = settingsBtn.innerHTML;
+    settingsBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
     settingsBtn.style.background = '#10b981';
     settingsBtn.style.color = 'white';
+    settingsBtn.style.borderColor = '#10b981';
     
     setTimeout(() => {
-      settingsBtn.innerHTML = originalText;
+      settingsBtn.innerHTML = originalHTML;
       settingsBtn.style.background = '';
       settingsBtn.style.color = '';
+      settingsBtn.style.borderColor = '';
     }, 1000);
   }
 }
