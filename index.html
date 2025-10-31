@@ -187,6 +187,12 @@
           <div class="exam-controls">
             <button class="btn primary" id="generatePdfBtn">PDF 생성</button>
             <button class="btn ghost" id="clearExam">초기화</button>
+            <button class="btn icon-btn" id="settingsBtn" title="설정">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="3"></circle>
+                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+              </svg>
+            </button>
           </div>
           
           <!-- PDF 생성 진행사항 표시 (기존 - 제거 예정) -->
@@ -260,6 +266,101 @@
       </div>
       <div class="progress-text-modal" id="progressTextModal">준비 중...</div>
       <div class="progress-details" id="progressDetails"></div>
+    </div>
+  </div>
+
+  <!-- PDF 설정 모달 -->
+  <div class="settings-modal-overlay" id="settingsModalOverlay" style="display: none;">
+    <div class="settings-modal">
+      <div class="settings-header">
+        <h3>PDF 설정</h3>
+        <button class="close-btn" id="closeSettingsBtn">×</button>
+      </div>
+      
+      <div class="settings-content">
+        <!-- 템플릿 선택 -->
+        <div class="settings-section">
+          <h4>템플릿 선택</h4>
+          <div class="template-grid">
+            <div class="template-card selected" data-template="default">
+              <div class="template-preview">
+                <div class="template-preview-page">
+                  <div class="preview-header"></div>
+                  <div class="preview-content">
+                    <div class="preview-line"></div>
+                    <div class="preview-line short"></div>
+                    <div class="preview-line"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="template-name">기본 템플릿</div>
+              <div class="template-check">✓</div>
+            </div>
+            
+            <div class="template-card" data-template="minimal">
+              <div class="template-preview">
+                <div class="template-preview-page minimal">
+                  <div class="preview-content">
+                    <div class="preview-line"></div>
+                    <div class="preview-line short"></div>
+                    <div class="preview-line"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="template-name">심플 템플릿</div>
+              <div class="template-check">✓</div>
+            </div>
+            
+            <div class="template-card" data-template="detailed">
+              <div class="template-preview">
+                <div class="template-preview-page">
+                  <div class="preview-header large"></div>
+                  <div class="preview-content">
+                    <div class="preview-line"></div>
+                    <div class="preview-line"></div>
+                    <div class="preview-line short"></div>
+                  </div>
+                  <div class="preview-footer"></div>
+                </div>
+              </div>
+              <div class="template-name">상세 템플릿</div>
+              <div class="template-check">✓</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 정답/해설 여부 -->
+        <div class="settings-section">
+          <h4>정답/해설 여부</h4>
+          <div class="toggle-group">
+            <label class="toggle-item">
+              <input type="checkbox" id="includeAnswers" checked>
+              <span class="toggle-label">정답</span>
+              <div class="toggle-switch"></div>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="includeExplanations">
+              <span class="toggle-label">해설</span>
+              <div class="toggle-switch"></div>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="separateAnswerPage">
+              <span class="toggle-label">자세한 해설</span>
+              <div class="toggle-switch"></div>
+            </label>
+            <label class="toggle-item">
+              <input type="checkbox" id="blankMode">
+              <span class="toggle-label">없음</span>
+              <div class="toggle-switch"></div>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-footer">
+        <button class="btn ghost" id="cancelSettingsBtn">취소</button>
+        <button class="btn primary" id="applySettingsBtn">적용</button>
+      </div>
     </div>
   </div>
 

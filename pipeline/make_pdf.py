@@ -130,7 +130,7 @@ def firstpage_big_header():
     L = []
     L.append(r"\thispagestyle{fancy}")
     L.append(r"\vspace*{-6mm}")
-    L.append(r"\noindent{\bfseries\Large " + META["academy"] + r"}\hfill{\bfseries " + META["series"] + r"}")
+    L.append(r"\noindent\hfill{\bfseries " + META["series"] + r"}")
     L.append(r"\begin{center}{\bfseries\LARGE " + META["exam"] + r"}\end{center}")
     L.append(r"{\color{examBlue}\rule{\linewidth}{0.9pt}}")
     L.append(r"\vspace{2mm}")

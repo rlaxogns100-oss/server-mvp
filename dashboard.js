@@ -1295,9 +1295,11 @@ function initDashboard(){
   // 버튼 이벤트를 즉시 연결 (지연 없음)
   const generateBtn = document.getElementById('generatePdfBtn');
   const clearBtn = document.getElementById('clearExam');
+  const settingsBtn = document.getElementById('settingsBtn');
 
   if (generateBtn) generateBtn.addEventListener('click', generatePdf);
   if (clearBtn) clearBtn.addEventListener('click', clearExam);
+  if (settingsBtn) settingsBtn.addEventListener('click', openSettingsModal);
 
   // DOM이 완전히 로드된 후 핸들 위치 재설정
   setTimeout(() => {
@@ -1551,5 +1553,133 @@ async function downloadImages() {
     hideProgressOverlay();
   }
 }
+
+// ====== PDF 설정 모달 ======
+let pdfSettings = {
+  template: 'default',
+  includeAnswers: true,
+  includeExplanations: false,
+  separateAnswerPage: false,
+  blankMode: false
+};
+
+function openSettingsModal() {
+  const overlay = document.getElementById('settingsModalOverlay');
+  if (!overlay) return;
+  
+  // 현재 설정값으로 UI 초기화
+  document.querySelectorAll('.template-card').forEach(card => {
+    if (card.dataset.template === pdfSettings.template) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+  
+  document.getElementById('includeAnswers').checked = pdfSettings.includeAnswers;
+  document.getElementById('includeExplanations').checked = pdfSettings.includeExplanations;
+  document.getElementById('separateAnswerPage').checked = pdfSettings.separateAnswerPage;
+  document.getElementById('blankMode').checked = pdfSettings.blankMode;
+  
+  overlay.style.display = 'flex';
+  
+  // 닫기 이벤트 등록 (중복 방지)
+  const closeBtn = document.getElementById('closeSettingsBtn');
+  const cancelBtn = document.getElementById('cancelSettingsBtn');
+  const applyBtn = document.getElementById('applySettingsBtn');
+  
+  if (closeBtn) {
+    closeBtn.onclick = closeSettingsModal;
+  }
+  
+  if (cancelBtn) {
+    cancelBtn.onclick = closeSettingsModal;
+  }
+  
+  if (applyBtn) {
+    applyBtn.onclick = applySettings;
+  }
+  
+  // 오버레이 클릭 시 닫기
+  overlay.onclick = (e) => {
+    if (e.target === overlay) {
+      closeSettingsModal();
+    }
+  };
+  
+  // 템플릿 카드 클릭 이벤트
+  document.querySelectorAll('.template-card').forEach(card => {
+    card.onclick = () => {
+      document.querySelectorAll('.template-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+    };
+  });
+  
+  // 체크박스 상호 배타적 처리 (정답/해설 옵션)
+  const answerCheckboxes = [
+    document.getElementById('includeAnswers'),
+    document.getElementById('includeExplanations'),
+    document.getElementById('separateAnswerPage'),
+    document.getElementById('blankMode')
+  ];
+  
+  answerCheckboxes.forEach(checkbox => {
+    if (checkbox) {
+      checkbox.onclick = () => {
+        if (checkbox.checked) {
+          answerCheckboxes.forEach(cb => {
+            if (cb && cb !== checkbox) {
+              cb.checked = false;
+            }
+          });
+        }
+      };
+    }
+  });
+}
+
+function closeSettingsModal() {
+  const overlay = document.getElementById('settingsModalOverlay');
+  if (overlay) {
+    overlay.style.display = 'none';
+  }
+}
+
+function applySettings() {
+  // 선택된 템플릿 저장
+  const selectedTemplate = document.querySelector('.template-card.selected');
+  if (selectedTemplate) {
+    pdfSettings.template = selectedTemplate.dataset.template;
+  }
+  
+  // 정답/해설 옵션 저장
+  pdfSettings.includeAnswers = document.getElementById('includeAnswers').checked;
+  pdfSettings.includeExplanations = document.getElementById('includeExplanations').checked;
+  pdfSettings.separateAnswerPage = document.getElementById('separateAnswerPage').checked;
+  pdfSettings.blankMode = document.getElementById('blankMode').checked;
+  
+  console.log('✅ PDF 설정 적용:', pdfSettings);
+  
+  // 모달 닫기
+  closeSettingsModal();
+  
+  // 설정 적용 피드백
+  const settingsBtn = document.getElementById('settingsBtn');
+  if (settingsBtn) {
+    const originalText = settingsBtn.innerHTML;
+    settingsBtn.innerHTML = '✓';
+    settingsBtn.style.background = '#10b981';
+    settingsBtn.style.color = 'white';
+    
+    setTimeout(() => {
+      settingsBtn.innerHTML = originalText;
+      settingsBtn.style.background = '';
+      settingsBtn.style.color = '';
+    }, 1000);
+  }
+}
+
+// 설정값을 외부에서 가져올 수 있도록 export
+window.getPdfSettings = () => pdfSettings;
 
 document.addEventListener('DOMContentLoaded', initDashboard);
