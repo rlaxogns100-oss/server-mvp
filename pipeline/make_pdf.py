@@ -169,25 +169,58 @@ def extract_problem_text(problem):
     return "\n".join(pieces)
 
 def _absolute_url_for_openai(u: str) -> str:
-    """OpenAI용 절대 URL. http/https 아니면 그대로 반환하지 않음(스킵)."""
+    """OpenAI용 절대 URL. 상대경로는 PUBLIC_BASE_URL과 결합."""
     if not u:
         return ''
     u = str(u).strip()
+    # 이미 절대 URL이면 그대로 반환
     if u.startswith('http://') or u.startswith('https://'):
         return u
-    return ''
+    # 상대경로인 경우 PUBLIC_BASE_URL과 결합
+    PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL', '')
+    if not PUBLIC_BASE_URL:
+        print(f"[WARN] PUBLIC_BASE_URL이 설정되지 않아 상대 이미지 경로를 변환할 수 없습니다: {u}")
+        return ''
+    # URL 결합 (중복 슬래시 제거)
+    base = PUBLIC_BASE_URL.rstrip('/')
+    path = u if u.startswith('/') else '/' + u
+    return base + path
 
 def _build_mm_for_openai(problem):
-    """OpenAI chat.completions 멀티모달 포맷 구성."""
-    text = extract_problem_text(problem)
-    content = [{"type": "text", "text": f"문항 #{problem.get('id') or problem.get('problemNumber') or ''}\n{text}"}]
-    for b in (problem.get('content_blocks') or []):
-        t = (b.get('type') or '').lower()
-        c = (b.get('content') or '').strip()
-        if t in ('image', 'sub_image') and c:
-            url = _absolute_url_for_openai(c)
-            if url:
-                content.append({"type": "image_url", "image_url": {"url": url}})
+    """OpenAI chat.completions 멀티모달 포맷 구성 - content_blocks 순서대로 전부 전송."""
+    content = []
+    pid = problem.get('id') or problem.get('problemNumber') or ''
+    
+    # content_blocks 전체를 순서대로 처리
+    content_blocks = problem.get('content_blocks') or []
+    print(f'[DEBUG] 문항 {pid}: content_blocks 총 {len(content_blocks)}개')
+    
+    for idx, b in enumerate(content_blocks):
+        block_type = (b.get('type') or '').lower()
+        block_content = (b.get('content') or '').strip()
+        
+        if block_type in ('text', 'condition', 'table', 'sub_text', 'sub_condition', 'sub_table'):
+            if block_content:
+                content.append({"type": "text", "text": block_content})
+                print(f'[DEBUG]   블록 {idx}: {block_type} - 텍스트 {len(block_content)}자')
+        
+        elif block_type in ('image', 'sub_image'):
+            if block_content:
+                url = _absolute_url_for_openai(block_content)
+                if url:
+                    content.append({"type": "image_url", "image_url": {"url": url}})
+                    print(f'[DEBUG]   블록 {idx}: {block_type} - 이미지 URL: {url[:80]}...')
+                else:
+                    print(f'[WARN]   블록 {idx}: {block_type} - 상대경로 스킵: {block_content[:80]}')
+    
+    # 선택지 추가
+    options = problem.get('options') or []
+    if options:
+        options_text = "선택지:\n" + "\n".join([f"({i+1}) {opt}" for i, opt in enumerate(options)])
+        content.append({"type": "text", "text": options_text})
+        print(f'[DEBUG]   선택지: {len(options)}개')
+    
+    print(f'[DEBUG] 최종 content 블록 수: {len(content)}개 (텍스트 + 이미지 + 선택지)')
     return content
 
 def fetch_answers_via_llm(problems):
