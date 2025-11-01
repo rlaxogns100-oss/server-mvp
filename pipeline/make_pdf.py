@@ -702,6 +702,8 @@ def problem_to_tex(problem, idx=None, show_meta=False):
         if meta_parts:
             meta_text = " ".join(meta_parts)
             safe_meta = _latex_escape_expl(meta_text)
+            # 번호 기준선보다 한 줄 위에 메타를 표시하기 위해 음수 vspace 사용
+            L.append(r"\vspace*{-\baselineskip}")
             L.append(r"\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}")
             L.append(r"\vspace{0.3em}")
 
