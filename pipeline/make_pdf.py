@@ -655,6 +655,17 @@ def main():
 
         # PDF 생성
         build_pdf(tex_path)
+        
+        # 생성된 정답 출력 (로그 마지막에 표시)
+        if answers:
+            print("\n" + "=" * 60)
+            print("📝 생성된 정답 목록")
+            print("=" * 60)
+            for ans_item in answers:
+                ans_id = ans_item.get('id', '?')
+                ans_val = ans_item.get('answer', 'N/A')
+                print(f"문항 {ans_id}: {ans_val}")
+            print("=" * 60 + "\n")
 
         client.close()
 
