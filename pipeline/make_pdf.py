@@ -287,13 +287,27 @@ def fetch_answers_via_llm(problems):
                 answers.append({"id": pid, "answer": "N/A", "explanation": "API 오류"})
                 continue
 
-            content_str = r.json()['choices'][0]['message']['content'].strip()
-            print(f'[DEBUG] LLM 응답: {content_str[:150]}...')
+            resp_json = r.json()
+            print(f'[DEBUG] 전체 응답 구조: {resp_json}')
             
+            content_str = resp_json['choices'][0]['message']['content'].strip()
+            print(f'[DEBUG] LLM 응답 내용 (전체): {content_str}')
+            
+            if not content_str:
+                print(f'[WARN] 빈 응답 수신 (문항 {pid})')
+                answers.append({"id": pid, "answer": "N/A", "explanation": "빈 응답"})
+                continue
+            
+            # Markdown 코드 블록 제거 (```json ... ```)
             if content_str.startswith('```'):
-                content_str = content_str.split('\n', 1)[1]
+                lines = content_str.split('\n')
+                # 첫 줄 (```json 등) 제거
+                if len(lines) > 1:
+                    content_str = '\n'.join(lines[1:])
+                # 마지막 줄 (```) 제거
                 if content_str.endswith('```'):
-                    content_str = content_str[:-3]
+                    content_str = content_str[:-3].strip()
+            
             try:
                 parsed = json.loads(content_str)
                 if isinstance(parsed, dict) and 'answer' in parsed:
