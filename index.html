@@ -353,13 +353,23 @@
           </div>
         </div>
 
-        <!-- 문항 정보 표시 -->
+        <!-- 문항 정보 표시 (개별 체크) -->
         <div class="settings-section">
           <h4>문항 정보 입력</h4>
-          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
-            <input type="checkbox" id="showProblemMetaCheckbox" />
-            <span>파일/페이지/번호 표기 (예: file:2025모의고사 page:1 id:4)</span>
-          </label>
+          <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="metaFileCheckbox" />
+              <span>파일</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="metaPageCheckbox" />
+              <span>페이지</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+              <input type="checkbox" id="metaIdCheckbox" />
+              <span>번호</span>
+            </label>
+          </div>
         </div>
       </div>
 

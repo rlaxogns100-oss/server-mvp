@@ -2428,11 +2428,20 @@ async function runPythonPDFGenerator(examData) {
 
     // test_pdf.py에 문제 ID들을 커맨드라인 인자로 전달
     const answersType = (examData.settings && examData.settings.answerType) || 'none';
-    const showMeta = !!(examData.settings && examData.settings.showProblemMeta);
+    // 개별 메타 표시 플래그 (신규)
+    const showMetaFile = !!(examData.settings && (examData.settings.showMetaFile));
+    const showMetaPage = !!(examData.settings && (examData.settings.showMetaPage));
+    const showMetaId   = !!(examData.settings && (examData.settings.showMetaId));
+    // 레거시 호환: showProblemMeta가 true면 전체 표시로 간주
+    const legacyShowMeta = !!(examData.settings && examData.settings.showProblemMeta);
+    const showMetaAny = legacyShowMeta || showMetaFile || showMetaPage || showMetaId;
     const mergedEnv = {
       ...process.env,
       ANSWERS_MODE: answersType === 'answers-only' ? 'answers-only' : 'none',
-      SHOW_META: showMeta ? '1' : '0'
+      SHOW_META: showMetaAny ? '1' : '0',
+      SHOW_META_FILE: (legacyShowMeta || showMetaFile) ? '1' : '0',
+      SHOW_META_PAGE: (legacyShowMeta || showMetaPage) ? '1' : '0',
+      SHOW_META_ID:   (legacyShowMeta || showMetaId)   ? '1' : '0'
     };
 
     const pythonProcess = spawn(PYTHON_BIN, pythonArgs, {

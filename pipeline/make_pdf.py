@@ -673,19 +673,34 @@ def options_tex(opts):
 def problem_to_tex(problem, idx=None, show_meta=False):
     """문제 하나를 LaTeX로 변환"""
     L = []
-    L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
-
-    # 문항 메타 표기 (발문 바로 윗줄, 우측 정렬, 충돌 방지용 여백 포함)
+    # 문항 메타 표기 (발문 바로 윗줄, 우측 정렬, 충돌 방지)
     if show_meta:
+        # 개별 표시 플래그 반영
+        show_meta_file = os.getenv('SHOW_META_FILE', '0') == '1'
+        show_meta_page = os.getenv('SHOW_META_PAGE', '0') == '1'
+        show_meta_id = os.getenv('SHOW_META_ID', '0') == '1'
+
         meta_file = str(problem.get('file') or problem.get('source_file') or problem.get('origin_filename') or 'null')
         meta_page = str(problem.get('page') or problem.get('pageNumber') or 'null')
         raw_id = problem.get('problemNumber') or (idx if idx is not None else problem.get('_id'))
         meta_id = str(raw_id) if raw_id is not None else 'null'
-        meta_text = f"file:{meta_file} page:{meta_page} id:{meta_id}"
-        safe_meta = _latex_escape_expl(meta_text)
-        L.append(r"\vspace{0.2em}")
-        L.append(r"\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}")
-        L.append(r"\vspace{0.6em}")
+
+        meta_parts = []
+        if show_meta_file:
+            meta_parts.append(f"file:{meta_file}")
+        if show_meta_page:
+            meta_parts.append(f"page:{meta_page}")
+        if show_meta_id:
+            meta_parts.append(f"id:{meta_id}")
+
+        if meta_parts:
+            meta_text = " ".join(meta_parts)
+            safe_meta = _latex_escape_expl(meta_text)
+            L.append(r"\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}")
+            L.append(r"\vspace{0.8em}")
+
+    # 이제 번호와 발문 블록 시작 (메타 아래 줄에 위치)
+    L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
 
     # content_blocks 처리
     content_blocks = problem.get('content_blocks', [])

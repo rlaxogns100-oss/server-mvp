@@ -1347,7 +1347,11 @@ async function generatePdf() {
       }).filter(problem => problem._id), // _id가 있는 문제만 필터링
       settings: {
         answerType: pdfSettings.answerType,
-        showProblemMeta: !!pdfSettings.showProblemMeta
+        // 신규 개별 메타 플래그 전달 (레거시도 서버에서 병합됨)
+        showMetaFile: !!pdfSettings.showMetaFile,
+        showMetaPage: !!pdfSettings.showMetaPage,
+        showMetaId: !!pdfSettings.showMetaId,
+        showProblemMeta: !!pdfSettings.showProblemMeta // backward compat
       }
     };
     
@@ -1562,6 +1566,11 @@ async function downloadImages() {
 let pdfSettings = {
   template: 'exam1',
   answerType: 'none',
+  // 신규: 개별 메타 표시 플래그
+  showMetaFile: false,
+  showMetaPage: false,
+  showMetaId: false,
+  // 레거시 호환: 전체 표시
   showProblemMeta: false
 };
 
@@ -1587,9 +1596,13 @@ function openSettingsModal() {
     }
   });
 
-  // 문항 정보 표기 체크박스 초기화
-  const metaCb = document.getElementById('showProblemMetaCheckbox');
-  if (metaCb) metaCb.checked = !!pdfSettings.showProblemMeta;
+  // 문항 정보 표기 체크박스 초기화 (개별)
+  const cbFile = document.getElementById('metaFileCheckbox');
+  const cbPage = document.getElementById('metaPageCheckbox');
+  const cbId = document.getElementById('metaIdCheckbox');
+  if (cbFile) cbFile.checked = !!pdfSettings.showMetaFile;
+  if (cbPage) cbPage.checked = !!pdfSettings.showMetaPage;
+  if (cbId) cbId.checked = !!pdfSettings.showMetaId;
   
   overlay.style.display = 'flex';
   
@@ -1658,9 +1671,13 @@ function applySettings() {
     pdfSettings.answerType = selectedAnswer.dataset.answerType;
   }
 
-  // 문항 정보 표기 저장
-  const metaCb = document.getElementById('showProblemMetaCheckbox');
-  pdfSettings.showProblemMeta = !!(metaCb && metaCb.checked);
+  // 문항 정보 표기 저장 (개별)
+  const cbFile = document.getElementById('metaFileCheckbox');
+  const cbPage = document.getElementById('metaPageCheckbox');
+  const cbId = document.getElementById('metaIdCheckbox');
+  pdfSettings.showMetaFile = !!(cbFile && cbFile.checked);
+  pdfSettings.showMetaPage = !!(cbPage && cbPage.checked);
+  pdfSettings.showMetaId = !!(cbId && cbId.checked);
   
   console.log('✅ PDF 설정 적용:', pdfSettings);
   
