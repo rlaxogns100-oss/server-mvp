@@ -836,13 +836,6 @@ def main():
         parts.append(preamble_before_document())
         parts.append(firstpage_big_header())
 
-    except Exception as e:
-        print(f"❌ 오류 발생: {e}")
-        import traceback
-        traceback.print_exc()
-        # 에러 발생 시 종료 코드 1로 종료
-        sys.exit(1)
-
     # 모든 문제 추가
         SHOW_META = os.getenv('SHOW_META', '0') == '1'
         for i, problem in enumerate(problems, 1):
@@ -891,6 +884,13 @@ def main():
             print("=" * 60 + "\n")
 
         client.close()
+
+    except Exception as e:
+        print(f"❌ 오류 발생: {e}")
+        import traceback
+        traceback.print_exc()
+        # 에러 발생 시 종료 코드 1로 종료
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
