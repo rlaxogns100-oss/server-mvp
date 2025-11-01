@@ -677,10 +677,7 @@ def problem_to_tex(problem, idx=None, show_meta=False):
     if idx == 1:
         L.append(r"\vspace{1em}")
 
-    # 번호와 발문 블록 시작
-    L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
-
-    # 문항 메타 표기 (발문 바로 윗줄, 우측 정렬, 아이템 박스 내에 포함)
+    # 문항 메타 표기 (발문 바로 윗줄, 우측 정렬, 번호/발문과 분리)
     if show_meta:
         show_meta_file = os.getenv('SHOW_META_FILE', '0') == '1'
         show_meta_page = os.getenv('SHOW_META_PAGE', '0') == '1'
@@ -702,8 +699,11 @@ def problem_to_tex(problem, idx=None, show_meta=False):
         if meta_parts:
             meta_text = " ".join(meta_parts)
             safe_meta = _latex_escape_expl(meta_text)
-            # 번호/발문과 같은 줄 기준으로, 메타를 위로 띄워서(한 줄 위) 공간을 차지하지 않게 출력
-            L.append(r"\smash{\raisebox{1.0\baselineskip}{\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}}}")
+            L.append(r"\noindent\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}")
+            L.append(r"\vspace{0.15em}")
+
+    # 번호와 발문 블록 시작
+    L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
 
     # content_blocks 처리
     content_blocks = problem.get('content_blocks', [])
