@@ -248,9 +248,9 @@ def fetch_answers_via_llm(problems):
         '2. 선택지가 있으면 반드시 그 중에서 선택하라 (예: ①, ②, 11, 등)\n'
         '3. 계산 과정은 생략하고 최종 정답만 answer에 적어라\n'
         '4. 해설은 핵심 아이디어만 100자 이내로 간결하게 적어라\n'
-        '5. 수식은 LaTeX 형식으로 작성하라 (예: $x^2$, $\\frac{a}{b}$)\n\n'
+        '5. LaTeX 수식을 사용할 때는 백슬래시를 2번 사용하라 (예: $x^2$, $\\\\frac{a}{b}$, $\\\\sqrt{x}$)\n\n'
         '**출력 형식 (JSON만):**\n'
-        '{"id": 1, "answer": "정답", "explanation": "해설"}\n\n'
+        '{"id": 1, "answer": "정답", "explanation": "해설 (LaTeX 백슬래시는 \\\\\\\\로)"}\n\n'
         '불확실하면 "N/A"를 반환하고 이유를 explanation에 적어라.'
     )
 
@@ -331,7 +331,8 @@ def fetch_answers_via_llm(problems):
                     content_str = content_str[:-3].strip()
             
             try:
-                parsed = json.loads(content_str)
+                # JSON 파싱 시도 (strict=False로 이스케이프 문제 완화)
+                parsed = json.loads(content_str, strict=False)
                 if isinstance(parsed, dict) and 'answer' in parsed:
                     ans = str(parsed.get('answer', '')).strip()
                     exp = str(parsed.get('explanation', '')).strip()
@@ -339,10 +340,37 @@ def fetch_answers_via_llm(problems):
                     answers.append({"id": pid, "answer": ans, "explanation": exp})
                 else:
                     print(f'[WARN] JSON 파싱 결과에 answer 키 없음')
-                    answers.append({"id": pid, "answer": str(content_str), "explanation": ""})
-            except Exception as parse_err:
+                    # answer만 추출 시도
+                    try:
+                        import re
+                        ans_match = re.search(r'"answer"\s*:\s*"([^"]+)"', content_str)
+                        if ans_match:
+                            ans = ans_match.group(1)
+                            print(f'[DEBUG] ⚠️ 정규식으로 정답 추출: {ans}')
+                            answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류"})
+                        else:
+                            answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 실패"})
+                    except:
+                        answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 실패"})
+            except json.JSONDecodeError as parse_err:
                 print(f'[WARN] JSON 파싱 실패: {parse_err}')
-                answers.append({"id": pid, "answer": str(content_str), "explanation": ""})
+                # 정규식으로 answer 추출 시도
+                try:
+                    import re
+                    ans_match = re.search(r'"answer"\s*:\s*"([^"]+)"', content_str)
+                    if ans_match:
+                        ans = ans_match.group(1)
+                        print(f'[DEBUG] ⚠️ 정규식으로 정답 추출 성공: {ans}')
+                        answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류 (정규식 추출)"})
+                    else:
+                        print(f'[WARN] 정규식 추출도 실패, 원본 반환')
+                        answers.append({"id": pid, "answer": "N/A", "explanation": f"파싱 오류: {str(parse_err)[:50]}"})
+                except Exception as regex_err:
+                    print(f'[ERROR] 정규식 추출 실패: {regex_err}')
+                    answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 완전 실패"})
+            except Exception as parse_err:
+                print(f'[ERROR] 예외 발생: {parse_err}')
+                answers.append({"id": pid, "answer": "N/A", "explanation": f"예외: {str(parse_err)[:50]}"})
         except Exception as e:
             print(f"[ERROR] ❌ OpenAI 호출 예외 (문항 {pid}): {e}")
             import traceback
