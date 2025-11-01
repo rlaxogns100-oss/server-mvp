@@ -702,10 +702,8 @@ def problem_to_tex(problem, idx=None, show_meta=False):
         if meta_parts:
             meta_text = " ".join(meta_parts)
             safe_meta = _latex_escape_expl(meta_text)
-            # 번호 기준선보다 한 줄 위에 메타를 표시하기 위해 음수 vspace 사용
-            L.append(r"\vspace*{-\baselineskip}")
-            L.append(r"\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}")
-            L.append(r"\vspace{0.3em}")
+            # 번호/발문과 같은 줄 기준으로, 메타를 위로 띄워서(한 줄 위) 공간을 차지하지 않게 출력
+            L.append(r"\smash{\raisebox{1.0\baselineskip}{\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}}}")
 
     # content_blocks 처리
     content_blocks = problem.get('content_blocks', [])
