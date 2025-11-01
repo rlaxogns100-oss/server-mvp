@@ -344,19 +344,22 @@
         <div class="settings-section">
           <h4>정답/해설 여부</h4>
           <div class="answer-options">
-            <div class="answer-option selected" data-answer-type="answers-only">
-              <div class="option-text">정답</div>
-            </div>
-            <div class="answer-option" data-answer-type="answers-explanations">
-              <div class="option-text">정답 + 해설</div>
-            </div>
-            <div class="answer-option" data-answer-type="answers-detailed">
-              <div class="option-text">정답 + 자세한 해설</div>
-            </div>
-            <div class="answer-option" data-answer-type="none">
+            <div class="answer-option selected" data-answer-type="none">
               <div class="option-text">없음</div>
             </div>
+            <div class="answer-option" data-answer-type="answers-only">
+              <div class="option-text">정답 (beta)</div>
+            </div>
           </div>
+        </div>
+
+        <!-- 문항 정보 표시 -->
+        <div class="settings-section">
+          <h4>문항 정보 입력</h4>
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="showProblemMetaCheckbox" />
+            <span>파일/페이지/번호 표기 (예: file:2025모의고사 page:1 id:4)</span>
+          </label>
         </div>
       </div>
 

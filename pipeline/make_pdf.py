@@ -288,17 +288,10 @@ def fetch_answers_via_llm(problems):
 
     system_prompt = (
         '너는 한국 고등학교 수학 문제를 푸는 전문가다.\n'
-        '주어진 문제를 정확히 풀고 최종 정답과 깔끔한 해설을 제시하라.\n\n'
-        '지침:\n'
-        '- 이미지의 그래프, 도형, 표를 정밀하게 분석하라\n'
-        '- 선택지가 있으면 반드시 그 중 하나를 선택하라 (①, ②, ③ 형식 또는 숫자)\n'
-        '- 주관식이면 최종 답만 숫자나 식으로 적어라\n'
-        '- 해설은 핵심 풀이 과정을 깔끔하게 서술하라 (과도하게 길지 않게)\n'
-        '- 답을 모르면 정직하게 "풀 수 없음"이라고 적어라\n\n'
-        '출력 형식 (반드시 JSON):\n'
-        '{"id": 문항번호, "answer": "정답", "explanation": "깔끔한 해설"}\n\n'
-        '예시:\n'
-        '{"id": 1, "answer": "15", "explanation": "두 직선 사이의 거리 공식을 적용하면 d의 제곱은 5가 된다."}'
+        '주어진 문제를 정확히 풀고 최종 정답만 한국어로 제시하라.\n'
+        '선택지가 있으면 반드시 그 중에서 고르되, 주관식이면 숫자나 수식으로만 답하라.\n\n'
+        '출력 형식 (JSON 한 줄):\n'
+        '{"id": 문항번호, "answer": "정답"}'
     )
 
     answers = []
@@ -381,9 +374,8 @@ def fetch_answers_via_llm(problems):
                 parsed = json.loads(content_str, strict=False)
                 if isinstance(parsed, dict) and 'answer' in parsed:
                     ans = str(parsed.get('answer', '')).strip()
-                    exp = str(parsed.get('explanation', '')).strip()
                     print(f'[DEBUG] ✅ 정답 파싱 성공: {ans[:30]}')
-                    answers.append({"id": pid, "answer": ans, "explanation": exp})
+                    answers.append({"id": pid, "answer": ans})
                 else:
                     print(f'[WARN] JSON 파싱 결과에 answer 키 없음')
                     # answer만 추출 시도
@@ -393,11 +385,11 @@ def fetch_answers_via_llm(problems):
                         if ans_match:
                             ans = ans_match.group(1)
                             print(f'[DEBUG] ⚠️ 정규식으로 정답 추출: {ans}')
-                            answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류"})
+                            answers.append({"id": pid, "answer": ans})
                         else:
-                            answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 실패"})
+                            answers.append({"id": pid, "answer": "N/A"})
                     except:
-                        answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 실패"})
+                        answers.append({"id": pid, "answer": "N/A"})
             except json.JSONDecodeError as parse_err:
                 print(f'[WARN] JSON 파싱 실패: {parse_err}')
                 # 정규식으로 answer 추출 시도
@@ -407,16 +399,16 @@ def fetch_answers_via_llm(problems):
                     if ans_match:
                         ans = ans_match.group(1)
                         print(f'[DEBUG] ⚠️ 정규식으로 정답 추출 성공: {ans}')
-                        answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류 (정규식 추출)"})
+                        answers.append({"id": pid, "answer": ans})
                     else:
                         print(f'[WARN] 정규식 추출도 실패, 원본 반환')
-                        answers.append({"id": pid, "answer": "N/A", "explanation": f"파싱 오류: {str(parse_err)[:50]}"})
+                        answers.append({"id": pid, "answer": "N/A"})
                 except Exception as regex_err:
                     print(f'[ERROR] 정규식 추출 실패: {regex_err}')
-                    answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 완전 실패"})
+                    answers.append({"id": pid, "answer": "N/A"})
             except Exception as parse_err:
                 print(f'[ERROR] 예외 발생: {parse_err}')
-                answers.append({"id": pid, "answer": "N/A", "explanation": f"예외: {str(parse_err)[:50]}"})
+                answers.append({"id": pid, "answer": "N/A"})
         except Exception as e:
             print(f"[ERROR] ❌ OpenAI 호출 예외 (문항 {pid}): {e}")
             import traceback
@@ -445,9 +437,9 @@ def fetch_answers_via_gemini(problems):
 
     system_prompt = (
         '너는 한국 고등학교 수학 문제를 푸는 전문가다.\n'
-        '주어진 문제를 정확히 풀고 최종 정답과 깔끔한 해설을 한국어로 제시하라.\n\n'
+        '주어진 문제를 정확히 풀고 최종 정답만 한국어로 제시하라.\n\n'
         '출력 형식 (JSON 한 줄):\n'
-        '{"id": 문항번호, "answer": "정답", "explanation": "깔끔한 해설"}'
+        '{"id": 문항번호, "answer": "정답"}'
     )
 
     answers = []
@@ -496,18 +488,17 @@ def fetch_answers_via_gemini(problems):
                 parsed = json.loads(content_str, strict=False)
                 if isinstance(parsed, dict) and 'answer' in parsed:
                     ans = str(parsed.get('answer', '')).strip()
-                    exp = str(parsed.get('explanation', '')).strip()
                     print(f'[DEBUG] ✅ 정답 파싱 성공(Gemini): {ans[:30]}')
-                    answers.append({"id": pid, "answer": ans, "explanation": exp})
+                    answers.append({"id": pid, "answer": ans})
                 else:
                     import re
                     m = re.search(r'"answer"\s*:\s*"([^"]+)"', content_str)
                     if m:
                         ans = m.group(1)
                         print(f'[DEBUG] ⚠️ 정규식 정답 추출(Gemini): {ans}')
-                        answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류"})
+                        answers.append({"id": pid, "answer": ans})
                     else:
-                        answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 실패"})
+                        answers.append({"id": pid, "answer": "N/A"})
             except json.JSONDecodeError as parse_err:
                 print(f'[WARN] JSON 파싱 실패(Gemini): {parse_err}')
                 import re
@@ -515,9 +506,9 @@ def fetch_answers_via_gemini(problems):
                 if m:
                     ans = m.group(1)
                     print(f'[DEBUG] ⚠️ 정규식 정답 추출 성공(Gemini): {ans}')
-                    answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류 (정규식)"})
+                    answers.append({"id": pid, "answer": ans})
                 else:
-                    answers.append({"id": pid, "answer": "N/A", "explanation": f"파싱 오류: {str(parse_err)[:50]}"})
+                    answers.append({"id": pid, "answer": "N/A"})
         except requests.exceptions.Timeout:
             print(f"[ERROR] ❌ Gemini 호출 예외 (문항 {pid}): Read timed out")
             answers.append({"id": pid, "answer": "N/A", "explanation": "타임아웃"})
@@ -564,12 +555,7 @@ def answers_page_tex(answers):
     L.append(r"\begin{enumerate}[label=\arabic*., leftmargin=*, itemsep=0.4em, topsep=0.2em]")
     for item in answers:
         ans = str(item.get('answer', '')).strip()
-        exp = _latex_escape_expl(str(item.get('explanation', '')).strip())
-        if len(exp) > 120:
-            exp = exp[:120] + '…'
         line = (r"\item \textbf{정답:} " + ans)
-        if exp:
-            line += (r"\\{\small \textcolor{ruleGray}{해설: " + exp + r"}}")
         L.append(line)
     L.append(r"\end{enumerate}")
     return "\n".join(L)
@@ -684,10 +670,20 @@ def options_tex(opts):
     lines.append(r"\end{enumerate}")
     return "\n".join(lines)
 
-def problem_to_tex(problem):
+def problem_to_tex(problem, idx=None, show_meta=False):
     """문제 하나를 LaTeX로 변환"""
     L = []
     L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
+
+    # 문항 메타 표기 (좌측 상단, 작게)
+    if show_meta:
+        meta_file = str(problem.get('source_file') or problem.get('file') or problem.get('origin_filename') or '')
+        meta_page = str(problem.get('page') or problem.get('pageNumber') or '')
+        meta_id = str(problem.get('problemNumber') or (idx if idx is not None else problem.get('_id')))
+        meta_text = f"file:{meta_file} page:{meta_page} id:{meta_id}"
+        safe_meta = _latex_escape_expl(meta_text)
+        L.append(r"{\small\color{ruleGray} " + safe_meta + r"}")
+        L.append(r"\vspace{0.3em}")
 
     # content_blocks 처리
     content_blocks = problem.get('content_blocks', [])
@@ -840,25 +836,30 @@ def main():
         parts.append(preamble_before_document())
         parts.append(firstpage_big_header())
 
-        # 모든 문제 추가
-        for problem in problems:
-            parts.append(problem_to_tex(problem))
+    # 모든 문제 추가
+    SHOW_META = os.getenv('SHOW_META', '0') == '1'
+    for i, problem in enumerate(problems, 1):
+        parts.append(problem_to_tex(problem, idx=i, show_meta=SHOW_META))
 
         # 문제 섹션 종료 (정답 페이지는 별도 페이지로)
         parts.append(tail_close_lists())
 
-        # 정답 생성 (DB 저장 없음, 즉시 생성)
-        print('=' * 60)
-        print('정답 페이지 생성 시작')
-        print('=' * 60)
-        answers = fetch_answers_via_llm(problems)
-        print(f'[DEBUG] fetch_answers_via_llm 결과: {len(answers)}개 답안')
-        if answers:
-            print('[DEBUG] 정답 페이지 LaTeX 추가 중...')
-            parts.append(answers_page_tex(answers))
-            print('[DEBUG] 정답 페이지 추가 완료')
+        # 정답 생성은 환경설정(톱니바퀴)에서 선택된 경우에만 진행
+        ANSWERS_MODE = os.getenv('ANSWERS_MODE', 'none')
+        if ANSWERS_MODE == 'answers-only':
+            print('=' * 60)
+            print('정답 페이지 생성 시작 (answers-only 모드)')
+            print('=' * 60)
+            answers = fetch_answers_via_llm(problems)
+            print(f'[DEBUG] fetch_answers_via_llm 결과: {len(answers)}개 답안')
+            if answers:
+                print('[DEBUG] 정답 페이지 LaTeX 추가 중...')
+                parts.append(answers_page_tex(answers))
+                print('[DEBUG] 정답 페이지 추가 완료')
+            else:
+                print('[WARN] 정답이 없어 정답 페이지를 생성하지 않습니다. API 키 및 네트워크를 확인하세요.')
         else:
-            print('[WARN] 정답이 없어 정답 페이지를 생성하지 않습니다. API 키 및 네트워크를 확인하세요.')
+            print('[INFO] ANSWERS_MODE!=answers-only 이므로 정답 페이지를 생성하지 않습니다.')
 
         # 문서 종료
         parts.append(r"\end{document}")

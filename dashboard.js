@@ -1344,7 +1344,11 @@ async function generatePdf() {
         return {
           _id: problem.data?._id
         };
-      }).filter(problem => problem._id) // _id가 있는 문제만 필터링
+      }).filter(problem => problem._id), // _id가 있는 문제만 필터링
+      settings: {
+        answerType: pdfSettings.answerType,
+        showProblemMeta: !!pdfSettings.showProblemMeta
+      }
     };
     
     console.log('🔍 최종 examData:', examData);
@@ -1557,7 +1561,8 @@ async function downloadImages() {
 // ====== PDF 설정 모달 ======
 let pdfSettings = {
   template: 'exam1',
-  answerType: 'answers-only'
+  answerType: 'none',
+  showProblemMeta: false
 };
 
 function openSettingsModal() {
@@ -1581,6 +1586,10 @@ function openSettingsModal() {
       option.classList.remove('selected');
     }
   });
+
+  // 문항 정보 표기 체크박스 초기화
+  const metaCb = document.getElementById('showProblemMetaCheckbox');
+  if (metaCb) metaCb.checked = !!pdfSettings.showProblemMeta;
   
   overlay.style.display = 'flex';
   
@@ -1648,6 +1657,10 @@ function applySettings() {
   if (selectedAnswer) {
     pdfSettings.answerType = selectedAnswer.dataset.answerType;
   }
+
+  // 문항 정보 표기 저장
+  const metaCb = document.getElementById('showProblemMetaCheckbox');
+  pdfSettings.showProblemMeta = !!(metaCb && metaCb.checked);
   
   console.log('✅ PDF 설정 적용:', pdfSettings);
   

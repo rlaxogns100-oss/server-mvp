@@ -2427,9 +2427,17 @@ async function runPythonPDFGenerator(examData) {
     console.log(`🐍 Python 실행 명령어:`, PYTHON_BIN, pythonArgs);
 
     // test_pdf.py에 문제 ID들을 커맨드라인 인자로 전달
+    const answersType = (examData.settings && examData.settings.answerType) || 'none';
+    const showMeta = !!(examData.settings && examData.settings.showProblemMeta);
+    const mergedEnv = {
+      ...process.env,
+      ANSWERS_MODE: answersType === 'answers-only' ? 'answers-only' : 'none',
+      SHOW_META: showMeta ? '1' : '0'
+    };
+
     const pythonProcess = spawn(PYTHON_BIN, pythonArgs, {
       cwd: process.cwd(),
-      env: { ...process.env },
+      env: mergedEnv,
       stdio: ['ignore', 'pipe', 'pipe']
     });
 
