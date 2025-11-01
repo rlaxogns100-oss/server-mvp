@@ -673,9 +673,15 @@ def options_tex(opts):
 def problem_to_tex(problem, idx=None, show_meta=False):
     """문제 하나를 LaTeX로 변환"""
     L = []
-    # 문항 메타 표기 (발문 바로 윗줄, 우측 정렬, 충돌 방지)
+    # 단 첫 문제(1번) 상단 간격 보정
+    if idx == 1:
+        L.append(r"\vspace{1em}")
+
+    # 번호와 발문 블록 시작
+    L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
+
+    # 문항 메타 표기 (발문 바로 윗줄, 우측 정렬, 아이템 박스 내에 포함)
     if show_meta:
-        # 개별 표시 플래그 반영
         show_meta_file = os.getenv('SHOW_META_FILE', '0') == '1'
         show_meta_page = os.getenv('SHOW_META_PAGE', '0') == '1'
         show_meta_id = os.getenv('SHOW_META_ID', '0') == '1'
@@ -697,10 +703,7 @@ def problem_to_tex(problem, idx=None, show_meta=False):
             meta_text = " ".join(meta_parts)
             safe_meta = _latex_escape_expl(meta_text)
             L.append(r"\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}")
-            L.append(r"\vspace{0.8em}")
-
-    # 이제 번호와 발문 블록 시작 (메타 아래 줄에 위치)
-    L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
+            L.append(r"\vspace{0.3em}")
 
     # content_blocks 처리
     content_blocks = problem.get('content_blocks', [])
