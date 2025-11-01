@@ -265,8 +265,8 @@ def fetch_answers_via_llm(problems):
         # 모델에 따라 적절한 파라미터 사용
         if model.startswith('gpt-5') or model.startswith('o1') or model.startswith('o3') or model.startswith('o4'):
             # GPT-5/o-시리즈: reasoning 모델이므로 충분한 토큰 필요
-            # reasoning_tokens + actual_output_tokens를 고려하여 1000으로 설정
-            payload["max_completion_tokens"] = 1000
+            # 복잡한 수학 문제는 추론에 많은 토큰 소모 → 5000으로 증가
+            payload["max_completion_tokens"] = 5000
         else:
             # 기존 모델: max_tokens, temperature 모두 지원
             payload["max_tokens"] = 220
