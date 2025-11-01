@@ -223,6 +223,39 @@ def _build_mm_for_openai(problem):
     print(f'[DEBUG] 최종 content 블록 수: {len(content)}개 (텍스트 + 이미지 + 선택지)')
     return content
 
+def _build_text_for_deepseek(problem):
+    """DeepSeek(Prover/Reasoner)용 텍스트 프롬프트 구성.
+    - 멀티모달 미지원 가정: 이미지 URL은 참고용으로 텍스트에 나열만 함
+    - content_blocks 텍스트를 순서대로 결합하고, 선택지를 명시
+    """
+    pid = problem.get('id') or problem.get('problemNumber') or ''
+    blocks = problem.get('content_blocks') or []
+    lines = []
+    lines.append(f"문항 ID: {pid}")
+    text_parts = []
+    image_urls = []
+    for idx, b in enumerate(blocks):
+        t = (b.get('type') or '').lower()
+        c = (b.get('content') or '').strip()
+        if t in ('text', 'condition', 'table', 'sub_text', 'sub_condition', 'sub_table') and c:
+            text_parts.append(c)
+        elif t in ('image', 'sub_image') and c:
+            url = _absolute_url_for_openai(c) or c
+            image_urls.append(url)
+    if text_parts:
+        lines.append("문제:")
+        lines.append("\n".join(text_parts))
+    if image_urls:
+        lines.append("이미지(참고용 URL):")
+        for u in image_urls:
+            lines.append(f"- {u}")
+    opts = problem.get('options') or []
+    if opts:
+        lines.append("선택지:")
+        for i, opt in enumerate(opts, 1):
+            lines.append(f"({i}) {opt}")
+    return "\n".join(lines).strip()
+
 def fetch_answers_via_llm(problems):
     """OpenAI GPT 기반: 각 문항별 정답 + 100자 이내 짧은 해설 생성.
     - 이미지 URL이 있으면 vision 입력으로 전송
@@ -231,6 +264,12 @@ def fetch_answers_via_llm(problems):
     print('[DEBUG] fetch_answers_via_llm 호출됨')
     print(f'[DEBUG] 입력 문제 수: {len(problems)}')
     
+    # 프로바이더 선택: openai(기본) / deepseek
+    provider = (os.getenv('LLM_PROVIDER') or 'openai').lower()
+    if provider.startswith('deepseek'):
+        print('[INFO] DeepSeek 제공자 경로로 전환합니다 (텍스트 전용).')
+        return fetch_answers_via_deepseek(problems)
+
     api_key = os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_api') or os.getenv('OPENAI_KEY')
     if not api_key:
         print('[ERROR] ❌ OPENAI_API_KEY가 설정되지 않았습니다!')
@@ -381,6 +420,120 @@ def fetch_answers_via_llm(problems):
 
     print('=' * 60)
     print(f'[INFO] ✅ 정답지 생성 완료: 총 {len(answers)}개 답안')
+    print('=' * 60)
+    return answers
+
+def fetch_answers_via_deepseek(problems):
+    """DeepSeek API (chat.completions) 사용: Prover/Reasoner 계열 텍스트 모델용.
+    - 멀티모달 미지원 가정 → 이미지 URL은 텍스트로만 전달
+    - env: DEEPSEEK_API_KEY, DEEPSEEK_MODEL (기본: deepseek-reasoner)
+    - 출력 파싱은 OpenAI 경로와 동일 로직 재사용
+    """
+    print('[DEBUG] fetch_answers_via_deepseek 호출됨')
+    print(f'[DEBUG] 입력 문제 수: {len(problems)}')
+
+    api_key = os.getenv('DEEPSEEK_API_KEY') or os.getenv('DEEPSEEK_KEY')
+    if not api_key:
+        print('[ERROR] ❌ DEEPSEEK_API_KEY가 설정되지 않았습니다!')
+        return []
+    model = os.getenv('DEEPSEEK_MODEL', 'deepseek-reasoner')
+    print(f'[INFO] 정답지 생성 중 (DeepSeek 모델: {model}, 문항 수: {len(problems)})')
+
+    system_prompt = (
+        '너는 한국 고등학교 수학 문제 풀이 전문가다.\n'
+        '주어진 문제를 정확히 풀고 최종 정답과 깔끔한 해설을 한국어로 제시하라.\n'
+        '이미지 URL이 제공되면 참고하되, 응답은 텍스트만으로 작성하라.\n\n'
+        '출력 형식 (JSON 한 줄):\n'
+        '{"id": 문항번호, "answer": "정답", "explanation": "깔끔한 해설"}'
+    )
+
+    answers = []
+    for idx, p in enumerate(problems, 1):
+        pid = p.get('id') or p.get('problemNumber') or 0
+        print(f'[DEBUG] (DeepSeek) 문항 {idx}/{len(problems)} (ID: {pid}) 처리 중...')
+        user_text = _build_text_for_deepseek(p)
+        print(f'[DEBUG] (DeepSeek) 전송 텍스트 길이: {len(user_text)}자')
+
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_text}
+            ],
+            "max_tokens": 800,
+            "temperature": 0.3
+        }
+
+        try:
+            print(f'[DEBUG] DeepSeek API 호출 중... (timeout: 60s)')
+            r = requests.post(
+                "https://api.deepseek.com/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json=payload,
+                timeout=60
+            )
+            r.encoding = 'utf-8'
+            print(f'[DEBUG] API 응답 상태: {r.status_code}')
+            if r.status_code != 200:
+                print(f"[WARN] ❌ DeepSeek 호출 실패 (문항 {pid}): {r.status_code}")
+                print(f"[WARN] 응답 내용: {r.text[:200]}")
+                answers.append({"id": pid, "answer": "N/A", "explanation": "API 오류"})
+                continue
+
+            resp_json = r.json()
+            print(f'[DEBUG] 전체 응답 구조(DeepSeek): {resp_json}')
+            content_str = (resp_json.get('choices') or [{}])[0].get('message', {}).get('content', '')
+            content_str = (content_str or '').strip()
+            print(f'[DEBUG] LLM 응답 내용 (DeepSeek 전체): {content_str}')
+
+            if not content_str:
+                print(f'[WARN] 빈 응답 수신 (문항 {pid})')
+                answers.append({"id": pid, "answer": "N/A", "explanation": "빈 응답"})
+                continue
+
+            if content_str.startswith('```'):
+                lines = content_str.split('\n')
+                if len(lines) > 1:
+                    content_str = '\n'.join(lines[1:])
+                if content_str.endswith('```'):
+                    content_str = content_str[:-3].strip()
+
+            try:
+                parsed = json.loads(content_str, strict=False)
+                if isinstance(parsed, dict) and 'answer' in parsed:
+                    ans = str(parsed.get('answer', '')).strip()
+                    exp = str(parsed.get('explanation', '')).strip()
+                    print(f'[DEBUG] ✅ 정답 파싱 성공(DeepSeek): {ans[:30]}')
+                    answers.append({"id": pid, "answer": ans, "explanation": exp})
+                else:
+                    print(f'[WARN] JSON 파싱 결과에 answer 키 없음(DeepSeek)')
+                    import re
+                    m = re.search(r'"answer"\s*:\s*"([^"]+)"', content_str)
+                    if m:
+                        ans = m.group(1)
+                        print(f'[DEBUG] ⚠️ 정규식 정답 추출(DeepSeek): {ans}')
+                        answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류"})
+                    else:
+                        answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 실패"})
+            except json.JSONDecodeError as parse_err:
+                print(f'[WARN] JSON 파싱 실패(DeepSeek): {parse_err}')
+                import re
+                m = re.search(r'"answer"\s*:\s*"([^"]+)"', content_str)
+                if m:
+                    ans = m.group(1)
+                    print(f'[DEBUG] ⚠️ 정규식 정답 추출 성공(DeepSeek): {ans}')
+                    answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류 (정규식)"})
+                else:
+                    answers.append({"id": pid, "answer": "N/A", "explanation": f"파싱 오류: {str(parse_err)[:50]}"})
+        except requests.exceptions.Timeout:
+            print(f"[ERROR] ❌ DeepSeek 호출 예외 (문항 {pid}): Read timed out")
+            answers.append({"id": pid, "answer": "N/A", "explanation": "타임아웃"})
+        except Exception as e:
+            print(f"[ERROR] ❌ DeepSeek 호출 예외 (문항 {pid}): {e}")
+            answers.append({"id": pid, "answer": "N/A", "explanation": f"네트워크 오류: {e}"})
+
+    print('=' * 60)
+    print(f'[INFO] ✅ 정답지 생성 완료(DeepSeek): 총 {len(answers)}개 답안')
     print('=' * 60)
     return answers
 
