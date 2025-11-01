@@ -253,15 +253,21 @@ def fetch_answers_via_llm(problems):
         print(f'[DEBUG] 문항 {idx}/{len(problems)} (ID: {pid}) 처리 중...')
         content = _build_mm_for_openai(p)
         print(f'[DEBUG] 멀티모달 content 구성 완료 (블록 수: {len(content)})')
+        # GPT-5 시리즈는 max_completion_tokens 사용, 기존 모델은 max_tokens 사용
         payload = {
             "model": model,
             "messages": [
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": content}
             ],
-            "max_tokens": 220,
             "temperature": 0.1
         }
+        
+        # 모델에 따라 적절한 토큰 제한 파라미터 사용
+        if model.startswith('gpt-5') or model.startswith('o1') or model.startswith('o3') or model.startswith('o4'):
+            payload["max_completion_tokens"] = 220
+        else:
+            payload["max_tokens"] = 220
         try:
             print(f'[DEBUG] OpenAI API 호출 중... (timeout: 60s)')
             r = requests.post(
