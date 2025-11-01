@@ -18,6 +18,7 @@ import hashlib
 import urllib.request
 from urllib.parse import urlparse
 import requests
+import base64
 import json
 
 # UTF-8 인코딩 강제 설정 (Windows cp949 문제 해결)
@@ -223,6 +224,46 @@ def _build_mm_for_openai(problem):
     print(f'[DEBUG] 최종 content 블록 수: {len(content)}개 (텍스트 + 이미지 + 선택지)')
     return content
 
+def _build_mm_for_gemini(problem):
+    """Gemini generateContent parts 구성 (텍스트 + inline 이미지)."""
+    parts = []
+    # 텍스트 파츠: content_blocks 중 텍스트성 요소를 합쳐 하나로
+    text_chunks = []
+    blocks = problem.get('content_blocks') or []
+    for b in blocks:
+        t = (b.get('type') or '').lower()
+        c = (b.get('content') or '').strip()
+        if t in ('text', 'condition', 'table', 'sub_text', 'sub_condition', 'sub_table') and c:
+            text_chunks.append(c)
+    if text_chunks:
+        parts.append({"text": "\n".join(text_chunks)})
+    # 이미지 파츠: 다운로드 후 base64 inline_data로 첨부
+    for b in blocks:
+        t = (b.get('type') or '').lower()
+        c = (b.get('content') or '').strip()
+        if t in ('image', 'sub_image') and c:
+            local_path = fetch_image(_absolute_url_for_openai(c) or c)
+            try:
+                if local_path and local_path.exists():
+                    data = local_path.read_bytes()
+                    b64 = base64.b64encode(data).decode('utf-8')
+                    ext = str(local_path).lower()
+                    mime = 'image/jpeg'
+                    if ext.endswith('.png'):
+                        mime = 'image/png'
+                    elif ext.endswith('.gif'):
+                        mime = 'image/gif'
+                    elif ext.endswith('.webp'):
+                        mime = 'image/webp'
+                    parts.append({"inline_data": {"mime_type": mime, "data": b64}})
+            except Exception as _:
+                pass
+    # 선택지 파츠
+    opts = problem.get('options') or []
+    if opts:
+        parts.append({"text": "선택지:\n" + "\n".join([f"({i+1}) {opt}" for i, opt in enumerate(opts)])})
+    return parts
+
 def fetch_answers_via_llm(problems):
     """OpenAI GPT 기반: 각 문항별 정답 + 깔끔한 해설 생성.
     - 이미지 URL이 있으면 vision 입력으로 전송
@@ -231,6 +272,10 @@ def fetch_answers_via_llm(problems):
     print('[DEBUG] fetch_answers_via_llm 호출됨')
     print(f'[DEBUG] 입력 문제 수: {len(problems)}')
     
+    provider = (os.getenv('LLM_PROVIDER') or 'openai').lower()
+    if provider == 'gemini':
+        return fetch_answers_via_gemini(problems)
+
     api_key = os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_api') or os.getenv('OPENAI_KEY')
     if not api_key:
         print('[ERROR] ❌ OPENAI_API_KEY가 설정되지 않았습니다!')
@@ -380,6 +425,108 @@ def fetch_answers_via_llm(problems):
 
     print('=' * 60)
     print(f'[INFO] ✅ 정답지 생성 완료: 총 {len(answers)}개 답안')
+    print('=' * 60)
+    return answers
+
+def fetch_answers_via_gemini(problems):
+    """Google Gemini API 사용: 2.5-pro 등 멀티모달(텍스트+이미지) 입력 지원.
+    - env: GEMINI (API Key), GEMINI_MODEL (기본: gemini-2.5-pro)
+    - 이미지: inline_data(base64)로 전송
+    """
+    print('[DEBUG] fetch_answers_via_gemini 호출됨')
+    print(f'[DEBUG] 입력 문제 수: {len(problems)}')
+
+    api_key = os.getenv('GEMINI') or os.getenv('GOOGLE_API_KEY')
+    if not api_key:
+        print('[ERROR] ❌ GEMINI API 키가 없습니다 (.env: GEMINI)')
+        return []
+    model = os.getenv('GEMINI_MODEL', 'gemini-2.5-pro')
+    print(f'[INFO] 정답지 생성 중 (Gemini 모델: {model}, 문항 수: {len(problems)})')
+
+    system_prompt = (
+        '너는 한국 고등학교 수학 문제를 푸는 전문가다.\n'
+        '주어진 문제를 정확히 풀고 최종 정답과 깔끔한 해설을 한국어로 제시하라.\n\n'
+        '출력 형식 (JSON 한 줄):\n'
+        '{"id": 문항번호, "answer": "정답", "explanation": "깔끔한 해설"}'
+    )
+
+    answers = []
+    for idx, p in enumerate(problems, 1):
+        pid = p.get('id') or p.get('problemNumber') or 0
+        print(f'[DEBUG] (Gemini) 문항 {idx}/{len(problems)} (ID: {pid}) 처리 중...')
+        parts = _build_mm_for_gemini(p)
+        print(f'[DEBUG] (Gemini) parts 수: {len(parts)} (텍스트/이미지 합산)')
+
+        payload = {
+            "system_instruction": {"role": "system", "parts": [{"text": system_prompt}]},
+            "contents": [{"role": "user", "parts": parts}],
+            "generationConfig": {"maxOutputTokens": 8000, "temperature": 0.3}
+        }
+
+        try:
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+            print('[DEBUG] Gemini API 호출 중... (timeout: 120s)')
+            r = requests.post(url, json=payload, timeout=120)
+            print(f'[DEBUG] API 응답 상태: {r.status_code}')
+            if r.status_code != 200:
+                print(f"[WARN] ❌ Gemini 호출 실패 (문항 {pid}): {r.status_code}")
+                print(f"[WARN] 응답 내용: {r.text[:250]}")
+                answers.append({"id": pid, "answer": "N/A", "explanation": "API 오류"})
+                continue
+
+            resp = r.json()
+            # candidates[0].content.parts[*].text 결합
+            cand = (resp.get('candidates') or [{}])[0]
+            parts_out = (cand.get('content') or {}).get('parts') or []
+            content_str = "".join([p.get('text', '') for p in parts_out]).strip()
+            print(f'[DEBUG] LLM 응답 내용 (Gemini 전체): {content_str[:400]}')
+
+            if not content_str:
+                answers.append({"id": pid, "answer": "N/A", "explanation": "빈 응답"})
+                continue
+
+            if content_str.startswith('```'):
+                lines = content_str.split('\n')
+                if len(lines) > 1:
+                    content_str = '\n'.join(lines[1:])
+                if content_str.endswith('```'):
+                    content_str = content_str[:-3].strip()
+
+            try:
+                parsed = json.loads(content_str, strict=False)
+                if isinstance(parsed, dict) and 'answer' in parsed:
+                    ans = str(parsed.get('answer', '')).strip()
+                    exp = str(parsed.get('explanation', '')).strip()
+                    print(f'[DEBUG] ✅ 정답 파싱 성공(Gemini): {ans[:30]}')
+                    answers.append({"id": pid, "answer": ans, "explanation": exp})
+                else:
+                    import re
+                    m = re.search(r'"answer"\s*:\s*"([^"]+)"', content_str)
+                    if m:
+                        ans = m.group(1)
+                        print(f'[DEBUG] ⚠️ 정규식 정답 추출(Gemini): {ans}')
+                        answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류"})
+                    else:
+                        answers.append({"id": pid, "answer": "N/A", "explanation": "정답 추출 실패"})
+            except json.JSONDecodeError as parse_err:
+                print(f'[WARN] JSON 파싱 실패(Gemini): {parse_err}')
+                import re
+                m = re.search(r'"answer"\s*:\s*"([^"]+)"', content_str)
+                if m:
+                    ans = m.group(1)
+                    print(f'[DEBUG] ⚠️ 정규식 정답 추출 성공(Gemini): {ans}')
+                    answers.append({"id": pid, "answer": ans, "explanation": "JSON 파싱 오류 (정규식)"})
+                else:
+                    answers.append({"id": pid, "answer": "N/A", "explanation": f"파싱 오류: {str(parse_err)[:50]}"})
+        except requests.exceptions.Timeout:
+            print(f"[ERROR] ❌ Gemini 호출 예외 (문항 {pid}): Read timed out")
+            answers.append({"id": pid, "answer": "N/A", "explanation": "타임아웃"})
+        except Exception as e:
+            print(f"[ERROR] ❌ Gemini 호출 예외 (문항 {pid}): {e}")
+            answers.append({"id": pid, "answer": "N/A", "explanation": f"네트워크 오류: {e}"})
+
+    print('=' * 60)
+    print(f'[INFO] ✅ 정답지 생성 완료(Gemini): 총 {len(answers)}개 답안')
     print('=' * 60)
     return answers
 
