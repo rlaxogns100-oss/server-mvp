@@ -242,16 +242,18 @@ def fetch_answers_via_llm(problems):
     print(f'[INFO] 정답지 생성 중 (모델: {model}, 문항 수: {len(problems)})')
 
     system_prompt = (
-        '너는 한국 고등학교 수학 전문가다. 주어진 문제를 단계별로 풀고 최종 정답과 간단한 해설을 제공하라.\n\n'
-        '**중요 규칙:**\n'
-        '1. 이미지의 그래프, 도형, 수식을 정확히 분석하라\n'
-        '2. 선택지가 있으면 반드시 그 중에서 선택하라 (예: ①, ②, 11, 등)\n'
-        '3. 계산 과정은 생략하고 최종 정답만 answer에 적어라\n'
-        '4. 해설은 핵심 아이디어만 100자 이내로 간결하게 적어라\n'
-        '5. LaTeX 수식을 사용할 때는 백슬래시를 2번 사용하라 (예: $x^2$, $\\\\frac{a}{b}$, $\\\\sqrt{x}$)\n\n'
-        '**출력 형식 (JSON만):**\n'
-        '{"id": 1, "answer": "정답", "explanation": "해설 (LaTeX 백슬래시는 \\\\\\\\로)"}\n\n'
-        '불확실하면 "N/A"를 반환하고 이유를 explanation에 적어라.'
+        '너는 한국 고등학교 수학 문제를 푸는 전문가다.\n'
+        '주어진 문제를 정확히 풀고 최종 정답만 간결하게 제시하라.\n\n'
+        '지침:\n'
+        '- 이미지의 그래프, 도형, 표를 정밀하게 분석하라\n'
+        '- 선택지가 있으면 반드시 그 중 하나를 선택하라 (①, ②, ③ 형식 또는 숫자)\n'
+        '- 주관식이면 최종 답만 숫자나 식으로 적어라\n'
+        '- 해설은 핵심 풀이 과정만 1-2문장으로 적어라\n'
+        '- 답을 모르면 정직하게 "풀 수 없음"이라고 적어라\n\n'
+        '출력 형식 (반드시 JSON):\n'
+        '{"id": 문항번호, "answer": "정답", "explanation": "간단한 해설"}\n\n'
+        '예시:\n'
+        '{"id": 1, "answer": "15", "explanation": "두 직선의 거리 공식을 적용하면 d^2=5"}'
     )
 
     answers = []
@@ -290,8 +292,8 @@ def fetch_answers_via_llm(problems):
             payload["max_completion_tokens"] = 5000
         else:
             # GPT-4o 등 일반 모델: max_tokens, temperature 모두 지원
-            payload["max_tokens"] = 500  # 정답 + 해설을 위해 충분히 설정
-            payload["temperature"] = 0.1  # 낮은 temperature로 일관성 있는 답변
+            payload["max_tokens"] = 800  # 복잡한 문제를 위해 충분히 설정
+            payload["temperature"] = 0.3  # 약간 높여서 문제 해결 능력 향상
         try:
             print(f'[DEBUG] OpenAI API 호출 중... (timeout: 60s)')
             r = requests.post(
