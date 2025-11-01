@@ -675,14 +675,15 @@ def problem_to_tex(problem, idx=None, show_meta=False):
     L = []
     L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
 
-    # 문항 메타 표기 (좌측 상단, 작게)
+    # 문항 메타 표기 (발문 윗줄, 우측 정렬, 작게)
     if show_meta:
-        meta_file = str(problem.get('source_file') or problem.get('file') or problem.get('origin_filename') or '')
-        meta_page = str(problem.get('page') or problem.get('pageNumber') or '')
-        meta_id = str(problem.get('problemNumber') or (idx if idx is not None else problem.get('_id')))
+        meta_file = str(problem.get('file') or problem.get('source_file') or problem.get('origin_filename') or 'null')
+        meta_page = str(problem.get('page') or problem.get('pageNumber') or 'null')
+        raw_id = problem.get('problemNumber') or (idx if idx is not None else problem.get('_id'))
+        meta_id = str(raw_id) if raw_id is not None else 'null'
         meta_text = f"file:{meta_file} page:{meta_page} id:{meta_id}"
         safe_meta = _latex_escape_expl(meta_text)
-        L.append(r"{\small\color{ruleGray} " + safe_meta + r"}")
+        L.append(r"\noindent\hfill{\small\color{ruleGray} " + safe_meta + r"}")
         L.append(r"\vspace{0.3em}")
 
     # content_blocks 처리
@@ -815,6 +816,22 @@ def main():
         for pid in problem_ids:
             problem = db.problems.find_one({"_id": ObjectId(pid)})
             if problem:
+                # 파일명 보강: 문제의 fileid로 files 컬렉션에서 filename 조회
+                try:
+                    file_id_val = problem.get('fileid') or problem.get('file_id') or problem.get('fileId') or problem.get('source_file_id')
+                    filename_val = None
+                    if file_id_val:
+                        try:
+                            fid = ObjectId(str(file_id_val))
+                            fdoc = db.files.find_one({"_id": fid})
+                            if fdoc:
+                                filename_val = fdoc.get('filename') or fdoc.get('name') or fdoc.get('originalname')
+                        except Exception as e:
+                            print(f"[WARN] 파일명 조회 실패 (fileid={file_id_val}): {e}")
+                    if filename_val:
+                        problem['file'] = filename_val
+                except Exception as _:
+                    pass
                 problems.append(problem)
                 print(f"문제 찾음: {pid}")
             else:
