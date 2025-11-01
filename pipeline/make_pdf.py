@@ -675,7 +675,7 @@ def problem_to_tex(problem, idx=None, show_meta=False):
     L = []
     L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
 
-    # 문항 메타 표기 (발문 윗줄, 우측 정렬, 작게)
+    # 문항 메타 표기 (발문 바로 윗줄, 우측 정렬, 충돌 방지용 여백 포함)
     if show_meta:
         meta_file = str(problem.get('file') or problem.get('source_file') or problem.get('origin_filename') or 'null')
         meta_page = str(problem.get('page') or problem.get('pageNumber') or 'null')
@@ -683,8 +683,9 @@ def problem_to_tex(problem, idx=None, show_meta=False):
         meta_id = str(raw_id) if raw_id is not None else 'null'
         meta_text = f"file:{meta_file} page:{meta_page} id:{meta_id}"
         safe_meta = _latex_escape_expl(meta_text)
-        L.append(r"\noindent\hfill{\small\color{ruleGray} " + safe_meta + r"}")
-        L.append(r"\vspace{0.3em}")
+        L.append(r"\vspace{0.2em}")
+        L.append(r"\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}")
+        L.append(r"\vspace{0.6em}")
 
     # content_blocks 처리
     content_blocks = problem.get('content_blocks', [])
