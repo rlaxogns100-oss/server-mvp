@@ -34,6 +34,11 @@ MONGODB_DATABASE = os.getenv('MONGODB_DATABASE', 'ZeroTyping')
 BUILD = Path("build")
 IMGDIR = BUILD / "images"
 
+# LLM/호출 관련 환경변수 (비전 사용 여부 및 퍼블릭 URL)
+DEEPSEEK_VISION_MODEL = os.getenv('DEEPSEEK_VISION_MODEL', 'deepseek-vl')
+PUBLIC_BASE_URL = os.getenv('PUBLIC_BASE_URL', '').strip()  # 예: https://tzyping.com
+FORCE_VISION = os.getenv('FORCE_VISION', 'false').lower() == 'true'
+
 META = {
     "academy": "수학학원명",
     "grade": "고1",
@@ -168,6 +173,104 @@ def extract_problem_text(problem):
         pieces.append("선택지: " + " | ".join([str(o) for o in opts]))
     return "\n".join(pieces)
 
+def _absolute_url(u: str) -> str:
+    """절대 URL 보장: http/https가 아니면 PUBLIC_BASE_URL을 접두로 붙임"""
+    if not u:
+        return ''
+    u = str(u).strip()
+    if u.startswith('http://') or u.startswith('https://'):
+        return u
+    if not PUBLIC_BASE_URL:
+        return ''  # 외부 접근 불가 → 비전 호출 시 해당 이미지는 스킵
+    return PUBLIC_BASE_URL.rstrip('/') + '/' + u.lstrip('/')
+
+def _build_mm_content_for_problem(problem):
+    """멀티모달 content 구성 (텍스트 + 이미지 URL)"""
+    text = extract_problem_text(problem)
+    content = [
+        {"type": "text", "text": f"문항 #{problem.get('id') or problem.get('problemNumber') or ''}\n{text}"}
+    ]
+
+    blocks = problem.get('content_blocks', []) or []
+    for b in blocks:
+        t = (b.get('type') or '').lower()
+        c = (b.get('content') or '').strip()
+        if t in ('image', 'sub_image') and c:
+            url = _absolute_url(c)
+            if url:
+                # OpenAI 호환 포맷 우선
+                content.append({"type": "image_url", "image_url": {"url": url}})
+    return content
+
+def _call_deepseek_vision(mm_content, api_key: str, model: str):
+    """DeepSeek 비전 모델 호출. 포맷 A 실패 시 포맷 B로 재시도."""
+    system_prompt = (
+        "너는 수학 정답 생성기다. 각 문항에 대해 '최종 정답'만 산출한다. "
+        "정보가 부족하면 'N/A'를 반환한다. 출력은 JSON {\"id\":문항번호, \"answer\":\"정답\"} 한 줄만."
+    )
+
+    # 포맷 A: OpenAI 호환 (text + image_url)
+    payload_a = {
+        "model": model,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": mm_content}
+        ],
+        "max_tokens": 200,
+        "temperature": 0.1
+    }
+
+    def _post(payload):
+        r = requests.post(
+            "https://api.deepseek.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=60
+        )
+        r.encoding = 'utf-8'
+        return r
+
+    r = _post(payload_a)
+    if r.status_code != 200:
+        # 포맷 B: 일부 구현체는 input_text/input_image를 사용
+        alt_content = []
+        for part in mm_content:
+            if part.get('type') == 'text':
+                alt_content.append({"type": "input_text", "text": part.get('text', '')})
+            elif part.get('type') == 'image_url':
+                img = part.get('image_url') or {}
+                url = img.get('url') or ''
+                if url:
+                    alt_content.append({"type": "input_image", "image_url": url})
+        payload_b = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": alt_content}
+            ],
+            "max_tokens": 200,
+            "temperature": 0.1
+        }
+        r = _post(payload_b)
+
+    if r.status_code != 200:
+        return None, f"{r.status_code} {r.text[:120]}"
+
+    try:
+        content = r.json()['choices'][0]['message']['content'].strip()
+        if content.startswith('```'):
+            content = content.split('\n', 1)[1]
+            if content.endswith('```'):
+                content = content[:-3]
+        try:
+            parsed = json.loads(content)
+            return parsed, None
+        except Exception:
+            # 비 JSON 응답이면 그대로 반환
+            return content, None
+    except Exception as e:
+        return None, str(e)
+
 def fetch_answers_via_llm(problems):
     api_key = os.getenv('DEEPSEEK_API_KEY')
     if not api_key:
@@ -175,8 +278,74 @@ def fetch_answers_via_llm(problems):
         return []
 
     print('정답지 생성 중')
+    # 1) 비전 필요 여부 판단 (이미지 포함 문제 존재 또는 FORCE_VISION)
+    any_has_image = False
+    for p in problems:
+        for b in (p.get('content_blocks') or []):
+            if (b.get('type') or '').lower() in ('image', 'sub_image'):
+                any_has_image = True
+                break
+        if any_has_image:
+            break
 
-    # Build compact prompt
+    answers = []
+
+    if any_has_image or FORCE_VISION:
+        # 문제별로 비전 모델 호출
+        for p in problems:
+            pid = p.get('id') or p.get('problemNumber') or 0
+            mm = _build_mm_content_for_problem(p)
+            if len(mm) == 1 and not FORCE_VISION:
+                # 이미지가 실제로 없으면 텍스트 모델로 대체 호출
+                txt = extract_problem_text(p)
+                payload = {
+                    "model": "deepseek-chat",
+                    "messages": [
+                        {"role": "system", "content": "정답만 JSON {\\\"id\\\":n, \\\"answer\\\":\"정답\"}"},
+                        {"role": "user", "content": json.dumps({"id": pid, "text": txt}, ensure_ascii=False)}
+                    ],
+                    "max_tokens": 300,
+                    "temperature": 0.1
+                }
+                try:
+                    r = requests.post(
+                        "https://api.deepseek.com/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                        json=payload,
+                        timeout=60
+                    )
+                    r.encoding = 'utf-8'
+                    if r.status_code == 200:
+                        content = r.json()['choices'][0]['message']['content'].strip()
+                        if content.startswith('```'):
+                            content = content.split('\n', 1)[1]
+                            if content.endswith('```'):
+                                content = content[:-3]
+                        try:
+                            parsed = json.loads(content)
+                            if isinstance(parsed, dict) and 'answer' in parsed:
+                                answers.append({"id": pid, "answer": str(parsed['answer']).strip()})
+                                continue
+                        except Exception:
+                            pass
+                    print(f"[WARN] 텍스트 호출 실패({pid}) → N/A")
+                    answers.append({"id": pid, "answer": "N/A"})
+                    continue
+
+            parsed, err = _call_deepseek_vision(mm, api_key, DEEPSEEK_VISION_MODEL)
+            if err:
+                print(f"[WARN] 비전 호출 실패({pid}): {err}")
+                answers.append({"id": pid, "answer": "N/A"})
+                continue
+            if isinstance(parsed, dict) and 'answer' in parsed:
+                answers.append({"id": pid, "answer": str(parsed['answer']).strip()})
+            else:
+                # 비 JSON 응답이면 원문을 답으로 기록
+                answers.append({"id": pid, "answer": str(parsed)})
+
+        return answers
+
+    # 2) 텍스트만으로 일괄 호출 (기존 방식)
     items = []
     for p in problems:
         pid = p.get('id') or p.get('problemNumber') or 0
@@ -186,12 +355,9 @@ def fetch_answers_via_llm(problems):
     system = (
         "너는 수학 평가 보조자이다. 각 문항의 정답만 산출하라. "
         "해설이나 중간 과정 없이 최종 정답만 제공한다. 선택지가 있으면 (1~5 또는 ①~⑤) 중에서 하나만 반환한다. "
-        "출력은 JSON 배열로, 각 항목은 {\"id\":문항번호, \"answer\":\"정답\"} 형식으로만 출력하라."
+        "출력은 JSON 배열로, 각 항목은 {\\\"id\\\":문항번호, \\\"answer\\\":\\\"정답\\\"} 형식으로만 출력하라."
     )
-    user_payload = {
-        "problems": items,
-        "output": "JSON array of {id, answer} only"
-    }
+    user_payload = {"problems": items, "output": "JSON array of {id, answer} only"}
 
     data = {
         "model": "deepseek-chat",
@@ -206,10 +372,7 @@ def fetch_answers_via_llm(problems):
     try:
         r = requests.post(
             "https://api.deepseek.com/v1/chat/completions",
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            },
+            headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
             json=data,
             timeout=60
         )
@@ -218,12 +381,10 @@ def fetch_answers_via_llm(problems):
             print(f"[WARN] LLM 호출 실패: {r.status_code} {r.text[:120]}")
             return []
         content = r.json()['choices'][0]['message']['content'].strip()
-        # Remove markdown fencing if any
         if content.startswith('```'):
-            content = content.split('\n',1)[1]
+            content = content.split('\n', 1)[1]
             if content.endswith('```'):
                 content = content[:-3]
-        # Try parse JSON
         try:
             ans = json.loads(content)
             if isinstance(ans, list):
