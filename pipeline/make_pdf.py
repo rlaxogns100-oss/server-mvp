@@ -195,13 +195,18 @@ def fetch_answers_via_llm(problems):
     - 이미지 URL이 있으면 vision 입력으로 전송
     - 키는 OPENAI_API_KEY / OPENAI_api / OPENAI_KEY 중 존재하는 것 사용
     """
+    print('[DEBUG] fetch_answers_via_llm 호출됨')
+    print(f'[DEBUG] 입력 문제 수: {len(problems)}')
+    
     api_key = os.getenv('OPENAI_API_KEY') or os.getenv('OPENAI_api') or os.getenv('OPENAI_KEY')
     if not api_key:
-        print('[INFO] OPENAI_API_KEY/OPENAI_api가 없어 정답지 생성을 건너뜁니다.')
+        print('[ERROR] ❌ OPENAI_API_KEY가 설정되지 않았습니다!')
+        print('[ERROR] .env 파일에 OPENAI_api 또는 OPENAI_API_KEY를 추가하세요.')
         return []
-
+    
+    print(f'[DEBUG] ✅ OpenAI API 키 확인됨 (길이: {len(api_key)})')
     model = os.getenv('OPENAI_MODEL', 'gpt-4o')
-    print('정답지 생성 중 (OpenAI:', model, ')')
+    print(f'[INFO] 정답지 생성 중 (모델: {model}, 문항 수: {len(problems)})')
 
     system_prompt = (
         '너는 한국 고등학교 수학 채점 보조이다. 각 문항에 대해 JSON 한 줄만 반환하라. '
@@ -210,9 +215,11 @@ def fetch_answers_via_llm(problems):
     )
 
     answers = []
-    for p in problems:
+    for idx, p in enumerate(problems, 1):
         pid = p.get('id') or p.get('problemNumber') or 0
+        print(f'[DEBUG] 문항 {idx}/{len(problems)} (ID: {pid}) 처리 중...')
         content = _build_mm_for_openai(p)
+        print(f'[DEBUG] 멀티모달 content 구성 완료 (블록 수: {len(content)})')
         payload = {
             "model": model,
             "messages": [
@@ -223,6 +230,7 @@ def fetch_answers_via_llm(problems):
             "temperature": 0.1
         }
         try:
+            print(f'[DEBUG] OpenAI API 호출 중... (timeout: 60s)')
             r = requests.post(
                 "https://api.openai.com/v1/chat/completions",
                 headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
@@ -230,12 +238,17 @@ def fetch_answers_via_llm(problems):
                 timeout=60
             )
             r.encoding = 'utf-8'
+            print(f'[DEBUG] API 응답 상태: {r.status_code}')
+            
             if r.status_code != 200:
-                print(f"[WARN] OpenAI 호출 실패({pid}): {r.status_code} {r.text[:120]}")
+                print(f"[WARN] ❌ OpenAI 호출 실패 (문항 {pid}): {r.status_code}")
+                print(f"[WARN] 응답 내용: {r.text[:200]}")
                 answers.append({"id": pid, "answer": "N/A", "explanation": "API 오류"})
                 continue
 
             content_str = r.json()['choices'][0]['message']['content'].strip()
+            print(f'[DEBUG] LLM 응답: {content_str[:150]}...')
+            
             if content_str.startswith('```'):
                 content_str = content_str.split('\n', 1)[1]
                 if content_str.endswith('```'):
@@ -245,15 +258,23 @@ def fetch_answers_via_llm(problems):
                 if isinstance(parsed, dict) and 'answer' in parsed:
                     ans = str(parsed.get('answer', '')).strip()
                     exp = str(parsed.get('explanation', '')).strip()
+                    print(f'[DEBUG] ✅ 정답 파싱 성공: {ans[:30]}')
                     answers.append({"id": pid, "answer": ans, "explanation": exp})
                 else:
+                    print(f'[WARN] JSON 파싱 결과에 answer 키 없음')
                     answers.append({"id": pid, "answer": str(content_str), "explanation": ""})
-            except Exception:
+            except Exception as parse_err:
+                print(f'[WARN] JSON 파싱 실패: {parse_err}')
                 answers.append({"id": pid, "answer": str(content_str), "explanation": ""})
         except Exception as e:
-            print(f"[WARN] OpenAI 호출 예외({pid}):", e)
+            print(f"[ERROR] ❌ OpenAI 호출 예외 (문항 {pid}): {e}")
+            import traceback
+            traceback.print_exc()
             answers.append({"id": pid, "answer": "N/A", "explanation": "예외 발생"})
 
+    print('=' * 60)
+    print(f'[INFO] ✅ 정답지 생성 완료: 총 {len(answers)}개 답안')
+    print('=' * 60)
     return answers
 
 def _latex_escape_expl(s: str) -> str:
@@ -572,9 +593,17 @@ def main():
         parts.append(tail_close_lists())
 
         # 정답 생성 (DB 저장 없음, 즉시 생성)
+        print('=' * 60)
+        print('정답 페이지 생성 시작')
+        print('=' * 60)
         answers = fetch_answers_via_llm(problems)
+        print(f'[DEBUG] fetch_answers_via_llm 결과: {len(answers)}개 답안')
         if answers:
+            print('[DEBUG] 정답 페이지 LaTeX 추가 중...')
             parts.append(answers_page_tex(answers))
+            print('[DEBUG] 정답 페이지 추가 완료')
+        else:
+            print('[WARN] 정답이 없어 정답 페이지를 생성하지 않습니다. API 키 및 네트워크를 확인하세요.')
 
         # 문서 종료
         parts.append(r"\end{document}")
