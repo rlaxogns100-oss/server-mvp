@@ -836,15 +836,23 @@ def main():
         parts.append(preamble_before_document())
         parts.append(firstpage_big_header())
 
+    except Exception as e:
+        print(f"❌ 오류 발생: {e}")
+        import traceback
+        traceback.print_exc()
+        # 에러 발생 시 종료 코드 1로 종료
+        sys.exit(1)
+
     # 모든 문제 추가
-    SHOW_META = os.getenv('SHOW_META', '0') == '1'
-    for i, problem in enumerate(problems, 1):
-        parts.append(problem_to_tex(problem, idx=i, show_meta=SHOW_META))
+        SHOW_META = os.getenv('SHOW_META', '0') == '1'
+        for i, problem in enumerate(problems, 1):
+            parts.append(problem_to_tex(problem, idx=i, show_meta=SHOW_META))
 
         # 문제 섹션 종료 (정답 페이지는 별도 페이지로)
         parts.append(tail_close_lists())
 
         # 정답 생성은 환경설정(톱니바퀴)에서 선택된 경우에만 진행
+        answers = []
         ANSWERS_MODE = os.getenv('ANSWERS_MODE', 'none')
         if ANSWERS_MODE == 'answers-only':
             print('=' * 60)
@@ -883,13 +891,6 @@ def main():
             print("=" * 60 + "\n")
 
         client.close()
-
-    except Exception as e:
-        print(f"❌ 오류 발생: {e}")
-        import traceback
-        traceback.print_exc()
-        # 에러 발생 시 종료 코드 1로 종료
-        sys.exit(1)
 
 if __name__ == "__main__":
     main()
