@@ -242,9 +242,16 @@ def fetch_answers_via_llm(problems):
     print(f'[INFO] 정답지 생성 중 (모델: {model}, 문항 수: {len(problems)})')
 
     system_prompt = (
-        '너는 한국 고등학교 수학 채점 보조이다. 각 문항에 대해 JSON 한 줄만 반환하라. '
-        '{"id":문항번호, "answer":"최종 정답", "explanation":"100자 이내 짧은 해설(한국어, 필요 시 LaTeX 수식 허용)"}. '
-        '불확실하면 answer는 "N/A"로 하고 explanation은 이유를 30자 이내로 적어라.'
+        '너는 한국 고등학교 수학 전문가다. 주어진 문제를 단계별로 풀고 최종 정답과 간단한 해설을 제공하라.\n\n'
+        '**중요 규칙:**\n'
+        '1. 이미지의 그래프, 도형, 수식을 정확히 분석하라\n'
+        '2. 선택지가 있으면 반드시 그 중에서 선택하라 (예: ①, ②, 11, 등)\n'
+        '3. 계산 과정은 생략하고 최종 정답만 answer에 적어라\n'
+        '4. 해설은 핵심 아이디어만 100자 이내로 간결하게 적어라\n'
+        '5. 수식은 LaTeX 형식으로 작성하라 (예: $x^2$, $\\frac{a}{b}$)\n\n'
+        '**출력 형식 (JSON만):**\n'
+        '{"id": 1, "answer": "정답", "explanation": "해설"}\n\n'
+        '불확실하면 "N/A"를 반환하고 이유를 explanation에 적어라.'
     )
 
     answers = []
@@ -253,6 +260,20 @@ def fetch_answers_via_llm(problems):
         print(f'[DEBUG] 문항 {idx}/{len(problems)} (ID: {pid}) 처리 중...')
         content = _build_mm_for_openai(p)
         print(f'[DEBUG] 멀티모달 content 구성 완료 (블록 수: {len(content)})')
+        
+        # 전송 내용 상세 로깅
+        text_blocks = [c for c in content if c.get('type') == 'text']
+        image_blocks = [c for c in content if c.get('type') == 'image_url']
+        print(f'[DEBUG] 전송 내용: 텍스트 {len(text_blocks)}개, 이미지 {len(image_blocks)}개')
+        if text_blocks:
+            total_text_len = sum(len(c['text']) for c in text_blocks)
+            print(f'[DEBUG] 총 텍스트 길이: {total_text_len}자')
+            for i, tb in enumerate(text_blocks):
+                preview = tb['text'][:100].replace('\n', ' ')
+                print(f'[DEBUG]   텍스트 블록 {i+1}: "{preview}..."')
+        if image_blocks:
+            for i, ib in enumerate(image_blocks):
+                print(f'[DEBUG]   이미지 블록 {i+1}: {ib["image_url"]["url"][:100]}...')
         # GPT-5/o-시리즈는 특정 파라미터만 지원
         payload = {
             "model": model,
@@ -268,9 +289,9 @@ def fetch_answers_via_llm(problems):
             # 복잡한 수학 문제는 추론에 많은 토큰 소모 → 5000으로 증가
             payload["max_completion_tokens"] = 5000
         else:
-            # 기존 모델: max_tokens, temperature 모두 지원
-            payload["max_tokens"] = 220
-            payload["temperature"] = 0.1
+            # GPT-4o 등 일반 모델: max_tokens, temperature 모두 지원
+            payload["max_tokens"] = 500  # 정답 + 해설을 위해 충분히 설정
+            payload["temperature"] = 0.1  # 낮은 temperature로 일관성 있는 답변
         try:
             print(f'[DEBUG] OpenAI API 호출 중... (timeout: 60s)')
             r = requests.post(
