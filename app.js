@@ -218,6 +218,8 @@ function bindAuth() {
     loginForm: document.getElementById('loginForm'),
     registerForm: document.getElementById('registerForm'),
     userInfo: document.getElementById('userInfo'),
+    userProfileArea: document.getElementById('userProfileArea'),
+    logoutBtn: document.getElementById('logoutBtn'),
     authButtons: document.getElementById('authButtons'),
     showLoginBtn: document.getElementById('showLoginBtn'),
     showRegisterBtn: document.getElementById('showRegisterBtn'),
@@ -426,16 +428,58 @@ function bindAuth() {
       console.log('registerBtn 요소를 찾을 수 없음');
     }
 
-    // 사용자 정보 영역 클릭 시 요금제 안내 창으로 이동
-    if (elements.userInfo) {
-      console.log('userInfo 요소 찾음 - 클릭 이벤트 등록');
-      elements.userInfo.addEventListener('click', function() {
+    // 프로필 영역(로그아웃 버튼 제외) 클릭 시 요금제 안내 창으로 이동
+    if (elements.userProfileArea) {
+      console.log('userProfileArea 요소 찾음 - 클릭 이벤트 등록');
+      elements.userProfileArea.addEventListener('click', function() {
         // 요금제 안내 페이지로 이동
         // 추후 실제 요금제 페이지가 생기면 해당 URL로 변경
         window.open('https://zerotyping.com/pricing', '_blank');
       });
     } else {
-      console.log('userInfo 요소를 찾을 수 없음');
+      console.log('userProfileArea 요소를 찾을 수 없음');
+    }
+
+    // 로그아웃 처리
+    if (elements.logoutBtn) {
+      console.log('logoutBtn 요소 찾음');
+      elements.logoutBtn.addEventListener('click', async function(event) {
+        event.stopPropagation(); // 부모 요소로 이벤트 전파 방지
+        try {
+          // 서버에 로그아웃 요청
+          await fetch('/api/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+        } catch (error) {
+          console.error('로그아웃 요청 오류:', error);
+        }
+
+        currentUser = null;
+        hideAllForms();
+        disableDashboard();
+
+        // 로그아웃 시 모든 열린 탭 닫기
+        if (window.openTabs) {
+          window.openTabs = [];
+          window.activeTabId = null;
+          if (window.renderTabs) {
+            window.renderTabs();
+          }
+          if (window.clearProblems) {
+            window.clearProblems();
+          }
+        }
+
+        // 로그아웃 시 내 파일 폴더 비우기
+        if (window.loadMyFiles) {
+          window.loadMyFiles();
+        }
+
+        alert('로그아웃되었습니다.');
+      });
+    } else {
+      console.log('logoutBtn 요소를 찾을 수 없음');
     }
 
     // 모달 오버레이 클릭 시 폼 닫기

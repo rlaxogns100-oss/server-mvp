@@ -144,19 +144,39 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.user-profile-area {
+  display: flex;
+  align-items: center;
+  gap: 10px;
   padding: 8px 14px;
   border-radius: 10px;
   cursor: pointer;
   transition: background 0.2s;
 }
 
-.user-info:hover {
+.user-profile-area:hover {
   background: #f3f4f6;
 }
 
 .user-info span {
   font-size: 14px;
   font-weight: 500;
+}
+
+.user-info button {
+  padding: 6px 12px;
+  background: #f3f4f6;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.user-info button:hover {
+  background: #e5e7eb;
 }
 
 .plan-badge {

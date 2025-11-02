@@ -673,11 +673,11 @@ def options_tex(opts):
 def problem_to_tex(problem, idx=None, show_meta=False):
     """문제 하나를 LaTeX로 변환"""
     L = []
-    # 단 첫 문제(1번) 상단 간격 보정
-    if idx == 1:
-        L.append(r"\vspace{1em}")
 
-    # 문항 메타 표기 (발문 바로 윗줄, 우측 정렬, 번호/발문과 분리)
+    # 번호와 발문 블록 시작 (여기서부터가 한 박스)
+    L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
+
+    # 문항 메타 표기: 아이템 내부에 0높이로 띄워 출력하여 줄맞춤/분리 문제 방지
     if show_meta:
         show_meta_file = os.getenv('SHOW_META_FILE', '0') == '1'
         show_meta_page = os.getenv('SHOW_META_PAGE', '0') == '1'
@@ -699,11 +699,7 @@ def problem_to_tex(problem, idx=None, show_meta=False):
         if meta_parts:
             meta_text = " ".join(meta_parts)
             safe_meta = _latex_escape_expl(meta_text)
-            L.append(r"\noindent\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}")
-            L.append(r"\vspace{0.15em}")
-
-    # 번호와 발문 블록 시작
-    L.append(r"\item \leavevmode\begin{minipage}[t]{\linewidth}")
+            L.append(r"\smash{\raisebox{1.05\baselineskip}{\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}}}")
 
     # content_blocks 처리
     content_blocks = problem.get('content_blocks', [])
