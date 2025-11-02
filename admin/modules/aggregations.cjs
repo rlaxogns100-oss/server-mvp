@@ -13,6 +13,10 @@ const billing = require('./billing.cjs');
 async function aggregateStats(db, filters) {
   const { userFilter, dateRange } = filters;
 
+  // to 날짜의 끝까지 포함하도록 하루 더하기
+  const toEndOfDay = new Date(dateRange.to);
+  toEndOfDay.setDate(toEndOfDay.getDate() + 1);
+
   // 총 사용자 수
   const totalUsers = await db.collection('users').countDocuments(userFilter);
 
@@ -65,7 +69,7 @@ async function aggregateStats(db, filters) {
   let failedPayments = 0;
   try {
     failedPayments = await db.collection('payments').countDocuments({
-      createdAt: { $gte: dateRange.from, $lt: dateRange.to },
+      createdAt: { $gte: dateRange.from, $lt: toEndOfDay },
       status: { $in: ['failed', 'canceled'] }
     });
   } catch (e) {
@@ -74,7 +78,7 @@ async function aggregateStats(db, filters) {
 
   // PDF 생성 수
   const pdfCount = await db.collection('files').countDocuments({
-    uploadDate: { $gte: dateRange.from, $lt: dateRange.to }
+    uploadDate: { $gte: dateRange.from, $lt: toEndOfDay }
   });
 
   // 처리 페이지 수
@@ -90,7 +94,7 @@ async function aggregateStats(db, filters) {
     { $unwind: { path: '$file', preserveNullAndEmptyArrays: true } },
     {
       $match: {
-        'file.uploadDate': { $gte: dateRange.from, $lt: dateRange.to }
+        'file.uploadDate': { $gte: dateRange.from, $lt: toEndOfDay }
       }
     },
     {
@@ -119,7 +123,7 @@ async function aggregateStats(db, filters) {
       {
         $match: {
           type: 'llm_call',
-          createdAt: { $gte: dateRange.from, $lt: dateRange.to }
+          createdAt: { $gte: dateRange.from, $lt: toEndOfDay }
         }
       },
       {
@@ -178,7 +182,7 @@ async function aggregateStats(db, filters) {
     const pipelineStats = await db.collection('pipeline_runs').aggregate([
       {
         $match: {
-          createdAt: { $gte: dateRange.from, $lt: dateRange.to }
+          createdAt: { $gte: dateRange.from, $lt: toEndOfDay }
         }
       },
       {
@@ -249,11 +253,15 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
   const labels = generateDateLabels(dateRange.from, dateRange.to, interval);
 
   // 가입자 추이
+  // to 날짜의 끝까지 포함하도록 하루 더하기
+  const toEndOfDay = new Date(dateRange.to);
+  toEndOfDay.setDate(toEndOfDay.getDate() + 1);
+
   const userTrend = await db.collection('users').aggregate([
     {
       $match: {
         ...userFilter,
-        createdAt: { $gte: dateRange.from, $lt: dateRange.to }
+        createdAt: { $gte: dateRange.from, $lt: toEndOfDay }
       }
     },
     {
@@ -280,7 +288,7 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
   const conversionTrend = await db.collection('files').aggregate([
     {
       $match: {
-        uploadDate: { $gte: dateRange.from, $lt: dateRange.to }
+        uploadDate: { $gte: dateRange.from, $lt: toEndOfDay }
       }
     },
     {
@@ -303,7 +311,7 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
     visitTrend = await db.collection('visits').aggregate([
       {
         $match: {
-          timestamp: { $gte: dateRange.from, $lt: dateRange.to }
+          timestamp: { $gte: dateRange.from, $lt: toEndOfDay }
         }
       },
       {
@@ -341,7 +349,7 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
     revenueTrend = await db.collection('payments').aggregate([
       {
         $match: {
-          createdAt: { $gte: dateRange.from, $lt: dateRange.to },
+          createdAt: { $gte: dateRange.from, $lt: toEndOfDay },
           status: 'succeeded'
         }
       },
