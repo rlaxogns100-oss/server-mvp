@@ -148,6 +148,27 @@ async function aggregateStats(db, filters) {
     // events 컬렉션이 없으면 0
   }
 
+  // 방문자 통계 (visits 컬렉션)
+  let todayVisitors = 0;
+  let activeUsers = 0;
+
+  try {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    todayVisitors = await db.collection('visits').countDocuments({
+      timestamp: { $gte: today }
+    });
+
+    // 최근 24시간 내 활동 사용자
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    activeUsers = await db.collection('visits').distinct('userId', {
+      timestamp: { $gte: oneDayAgo }
+    }).then(arr => arr.length);
+  } catch (e) {
+    // visits 컬렉션이 없으면 0
+  }
+
   // 파이프라인 성공률 (pipeline_runs 컬렉션)
   let pipelineSuccessRate = 0;
   let pipelineP95Ms = 0;
@@ -206,6 +227,8 @@ async function aggregateStats(db, filters) {
     llmCalls,
     llmTokens,
     estimatedCost: Math.round(estimatedCost * 100) / 100,
+    todayVisitors,
+    activeUsers,
     pipelineSuccessRate,
     pipelineP95Ms,
     errorRate

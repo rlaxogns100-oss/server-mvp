@@ -592,6 +592,11 @@
             <div class="card-value ${stats.errorRate > 5 ? 'card-change negative' : ''}">${stats.errorRate}%</div>
             <div class="card-change">전체 대비</div>
           </div>
+          <div class="card">
+            <div class="card-label">오늘 방문자</div>
+            <div class="card-value">${stats.todayVisitors.toLocaleString()}명</div>
+            <div class="card-change">활성: ${stats.activeUsers}명</div>
+          </div>
         </div>
       `;
       document.getElementById('statsCards').innerHTML = html;
