@@ -433,8 +433,7 @@ function bindAuth() {
       console.log('userProfileArea 요소 찾음 - 클릭 이벤트 등록');
       elements.userProfileArea.addEventListener('click', function() {
         // 요금제 안내 페이지로 이동
-        // 추후 실제 요금제 페이지가 생기면 해당 URL로 변경
-        window.open('https://zerotyping.com/pricing', '_blank');
+        window.open('/pricing.html', '_blank');
       });
     } else {
       console.log('userProfileArea 요소를 찾을 수 없음');
