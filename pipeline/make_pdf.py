@@ -700,7 +700,6 @@ def problem_to_tex(problem, idx=None, show_meta=False):
             meta_text = " ".join(meta_parts)
             safe_meta = _latex_escape_expl(meta_text)
             L.append(r"\smash{\raisebox{1.05\baselineskip}{\makebox[\linewidth][r]{\small\color{ruleGray} " + safe_meta + r"}}}")
-            L.append(r"\vspace*{-\baselineskip}")
 
     # content_blocks 처리
     content_blocks = problem.get('content_blocks', [])
