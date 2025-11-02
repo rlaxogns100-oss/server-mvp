@@ -297,6 +297,44 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
     { $sort: { _id: 1 } }
   ]).toArray();
 
+  // 방문자 추이
+  let visitTrend = [];
+  try {
+    visitTrend = await db.collection('visits').aggregate([
+      {
+        $match: {
+          timestamp: { $gte: dateRange.from, $lt: dateRange.to }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: {
+              $dateToString: {
+                format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U',
+                date: '$timestamp'
+              }
+            }
+          },
+          totalVisits: { $sum: 1 },
+          uniqueVisitors: {
+            $addToSet: '$userId'
+          }
+        }
+      },
+      {
+        $project: {
+          _id: '$_id.date',
+          totalVisits: 1,
+          uniqueVisitors: { $size: '$uniqueVisitors' }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]).toArray();
+  } catch (e) {
+    // visits 컬렉션이 없으면 빈 배열
+  }
+
   // 매출 추이 (payments 컬렉션)
   let revenueTrend = [];
   try {
@@ -331,6 +369,8 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
   const trialData = mapTimeseriesData(labels, userTrend, 'trial');
   const conversionData = mapTimeseriesData(labels, conversionTrend, 'count');
   const revenueData = mapTimeseriesData(labels, revenueTrend, 'revenue');
+  const visitData = mapTimeseriesData(labels, visitTrend, 'totalVisits');
+  const uniqueVisitorData = mapTimeseriesData(labels, visitTrend, 'uniqueVisitors');
 
   return {
     labels: labels.map(l => l.substring(5)), // MM-DD 형식
@@ -338,7 +378,9 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
     paid: paidData,
     trial: trialData,
     conversions: conversionData,
-    revenue: revenueData
+    revenue: revenueData,
+    visits: visitData,
+    uniqueVisitors: uniqueVisitorData
   };
 }
 
@@ -391,6 +433,35 @@ async function aggregateTables(db, filters) {
 
   const totalCount = await db.collection('users').countDocuments(userFilter);
 
+  // 방문 로그 (최근 100개)
+  let visitLogs = [];
+  try {
+    visitLogs = await db.collection('visits').aggregate([
+      { $sort: { timestamp: -1 } },
+      { $limit: 100 },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'userId',
+          foreignField: '_id',
+          as: 'user'
+        }
+      },
+      { $unwind: { path: '$user', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          timestamp: 1,
+          ip: 1,
+          userAgent: 1,
+          username: { $ifNull: ['$user.username', '익명'] },
+          email: { $ifNull: ['$user.email', '-'] }
+        }
+      }
+    ]).toArray();
+  } catch (e) {
+    // visits 컬렉션이 없으면 빈 배열
+  }
+
   return {
     users: users.map(u => ({
       username: u.username,
@@ -401,6 +472,13 @@ async function aggregateTables(db, filters) {
       createdAt: u.createdAt ? new Date(u.createdAt).toLocaleDateString('ko-KR') : 'N/A',
       lastActivity: u.lastActivityAt ? new Date(u.lastActivityAt).toLocaleDateString('ko-KR') : 'N/A',
       pdfCount: u.pdfCount
+    })),
+    visitLogs: visitLogs.map(v => ({
+      timestamp: v.timestamp ? new Date(v.timestamp).toLocaleString('ko-KR') : 'N/A',
+      username: v.username,
+      email: v.email,
+      ip: v.ip,
+      userAgent: v.userAgent || 'Unknown'
     })),
     pagination: {
       page: pagination.page,

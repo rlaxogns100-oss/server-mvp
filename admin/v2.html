@@ -389,6 +389,17 @@
       <canvas id="revenueTrendChart"></canvas>
     </div>
 
+    <div class="chart-container">
+      <div class="chart-title">🌐 방문자 추이 (최근 7일)</div>
+      <canvas id="visitorTrendChart"></canvas>
+    </div>
+
+    <!-- 방문 로그 테이블 -->
+    <div class="table-container">
+      <div class="chart-title">🔍 최근 접속 로그 (최근 100건)</div>
+      <div id="visitLogsTable" class="loading">로딩 중...</div>
+    </div>
+
     <!-- 사용자 테이블 -->
     <div class="table-container">
       <div class="chart-title">👥 사용자 리스트</div>
@@ -659,6 +670,37 @@
           plugins: { legend: { display: false } }
         }
       });
+
+      // 방문자 추이
+      new Chart(document.getElementById('visitorTrendChart'), {
+        type: 'line',
+        data: {
+          labels: timeseries.labels,
+          datasets: [
+            {
+              label: '총 방문 수',
+              data: timeseries.visits || [],
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: '고유 방문자',
+              data: timeseries.uniqueVisitors || [],
+              borderColor: '#ec4899',
+              backgroundColor: 'rgba(236, 72, 153, 0.1)',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { position: 'top' } }
+        }
+      });
     }
 
     function renderTable(tables) {
@@ -708,6 +750,36 @@
       }
 
       document.getElementById('usersTable').innerHTML = html;
+
+      // 방문 로그 테이블
+      if (tables.visitLogs && tables.visitLogs.length > 0) {
+        let visitHtml = `<table>
+          <thead>
+            <tr>
+              <th>시간</th>
+              <th>사용자명</th>
+              <th>이메일</th>
+              <th>IP</th>
+              <th>User Agent</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+        tables.visitLogs.forEach(log => {
+          visitHtml += `<tr>
+            <td>${log.timestamp}</td>
+            <td><span class="badge ${log.username === '익명' ? 'trial' : 'pro'}">${log.username}</span></td>
+            <td>${log.email}</td>
+            <td><code style="font-size: 11px;">${log.ip}</code></td>
+            <td style="font-size: 11px; max-width: 300px; overflow: hidden; text-overflow: ellipsis;" title="${log.userAgent}">${log.userAgent}</td>
+          </tr>`;
+        });
+
+        visitHtml += '</tbody></table>';
+        document.getElementById('visitLogsTable').innerHTML = visitHtml;
+      } else {
+        document.getElementById('visitLogsTable').innerHTML = '<p>방문 로그가 없습니다.</p>';
+      }
     }
 
     function loadPage(page) {
