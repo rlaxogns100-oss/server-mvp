@@ -2391,6 +2391,111 @@ const server = http.createServer((req, res) => {
       }
     })();
 
+  // ===== 관리자 페이지 v2 =====
+  } else if (req.method === 'GET' && req.url === '/admin/v2') {
+    // 관리자 v2 페이지 제공
+    const adminV2Html = fs.readFileSync(path.join(__dirname, 'admin/v2.html'), 'utf8');
+    res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+    res.end(adminV2Html);
+
+  } else if (req.method === 'GET' && req.url.startsWith('/api/admin/v2/')) {
+    // 관리자 v2 API
+    const adminPassword = req.headers['x-admin-password'];
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+
+    if (adminPassword !== ADMIN_PASSWORD) {
+      res.writeHead(401, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({ error: '인증이 필요합니다.' }));
+      return;
+    }
+
+    // URL 파싱
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const pathname = url.pathname;
+    const params = url.searchParams;
+
+    // v2 모듈 로드
+    const filters = require('./admin/modules/filters.cjs');
+    const cache = require('./admin/modules/cache.cjs');
+    const aggregations = require('./admin/modules/aggregations.cjs');
+
+    (async () => {
+      try {
+        if (!db) {
+          res.writeHead(500, {'Content-Type': 'application/json'});
+          res.end(JSON.stringify({ error: 'Database not connected' }));
+          return;
+        }
+
+        // 입력 검증
+        const validationError = filters.validateParams(params);
+        if (validationError) {
+          res.writeHead(400, {'Content-Type': 'application/json'});
+          res.end(JSON.stringify(validationError));
+          return;
+        }
+
+        // 필터 파싱
+        const parsedFilters = filters.parseFilters(params);
+        const cacheKey = filters.generateCacheKey({ url: req.url, filters: parsedFilters });
+
+        // stats API
+        if (pathname === '/api/admin/v2/stats') {
+          const result = await cache.getOrFetch(cacheKey, async () => {
+            return await aggregations.aggregateStats(db, parsedFilters);
+          });
+
+          res.writeHead(200, {'Content-Type': 'application/json'});
+          res.end(JSON.stringify({ success: true, stats: result }));
+
+        // timeseries API
+        } else if (pathname === '/api/admin/v2/timeseries') {
+          const interval = params.get('interval') || 'day';
+          const result = await cache.getOrFetch(cacheKey, async () => {
+            return await aggregations.aggregateTimeseries(db, parsedFilters, interval);
+          });
+
+          res.writeHead(200, {'Content-Type': 'application/json'});
+          res.end(JSON.stringify({ success: true, timeseries: result }));
+
+        // tables API
+        } else if (pathname === '/api/admin/v2/tables') {
+          const result = await cache.getOrFetch(cacheKey, async () => {
+            return await aggregations.aggregateTables(db, parsedFilters);
+          });
+
+          res.writeHead(200, {'Content-Type': 'application/json'});
+          res.end(JSON.stringify({ success: true, tables: result }));
+
+        // CSV export
+        } else if (pathname === '/api/admin/v2/export/users.csv') {
+          // 캐시 사용 안 함 (매번 최신 데이터)
+          const result = await aggregations.aggregateTables(db, { ...parsedFilters, pagination: { page: 1, pageSize: 10000 } });
+
+          // CSV 생성
+          const csv = ['Username,Email,Role,Plan,IsPaid,CreatedAt,LastActivity,PDFCount'];
+          result.users.forEach(u => {
+            csv.push(`"${u.username}","${u.email}","${u.role}","${u.plan}","${u.isPaid}","${u.createdAt}","${u.lastActivity}","${u.pdfCount}"`);
+          });
+
+          res.writeHead(200, {
+            'Content-Type': 'text/csv; charset=utf-8',
+            'Content-Disposition': 'attachment; filename="users.csv"'
+          });
+          res.end(csv.join('\n'));
+
+        } else {
+          res.writeHead(404, {'Content-Type': 'application/json'});
+          res.end(JSON.stringify({ error: 'API endpoint not found' }));
+        }
+
+      } catch (error) {
+        console.error('관리자 v2 API 오류:', error);
+        res.writeHead(500, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({ error: '서버 오류가 발생했습니다.', message: error.message }));
+      }
+    })();
+
   } else {
     res.writeHead(404, {'Content-Type': 'text/html; charset=utf-8'});
     res.end('<h1>404 - 페이지를 찾을 수 없습니다</h1>');

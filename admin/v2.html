@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>제로타이핑 관리자 v2</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Pretendard', -apple-system, sans-serif;
+      background: #f8f9fa;
+      padding: 20px;
+    }
+    .container { max-width: 1600px; margin: 0 auto; }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .header h1 { font-size: 28px; }
+    .header .version { 
+      background: rgba(255,255,255,0.2);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+
+    /* 필터 바 */
+    .filter-bar {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .filter-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 15px;
+      color: #1e293b;
+    }
+    .filter-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .filter-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .filter-group label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #64748b;
+    }
+    .filter-group input,
+    .filter-group select {
+      padding: 8px 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+    .filter-group input:focus,
+    .filter-group select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .filter-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 15px;
+    }
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+    .btn-secondary {
+      background: #f3f4f6;
+      color: #1e293b;
+    }
+    .btn-secondary:hover {
+      background: #e5e7eb;
+    }
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+    .btn-success:hover {
+      background: #059669;
+    }
+
+    /* 카드 그리드 */
+    .cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      transition: transform 0.2s;
+    }
+    .card:hover { transform: translateY(-4px); }
+    .card-label {
+      font-size: 13px;
+      color: #64748b;
+      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .card-value {
+      font-size: 32px;
+      font-weight: 800;
+      color: #1e293b;
+      margin-bottom: 4px;
+    }
+    .card-change {
+      font-size: 13px;
+      color: #64748b;
+      font-weight: 600;
+    }
+    .card-change.positive { color: #10b981; }
+    .card-change.negative { color: #ef4444; }
+
+    /* 차트 */
+    .chart-container {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    .chart-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 20px;
+      color: #1e293b;
+    }
+    canvas { max-height: 300px; }
+
+    /* 테이블 */
+    .table-container {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    th {
+      background: #f8fafc;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 13px;
+      color: #64748b;
+      border-bottom: 2px solid #e2e8f0;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #e2e8f0;
+      font-size: 14px;
+      color: #334155;
+    }
+    tr:hover { background: #f8fafc; }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .badge.admin { background: #fef3c7; color: #92400e; }
+    .badge.teacher { background: #dbeafe; color: #1e40af; }
+    .badge.student { background: #d1fae5; color: #065f46; }
+    .badge.pro { background: #fef3c7; color: #92400e; }
+    .badge.basic { background: #e0e7ff; color: #3730a3; }
+
+    .pagination {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .pagination button {
+      padding: 8px 12px;
+      border: 1px solid #e2e8f0;
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .pagination button:hover {
+      background: #f3f4f6;
+    }
+    .pagination button.active {
+      background: #667eea;
+      color: white;
+      border-color: #667eea;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #64748b;
+    }
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .auth-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .auth-box {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      max-width: 400px;
+      width: 90%;
+    }
+    .auth-box h2 {
+      margin-bottom: 20px;
+      color: #1e293b;
+    }
+    .auth-box input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    .auth-box input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .auth-box button {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    .auth-box button:hover {
+      opacity: 0.9;
+    }
+    .auth-error {
+      color: #dc2626;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <!-- 인증 오버레이 -->
+  <div class="auth-overlay" id="authOverlay">
+    <div class="auth-box">
+      <h2>🔐 관리자 인증 v2</h2>
+      <input type="password" id="adminPassword" placeholder="관리자 비밀번호를 입력하세요" />
+      <button onclick="authenticate()">로그인</button>
+      <div class="auth-error" id="authError"></div>
+    </div>
+  </div>
+
+  <div class="container" id="mainContent" style="display: none;">
+    <div class="header">
+      <div>
+        <h1>📊 제로타이핑 관리자 대시보드</h1>
+        <p>고급 통계 및 분석</p>
+      </div>
+      <div class="version">v2.0</div>
+    </div>
+
+    <div id="errorMessage"></div>
+
+    <!-- 필터 바 -->
+    <div class="filter-bar">
+      <div class="filter-title">📋 필터</div>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>시작 날짜</label>
+          <input type="date" id="filterFrom" />
+        </div>
+        <div class="filter-group">
+          <label>종료 날짜</label>
+          <input type="date" id="filterTo" />
+        </div>
+        <div class="filter-group">
+          <label>사용자 역할</label>
+          <select id="filterRole">
+            <option value="">전체</option>
+            <option value="teacher">선생님</option>
+            <option value="student">학생</option>
+            <option value="admin">관리자</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>플랜</label>
+          <select id="filterPlan">
+            <option value="">전체</option>
+            <option value="basic">Basic</option>
+            <option value="pro">Pro</option>
+            <option value="trial">Trial</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-row">
+        <div class="filter-group">
+          <label>최소 PDF 수</label>
+          <input type="number" id="filterMinPdf" placeholder="0" min="0" />
+        </div>
+        <div class="filter-group">
+          <label>최대 PDF 수</label>
+          <input type="number" id="filterMaxPdf" placeholder="제한 없음" min="0" />
+        </div>
+        <div class="filter-group">
+          <label>검색 (이메일/이름)</label>
+          <input type="text" id="filterSearch" placeholder="검색어 입력" />
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-secondary" onclick="resetFilters()">초기화</button>
+        <button class="btn btn-success" onclick="exportCSV()">CSV 내보내기</button>
+        <button class="btn btn-primary" onclick="applyFilters()">적용</button>
+      </div>
+    </div>
+
+    <!-- 통계 카드 -->
+    <div id="statsCards" class="loading">로딩 중...</div>
+
+    <!-- 차트 -->
+    <div class="chart-container">
+      <div class="chart-title">📈 가입자/유료 사용자 추이 (최근 7일)</div>
+      <canvas id="userTrendChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">💰 매출 추이 (최근 7일)</div>
+      <canvas id="revenueTrendChart"></canvas>
+    </div>
+
+    <!-- 사용자 테이블 -->
+    <div class="table-container">
+      <div class="chart-title">👥 사용자 리스트</div>
+      <div id="usersTable" class="loading">로딩 중...</div>
+    </div>
+  </div>
+
+  <script>
+    const ADMIN_PASSWORD_KEY = 'admin_auth_token_v2';
+    let currentFilters = {};
+
+    function authenticate() {
+      const password = document.getElementById('adminPassword').value;
+
+      fetch('/api/admin/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          localStorage.setItem(ADMIN_PASSWORD_KEY, password);
+          document.getElementById('authOverlay').style.display = 'none';
+          document.getElementById('mainContent').style.display = 'block';
+          initFilters();
+          loadDashboard();
+        } else {
+          document.getElementById('authError').textContent = '비밀번호가 올바르지 않습니다.';
+        }
+      })
+      .catch(err => {
+        document.getElementById('authError').textContent = '인증 중 오류가 발생했습니다.';
+      });
+    }
+
+    document.getElementById('adminPassword').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') authenticate();
+    });
+
+    // 자동 로그인 체크
+    window.addEventListener('DOMContentLoaded', () => {
+      const savedPassword = localStorage.getItem(ADMIN_PASSWORD_KEY);
+      if (savedPassword) {
+        document.getElementById('adminPassword').value = savedPassword;
+        authenticate();
+      }
+    });
+
+    function initFilters() {
+      // 기본 날짜: 최근 7일
+      const to = new Date();
+      const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+      document.getElementById('filterFrom').valueAsDate = from;
+      document.getElementById('filterTo').valueAsDate = to;
+    }
+
+    function getFilters() {
+      const from = document.getElementById('filterFrom').value;
+      const to = document.getElementById('filterTo').value;
+      const role = document.getElementById('filterRole').value;
+      const plan = document.getElementById('filterPlan').value;
+      const minPdf = document.getElementById('filterMinPdf').value;
+      const maxPdf = document.getElementById('filterMaxPdf').value;
+      const search = document.getElementById('filterSearch').value;
+
+      const params = new URLSearchParams();
+      if (from) params.set('from', from);
+      if (to) params.set('to', to);
+      if (role) params.set('role', role);
+      if (plan) params.set('plan', plan);
+      if (minPdf) params.set('minPdf', minPdf);
+      if (maxPdf) params.set('maxPdf', maxPdf);
+      if (search) params.set('search', search);
+
+      return params.toString();
+    }
+
+    function resetFilters() {
+      document.getElementById('filterRole').value = '';
+      document.getElementById('filterPlan').value = '';
+      document.getElementById('filterMinPdf').value = '';
+      document.getElementById('filterMaxPdf').value = '';
+      document.getElementById('filterSearch').value = '';
+      initFilters();
+    }
+
+    function applyFilters() {
+      loadDashboard();
+    }
+
+    function exportCSV() {
+      const password = localStorage.getItem(ADMIN_PASSWORD_KEY);
+      const filters = getFilters();
+      const url = `/api/admin/v2/export/users.csv?${filters}`;
+
+      window.location.href = url;
+    }
+
+    function loadDashboard() {
+      const password = localStorage.getItem(ADMIN_PASSWORD_KEY);
+      const filters = getFilters();
+
+      // 통계 로드
+      fetch(`/api/admin/v2/stats?${filters}`, {
+        headers: { 'X-Admin-Password': password }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
+        renderStats(data.stats);
+      })
+      .catch(err => {
+        showError('통계 데이터를 불러오는 중 오류가 발생했습니다.');
+      });
+
+      // 시계열 데이터 로드
+      fetch(`/api/admin/v2/timeseries?${filters}`, {
+        headers: { 'X-Admin-Password': password }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
+        renderCharts(data.timeseries);
+      })
+      .catch(err => {
+        showError('시계열 데이터를 불러오는 중 오류가 발생했습니다.');
+      });
+
+      // 테이블 데이터 로드
+      fetch(`/api/admin/v2/tables?${filters}`, {
+        headers: { 'X-Admin-Password': password }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (data.error) {
+          showError(data.error);
+          return;
+        }
+        renderTable(data.tables);
+      })
+      .catch(err => {
+        showError('테이블 데이터를 불러오는 중 오류가 발생했습니다.');
+      });
+    }
+
+    function showError(message) {
+      document.getElementById('errorMessage').innerHTML =
+        `<div class="error">❌ ${message}</div>`;
+    }
+
+    function renderStats(stats) {
+      const html = `
+        <div class="cards-grid">
+          <div class="card">
+            <div class="card-label">총 사용자</div>
+            <div class="card-value">${stats.users.toLocaleString()}명</div>
+            <div class="card-change">유료: ${stats.paidUsers}명</div>
+          </div>
+          <div class="card">
+            <div class="card-label">MRR / ARR</div>
+            <div class="card-value">$${stats.mrr.toLocaleString()}</div>
+            <div class="card-change">ARR: $${stats.arr.toLocaleString()}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">ARPU</div>
+            <div class="card-value">$${stats.arpu}</div>
+            <div class="card-change">평균 사용자당 매출</div>
+          </div>
+          <div class="card">
+            <div class="card-label">오늘 매출</div>
+            <div class="card-value">$${stats.todayRevenue.toLocaleString()}</div>
+            <div class="card-change ${stats.failedPayments > 0 ? 'negative' : ''}">
+              실패: ${stats.failedPayments}건
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-label">PDF 생성</div>
+            <div class="card-value">${stats.pdfCount.toLocaleString()}건</div>
+            <div class="card-change">총 페이지: ${stats.totalPages.toLocaleString()}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">LLM 사용량</div>
+            <div class="card-value">${(stats.llmTokens / 1000).toFixed(1)}K</div>
+            <div class="card-change">호출: ${stats.llmCalls}회 / 비용: $${stats.estimatedCost}</div>
+          </div>
+          <div class="card">
+            <div class="card-label">파이프라인 성공률</div>
+            <div class="card-value">${stats.pipelineSuccessRate}%</div>
+            <div class="card-change">P95 지연: ${stats.pipelineP95Ms}ms</div>
+          </div>
+          <div class="card">
+            <div class="card-label">에러율</div>
+            <div class="card-value ${stats.errorRate > 5 ? 'card-change negative' : ''}">${stats.errorRate}%</div>
+            <div class="card-change">전체 대비</div>
+          </div>
+        </div>
+      `;
+      document.getElementById('statsCards').innerHTML = html;
+    }
+
+    function renderCharts(timeseries) {
+      // 가입자/유료 추이
+      new Chart(document.getElementById('userTrendChart'), {
+        type: 'line',
+        data: {
+          labels: timeseries.labels,
+          datasets: [
+            {
+              label: '전체 가입자',
+              data: timeseries.users,
+              borderColor: '#667eea',
+              backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: '유료 사용자',
+              data: timeseries.paid,
+              borderColor: '#f59e0b',
+              backgroundColor: 'rgba(245, 158, 11, 0.1)',
+              tension: 0.4,
+              fill: true
+            },
+            {
+              label: '체험 사용자',
+              data: timeseries.trial,
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              tension: 0.4,
+              fill: true
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { position: 'top' } }
+        }
+      });
+
+      // 매출 추이
+      new Chart(document.getElementById('revenueTrendChart'), {
+        type: 'bar',
+        data: {
+          labels: timeseries.labels,
+          datasets: [{
+            label: '매출 (USD)',
+            data: timeseries.revenue,
+            backgroundColor: '#10b981'
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: { legend: { display: false } }
+        }
+      });
+    }
+
+    function renderTable(tables) {
+      if (!tables.users || tables.users.length === 0) {
+        document.getElementById('usersTable').innerHTML = '<p>데이터가 없습니다.</p>';
+        return;
+      }
+
+      let html = `<table>
+        <thead>
+          <tr>
+            <th>사용자명</th>
+            <th>이메일</th>
+            <th>역할</th>
+            <th>플랜</th>
+            <th>유료 여부</th>
+            <th>가입일</th>
+            <th>최근 활동</th>
+            <th>PDF 수</th>
+          </tr>
+        </thead>
+        <tbody>`;
+
+      tables.users.forEach(user => {
+        html += `<tr>
+          <td>${user.username}</td>
+          <td>${user.email}</td>
+          <td><span class="badge ${user.role}">${user.role}</span></td>
+          <td><span class="badge ${user.plan}">${user.plan}</span></td>
+          <td>${user.isPaid ? '✅' : '❌'}</td>
+          <td>${user.createdAt}</td>
+          <td>${user.lastActivity}</td>
+          <td><strong>${user.pdfCount}</strong></td>
+        </tr>`;
+      });
+
+      html += '</tbody></table>';
+
+      // 페이지네이션
+      if (tables.pagination) {
+        html += '<div class="pagination">';
+        for (let i = 1; i <= tables.pagination.totalPages; i++) {
+          const active = i === tables.pagination.page ? 'active' : '';
+          html += `<button class="${active}" onclick="loadPage(${i})">${i}</button>`;
+        }
+        html += '</div>';
+      }
+
+      document.getElementById('usersTable').innerHTML = html;
+    }
+
+    function loadPage(page) {
+      // TODO: 페이지 로딩 구현
+      console.log('Load page', page);
+    }
+  </script>
+</body>
+</html>
+
