@@ -223,7 +223,6 @@ function bindAuth() {
     showRegisterBtn: document.getElementById('showRegisterBtn'),
     loginBtn: document.getElementById('loginBtn'),
     registerBtn: document.getElementById('registerBtn'),
-    logoutBtn: document.getElementById('logoutBtn'),
     modalOverlay: document.getElementById('modalOverlay')
   };
 
@@ -264,7 +263,15 @@ function bindAuth() {
     console.log('사용자 정보 표시:', user);
     if (elements.userInfo) {
       elements.userInfo.style.display = 'flex';
-      document.getElementById('userAvatar').textContent = user.username.charAt(0);
+      
+      // 요금제 뱃지 설정 (임시로 Basic, 추후 서버에서 받아올 수 있음)
+      const planBadge = document.getElementById('planBadge');
+      const userPlan = user.plan || 'basic'; // 기본값은 basic
+      if (planBadge) {
+        planBadge.textContent = userPlan === 'pro' ? 'Pro' : 'Basic';
+        planBadge.className = 'plan-badge ' + userPlan;
+      }
+      
       document.getElementById('userName').textContent = user.username;
       document.getElementById('userRole').textContent = user.role === 'teacher' ? '선생님' : '학생';
     }
@@ -419,45 +426,16 @@ function bindAuth() {
       console.log('registerBtn 요소를 찾을 수 없음');
     }
 
-    // 로그아웃 처리
-    if (elements.logoutBtn) {
-      console.log('logoutBtn 요소 찾음');
-      elements.logoutBtn.addEventListener('click', async function() {
-        try {
-          // 서버에 로그아웃 요청
-          await fetch('/api/logout', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
-          });
-        } catch (error) {
-          console.error('로그아웃 요청 오류:', error);
-        }
-
-        currentUser = null;
-        hideAllForms();
-        disableDashboard();
-
-        // 로그아웃 시 모든 열린 탭 닫기
-        if (window.openTabs) {
-          window.openTabs = [];
-          window.activeTabId = null;
-          if (window.renderTabs) {
-            window.renderTabs();
-          }
-          if (window.clearProblems) {
-            window.clearProblems();
-          }
-        }
-
-        // 로그아웃 시 내 파일 폴더 비우기
-        if (window.loadMyFiles) {
-          window.loadMyFiles();
-        }
-
-        alert('로그아웃되었습니다.');
+    // 사용자 정보 영역 클릭 시 요금제 안내 창으로 이동
+    if (elements.userInfo) {
+      console.log('userInfo 요소 찾음 - 클릭 이벤트 등록');
+      elements.userInfo.addEventListener('click', function() {
+        // 요금제 안내 페이지로 이동
+        // 추후 실제 요금제 페이지가 생기면 해당 URL로 변경
+        window.open('https://zerotyping.com/pricing', '_blank');
       });
     } else {
-      console.log('logoutBtn 요소를 찾을 수 없음');
+      console.log('userInfo 요소를 찾을 수 없음');
     }
 
     // 모달 오버레이 클릭 시 폼 닫기
