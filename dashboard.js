@@ -129,6 +129,26 @@ function createFileTile(node, child=false){
   const el=document.createElement('div');
   el.className='tile small-tile'+(child?' child-tile':''); el.dataset.type='file'; el.dataset.path=pathKey; el.draggable=true;
   el.innerHTML = `<div class="icon">📄</div><div><div class="name">${node.name}</div></div>`;
+  // 모바일 전용 열기 버튼(탭 지원)
+  try{
+    if (window.innerWidth <= 768) {
+      const btn = document.createElement('button');
+      btn.type='button';
+      btn.className='open-btn';
+      btn.textContent='열기';
+      btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const name=el.querySelector('.name')?.textContent || '';
+        const nodeRef = getNodeByPathKey(pathKey);
+        if(nodeRef && nodeRef.dataSource){
+          createTab(nodeRef.dataSource, name);
+        } else if(nodeRef && nodeRef.fileId){
+          if(window.viewFileProblems){ window.viewFileProblems(nodeRef.fileId, nodeRef.name); }
+        }
+      });
+      el.appendChild(btn);
+    }
+  }catch(_){}
   if(__SEL__.has(pathKey)) el.classList.add('selected'); return el;
 }
 function toggleFolder(pathKey){ __OPEN__.has(pathKey)?__OPEN__.delete(pathKey):__OPEN__.add(pathKey); renderDirectory(); }
