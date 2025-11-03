@@ -341,7 +341,7 @@ function bindAuth() {
     const dashboard = document.getElementById('dashboard');
     const overlay = document.getElementById('loginRequiredOverlay');
     if (dashboard) dashboard.classList.add('disabled');
-    if (overlay) overlay.style.display = 'flex';
+    if (overlay) overlay.style.display = 'block';
   }
 
   // 이벤트 리스너 등록

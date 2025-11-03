@@ -761,18 +761,14 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 
 /* 로그인 필요 오버레이 */
 .login-required-overlay{
-  position:absolute;
-  top:0;
-  left:0;
-  right:0;
-  bottom:0;
-  background:rgba(255,255,255,0.95);
-  backdrop-filter:blur(4px);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  z-index:100;
+  position:relative;
+  background:#fff;
+  border:1px solid #e6edf6;
   border-radius:16px;
+  box-shadow:var(--shadow-sm);
+  padding:24px 20px;
+  display:block;
+  margin-bottom:12px;
 }
 .login-overlay-stack{display:flex;flex-direction:column;gap:12px;align-items:center}
 .login-message{
@@ -823,10 +819,10 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .inline-role-btn.selected{background:var(--brand);color:#fff;border-color:var(--brand)}
 .inline-register-btn{width:100%;padding:12px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,#4f9aff,#2563eb);color:#fff;font-weight:800;cursor:pointer;margin-top:4px}
 .inline-switch-btn{width:100%;padding:12px 16px;border:none;border-radius:8px;background:#f3f4f6;color:#0f172a;font-weight:700;cursor:pointer;margin-top:8px}
-.ex-dashboard.disabled > *:not(.login-required-overlay){
-  opacity:0.3;
-  filter:grayscale(50%);
-}
+.ex-dashboard.disabled .ex-upload,
+.ex-dashboard.disabled .ex-usage,
+.ex-dashboard.disabled .grid,
+.ex-dashboard.disabled .ex-toolbar{display:none}
 
 /* ====== PDF 설정 모달 ====== */
 .settings-modal-overlay {
