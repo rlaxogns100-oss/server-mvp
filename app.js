@@ -328,6 +328,9 @@ function bindAuth() {
     if (overlay) overlay.style.display = 'none';
     const inlineReg = document.getElementById('inlineRegisterForm');
     if (inlineReg) inlineReg.style.display = 'none';
+    // 게스트 비활성화 상태 해제
+    try{ document.querySelector('.preview-wrap')?.classList.remove('guest-disabled'); }catch(_){ }
+    try{ document.querySelector('.exam-preview')?.classList.remove('guest-disabled'); }catch(_){ }
   }
 
   function disableDashboard() {
