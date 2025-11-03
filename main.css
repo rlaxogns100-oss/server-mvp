@@ -324,6 +324,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   background:#fff;border:1px solid #e6edf6;border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;min-height:400px;max-height:calc(100vh - 120px);
   display:flex;flex-direction:column;
 }
+.exam-preview.guest-disabled{filter:grayscale(100%);opacity:.85;pointer-events:none}
 .exam-header{
   padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between
 }

@@ -535,6 +535,16 @@ async function guestPreviewSample8First4(){
         }catch(_){ }
         // 영역 흑백 + 비활성화
         try{ document.querySelector('.preview-wrap')?.classList.add('guest-disabled'); }catch(_){ }
+        // 시험지 미리보기에 1,4번 추가 + 흑백 비활성화
+        try{
+          if (window.addProblemToExam){
+            const p1 = first4.find(p=>p.id===1);
+            const p4 = first4.find(p=>p.id===4);
+            p1 && window.addProblemToExam('guest:sample8-1', p1);
+            p4 && window.addProblemToExam('guest:sample8-4', p4);
+          }
+          document.querySelector('.exam-preview')?.classList.add('guest-disabled');
+        }catch(_){ }
       }, 50);
     }
   }catch(err){ console.error('guestPreviewSample8First4 실패:', err); }

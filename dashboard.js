@@ -990,6 +990,9 @@ function addProblemToExam(uniqueProblemId, problemData) {
   updateExamStats();
 }
 
+// 전역에서 사용할 수 있도록 노출 (게스트 초기 세팅 등)
+window.addProblemToExam = addProblemToExam;
+
 function removeProblemFromExam(uniqueProblemId) {
   const index = examProblems.findIndex(p => p.uniqueId === uniqueProblemId);
   if (index !== -1) {
