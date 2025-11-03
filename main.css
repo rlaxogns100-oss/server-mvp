@@ -809,8 +809,8 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   box-shadow:0 6px 16px rgba(102,126,234,0.4);
 }
 
-/* Inline register form under login overlay */
-.inline-register{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 10px 30px rgba(2,6,23,.08);width:300px}
+/* Inline register form (guest) */
+.inline-register{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 10px 30px rgba(2,6,23,.08);width:auto;max-width:320px;margin:0 auto}
 .inline-register h3{margin:0 0 12px 0;font-size:18px;font-weight:700;color:var(--ink);text-align:center}
 .inline-register input{width:100%;padding:7px 12px;border:1px solid var(--line);border-radius:8px;font-size:12px;margin-bottom:8px;outline:none}
 .inline-register input:focus{border-color:var(--brand)}

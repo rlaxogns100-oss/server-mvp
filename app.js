@@ -326,13 +326,17 @@ function bindAuth() {
     const overlay = document.getElementById('loginRequiredOverlay');
     if (dashboard) dashboard.classList.remove('disabled');
     if (overlay) overlay.style.display = 'none';
+    const inlineReg = document.getElementById('inlineRegisterForm');
+    if (inlineReg) inlineReg.style.display = 'none';
   }
 
   function disableDashboard() {
     const dashboard = document.getElementById('dashboard');
     const overlay = document.getElementById('loginRequiredOverlay');
-    if (dashboard) dashboard.classList.add('disabled');
-    if (overlay) overlay.style.display = 'block';
+    if (dashboard) dashboard.classList.remove('disabled'); // 게스트도 탐색기 표시
+    if (overlay) overlay.style.display = 'none'; // 오버레이 사용 안 함
+    const inlineReg = document.getElementById('inlineRegisterForm');
+    if (inlineReg) inlineReg.style.display = 'block';
   }
 
   // 이벤트 리스너 등록

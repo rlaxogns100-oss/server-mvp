@@ -110,24 +110,6 @@
       <!-- Left: Explorer -->
       <section class="explorer">
         <div class="ex-card ex-dashboard" id="dashboard">
-          <!-- 로그인 안내 오버레이 -->
-          <div class="login-required-overlay" id="loginRequiredOverlay" style="display: none;">
-            <div class="login-overlay-stack">
-              <div class="login-message">
-                <div class="login-icon">🔒</div>
-                <h3>로그인이 필요합니다</h3>
-                <p>파일을 업로드하고 관리하려면<br>로그인해주세요</p>
-                <button class="login-overlay-btn" onclick="document.getElementById('showLoginFormBtn').click()">로그인하기</button>
-              </div>
-              <div class="inline-register" id="inlineRegisterForm">
-                <h3>10초만에 회원가입</h3>
-                <input type="text" id="inlineRegisterUsername" placeholder="사용자명" />
-                <input type="email" id="inlineRegisterEmail" placeholder="이메일" />
-                <input type="password" id="inlineRegisterPassword" placeholder="비밀번호" />
-                <button id="inlineRegisterBtn" class="inline-register-btn">회원가입</button>
-              </div>
-            </div>
-          </div>
           <!-- 업로드 -->
           <div class="ex-upload" style="padding:12px 12px 4px">
             <div class="upload-tile" id="uploadTile">
@@ -153,6 +135,15 @@
           <!-- 파일/폴더 리스트 -->
           <div class="grid" style="border-top:1px solid #eef2f7; padding-top:8px">
             <div class="files-grid" id="fileGridBody"></div>
+          </div>
+
+          <!-- 인라인 회원가입 (게스트용) -->
+          <div class="inline-register" id="inlineRegisterForm" style="display:none; margin:12px 12px 0 12px;">
+            <h3>1초만에 회원가입</h3>
+            <input type="text" id="inlineRegisterUsername" placeholder="사용자명" />
+            <input type="email" id="inlineRegisterEmail" placeholder="이메일" />
+            <input type="password" id="inlineRegisterPassword" placeholder="비밀번호" />
+            <button id="inlineRegisterBtn" class="inline-register-btn">회원가입</button>
           </div>
 
           <!-- 툴바 -->
