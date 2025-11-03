@@ -202,6 +202,23 @@ document.addEventListener('dblclick', e=>{
     }
   }
 });
+
+// 모바일/단일 클릭에서도 파일 열기 지원
+document.addEventListener('click', e=>{
+  const tile = e.target.closest?.('.small-tile'); if(!tile) return;
+  if(tile.dataset.type!=='file') return;
+  // 선택 처리 후에도 단일 클릭에서 열기 지원 (모바일 편의)
+  const name=tile.querySelector('.name')?.textContent || '';
+  const pathKey = tile.dataset.path;
+  const node = getNodeByPathKey(pathKey);
+  if(node && node.dataSource) {
+    createTab(node.dataSource, name);
+  } else if(node && node.fileId) {
+    if(window.viewFileProblems) {
+      window.viewFileProblems(node.fileId, node.name);
+    }
+  }
+});
 /* ---- Drag & Drop (delegated; targets: folder-header & up-tile) ---- */
 function setDragImage(e,count){
   const ghost=document.createElement('div');
