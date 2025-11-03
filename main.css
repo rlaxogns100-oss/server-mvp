@@ -585,7 +585,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .mobile-tabs{display:none}
 @media (max-width: 768px){
   .mobile-tabs{display:flex;gap:8px;padding:0 12px 8px;position:sticky;top:8px;z-index:50;background:transparent}
-  .mobile-tabs .tab-btn{flex:1;padding:10px 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;color:#0f172a;font-weight:700}
+  .mobile-tabs .tab-btn{flex:1;min-width:0;height:44px;padding:0 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;color:#0f172a;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap}
   .mobile-tabs .tab-btn.active{background:linear-gradient(135deg,#4f9aff,#2563eb);color:#fff;border-color:#2563eb}
   .mobile-hide{display:none !important}
 }
