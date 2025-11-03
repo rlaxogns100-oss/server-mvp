@@ -108,7 +108,9 @@ function createOrMoveBubble(targetEl, id, html, offsetY){
     el.querySelector('.close').addEventListener('click', ()=>{ el.remove(); });
   }
   const r = targetEl.getBoundingClientRect();
-  const top = Math.max(10, r.top - (offsetY||70));
+  const isMobile = (window.innerWidth || document.documentElement.clientWidth) <= 768;
+  const baseOffset = (typeof offsetY==='number') ? offsetY : (isMobile ? 56 : 80);
+  const top = Math.max(10, r.top - baseOffset);
   const left = r.left + (r.width/2);
   el.style.top = top + 'px';
   el.style.left = left + 'px';

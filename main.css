@@ -860,6 +860,9 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .guide-bubble .close:hover{opacity:1}
 .guide-bubble:after{content:"";position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
   width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #764ba2}
+@media (max-width:768px){
+  .guide-bubble{max-width:88vw;font-size:13px;line-height:1.45;padding:10px 12px}
+}
 
 /* ====== PDF 설정 모달 ====== */
 .settings-modal-overlay {
