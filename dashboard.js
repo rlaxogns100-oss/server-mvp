@@ -759,9 +759,10 @@ function renderTabs() {
 function clearProblems() {
   const column1 = document.getElementById('column1');
   const column2 = document.getElementById('column2');
-  
   if (column1) column1.innerHTML = '';
   if (column2) column2.innerHTML = '';
+  // 프리뷰 영역 비어있음 표시
+  showPreviewPlaceholder();
 }
 
 function getCurrentFileSelectedProblems() {
@@ -1143,7 +1144,7 @@ function loadProblemsFromFile(dataSource) {
     alert('문제 데이터를 찾을 수 없습니다: ' + dataSource);
     return;
   }
-  
+  hidePreviewPlaceholder();
   displayProblems(problems);
 }
 
@@ -1156,6 +1157,7 @@ function displayProblems(problems) {
     return;
   }
   
+  hidePreviewPlaceholder();
   // 기존 문제들 제거
   column1.innerHTML = '';
   column2.innerHTML = '';
@@ -1349,6 +1351,9 @@ function initDashboard(){
   setTimeout(() => {
     updateResizeHandlePosition();
   }, 100);
+
+  // 초기 프리뷰 비어있음 표시
+  showPreviewPlaceholder();
 }
 
 /* ---- Mobile Tabs ---- */
@@ -1367,6 +1372,7 @@ function setupMobileTabs(){
       preview?.classList.remove('mobile-hide');
       exam?.classList.remove('mobile-hide');
       tabsBar.style.display = 'none';
+      if (!activeTabId) showPreviewPlaceholder(); else hidePreviewPlaceholder();
       return;
     }
     tabsBar.style.display = 'flex';
@@ -1376,6 +1382,7 @@ function setupMobileTabs(){
     if (tab==='explorer') explorer?.classList.remove('mobile-hide');
     if (tab==='preview') preview?.classList.remove('mobile-hide');
     if (tab==='exam') exam?.classList.remove('mobile-hide');
+    if (tab==='preview' && !activeTabId) { showPreviewPlaceholder(); } else { hidePreviewPlaceholder(); }
     // 버튼 active
     A('#mobileTabs .tab-btn').forEach(b=>b.classList.remove('active'));
     const btn = tabsBar.querySelector(`.tab-btn[data-target="${tab}"]`);
@@ -1802,3 +1809,21 @@ function applySettings() {
 window.getPdfSettings = () => pdfSettings;
 
 document.addEventListener('DOMContentLoaded', initDashboard);
+
+/* ---- Preview placeholder helpers ---- */
+function showPreviewPlaceholder(){
+  const cont = document.getElementById('problemsPreview');
+  if (!cont) return;
+  if (!cont.querySelector('.preview-empty-container')){
+    const wrap = document.createElement('div');
+    wrap.className = 'preview-empty-container';
+    wrap.innerHTML = '<div class="preview-empty"><div class="empty-icon">📂</div><div class="empty-text">선택한 파일의 문제가 표시됩니다.</div></div>';
+    cont.appendChild(wrap);
+  }
+  cont.classList.add('empty');
+}
+function hidePreviewPlaceholder(){
+  const cont = document.getElementById('problemsPreview'); if(!cont) return;
+  const wrap = cont.querySelector('.preview-empty-container'); if(wrap) wrap.remove();
+  cont.classList.remove('empty');
+}
