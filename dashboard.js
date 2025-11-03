@@ -899,6 +899,11 @@ function updateResizeHandlePosition() {
     // DOM이 아직 준비되지 않은 경우, 기본 위치로 설정
     const defaultLeft = 324 + 18 + (mainRect.width - 324 - 36) / 2 - 3;
     resizeHandle.style.left = defaultLeft + 'px';
+    // 힌트/버튼 위치도 기본값으로
+    const hint = document.getElementById('resizeHint');
+    hint && (hint.style.left = '50%');
+    const btn = document.getElementById('guestSignupBtn');
+    if (btn) { btn.style.left = '50%'; btn.style.top = '50%'; }
     return;
   }
   
@@ -907,6 +912,11 @@ function updateResizeHandlePosition() {
   // 핸들을 왼쪽 컬럼의 오른쪽 경계에 위치
   const handleLeft = leftColumnRect.right - mainRect.left - 3; // 3px는 핸들 너비의 절반
   resizeHandle.style.left = handleLeft + 'px';
+  // 힌트와 float 버튼 위치 동기화
+  const hint = document.getElementById('resizeHint');
+  if (hint) { hint.style.left = handleLeft + 'px'; }
+  const btn = document.getElementById('guestSignupBtn');
+  if (btn) { btn.style.left = handleLeft + 'px'; btn.style.top = '50%'; }
 }
 
 function startResize(e) {

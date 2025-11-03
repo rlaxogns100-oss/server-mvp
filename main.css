@@ -245,14 +245,17 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 /* ====== Main Layout: Explorer (left) + Preview (right) ====== */
 .main{display:grid;grid-template-columns:324px 1fr 1fr;gap:18px;padding:18px 20px;height:calc(100vh - 80px);overflow:hidden;position:relative}
 .resize-handle{
-  position:absolute;top:0;bottom:0;width:6px;background:#e5e7eb;cursor:col-resize;z-index:10;transition:background 0.2s;
+  position:absolute;top:0;bottom:0;width:6px;background:#3b82f6;cursor:col-resize;z-index:10;transition:background 0.2s;
 }
-.resize-handle:hover{
-  background:#3b82f6;
-}
-.resize-handle:active{
-  background:#1e40af;
-}
+.resize-handle:hover{background:#2563eb}
+.resize-handle:active{background:#1e40af}
+
+/* Hint above handle */
+.resize-hint{position:absolute;top:6px;left:50%;transform:translateX(-50%);z-index:12;width:36px;height:24px;border:1px solid #2563eb;border-radius:6px;background:#fff;color:#2563eb;display:flex;align-items:center;justify-content:center;font-weight:800;box-shadow:0 4px 12px rgba(37,99,235,.15);pointer-events:none}
+
+/* Floating signup button centered between sections */
+.signup-floating-btn{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:11;padding:10px 16px;border-radius:999px;border:1px solid #94a3b8;background:linear-gradient(135deg,#f8fafc,#eef2ff);color:#0f172a;font-weight:800;box-shadow:0 10px 30px rgba(2,6,23,.08);cursor:pointer}
+.signup-floating-btn:hover{background:linear-gradient(135deg,#eef2ff,#e0e7ff)}
 .explorer{
   display:grid;grid-template-rows:auto auto auto 1fr auto;gap:12px; /* logo gap handled by topbar */
 }
