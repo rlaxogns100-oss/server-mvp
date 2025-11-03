@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', function(){
   bindMyFiles();
   console.log('MathJax 타입셋');
   safeTypeset();
+  // 비로그인 초기 상태: sample8 1~4번을 JSON에서 읽어 미리보기 표시 (DB 미사용)
+  setTimeout(()=>{ try{ if(!currentUser){ guestPreviewSample8First4(); } }catch(_){ } }, 150);
   console.log('모든 초기화 완료');
 });
 
@@ -511,4 +513,18 @@ function bindAuth() {
   }
 
   console.log('인증 기능 초기화 완료');
+}
+
+// 게스트 전용: sample8 1~4번 문제를 JSON에서 읽어와 미리보기 영역에 표시
+async function guestPreviewSample8First4(){
+  try{
+    const res = await fetch('/history/sample8/problems_llm_structured.json', { cache: 'no-store' });
+    const data = await res.json();
+    const first4 = (Array.isArray(data)?data:[])
+      .filter(p=>[1,2,3,4].includes(p.id))
+      .map(p=>{ return Object.assign({}, p, { _id: 'sample8-'+p.id }); });
+    if (first4.length && typeof window.displayProblems === 'function'){
+      window.displayProblems(first4);
+    }
+  }catch(err){ console.error('guestPreviewSample8First4 실패:', err); }
 }
