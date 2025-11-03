@@ -138,6 +138,10 @@ function createFileTile(node, child=false){
       btn.textContent='열기';
       btn.addEventListener('click', (e)=>{
         e.stopPropagation();
+        // 탭 자동 전환: 문항 선택
+        if (window.innerWidth <= 768 && window.switchMobileTab) {
+          window.switchMobileTab('preview');
+        }
         const name=el.querySelector('.name')?.textContent || '';
         const nodeRef = getNodeByPathKey(pathKey);
         if(nodeRef && nodeRef.dataSource){
@@ -1328,6 +1332,9 @@ function initDashboard(){
   
   // 윈도우 리사이즈 시 핸들 위치 업데이트
   window.addEventListener('resize', updateResizeHandlePosition);
+
+  // 모바일 탭 설정
+  setupMobileTabs();
   
   // 버튼 이벤트를 즉시 연결 (지연 없음)
   const generateBtn = document.getElementById('generatePdfBtn');
@@ -1342,6 +1349,58 @@ function initDashboard(){
   setTimeout(() => {
     updateResizeHandlePosition();
   }, 100);
+}
+
+/* ---- Mobile Tabs ---- */
+function setupMobileTabs(){
+  const tabsBar = document.getElementById('mobileTabs');
+  if (!tabsBar) return;
+
+  const explorer = document.querySelector('.explorer');
+  const preview = document.querySelector('.preview-wrap');
+  const exam = document.querySelector('.exam-preview');
+
+  function apply(tab){
+    if (window.innerWidth > 768){
+      // 데스크톱: 모두 표시
+      explorer?.classList.remove('mobile-hide');
+      preview?.classList.remove('mobile-hide');
+      exam?.classList.remove('mobile-hide');
+      tabsBar.style.display = 'none';
+      return;
+    }
+    tabsBar.style.display = 'flex';
+    explorer?.classList.add('mobile-hide');
+    preview?.classList.add('mobile-hide');
+    exam?.classList.add('mobile-hide');
+    if (tab==='explorer') explorer?.classList.remove('mobile-hide');
+    if (tab==='preview') preview?.classList.remove('mobile-hide');
+    if (tab==='exam') exam?.classList.remove('mobile-hide');
+    // 버튼 active
+    A('#mobileTabs .tab-btn').forEach(b=>b.classList.remove('active'));
+    const btn = tabsBar.querySelector(`.tab-btn[data-target="${tab}"]`);
+    btn && btn.classList.add('active');
+  }
+
+  // 외부에서 사용 가능
+  window.switchMobileTab = apply;
+
+  // 초기 탭은 explorer
+  apply('explorer');
+
+  A('#mobileTabs .tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      apply(btn.dataset.target);
+      // 미리보기나 시험지 전환 시 핸들 위치 갱신
+      setTimeout(updateResizeHandlePosition, 50);
+    });
+  });
+
+  // 리사이즈 시 모드 전환 반영
+  window.addEventListener('resize', ()=>{
+    const active = tabsBar.querySelector('.tab-btn.active')?.dataset.target || 'explorer';
+    apply(active);
+  });
 }
 
 /* ---- PDF 생성 (LaTeX 기반) ---- */
