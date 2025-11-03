@@ -810,7 +810,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 }
 
 /* Inline register form (guest) */
-.inline-register{background:#fff;border:1px solid var(--line);border-radius:12px;padding:20px;box-shadow:0 10px 30px rgba(2,6,23,.08);width:auto;max-width:320px;margin:0 auto}
+.inline-register{background:#fff;background-image:linear-gradient(180deg,#fafbff,#ffffff);border:2px solid rgba(102,126,234,.55);border-radius:16px;padding:20px;box-shadow:0 10px 30px rgba(102,126,234,.18),0 1px 0 rgba(255,255,255,.6) inset;width:auto;max-width:360px;margin:0 auto}
 .inline-register h3{margin:0 0 12px 0;font-size:18px;font-weight:700;color:var(--ink);text-align:center}
 .inline-register input{width:100%;padding:7px 12px;border:1px solid var(--line);border-radius:8px;font-size:12px;margin-bottom:8px;outline:none}
 .inline-register input:focus{border-color:var(--brand)}
@@ -840,7 +840,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .guest-lock-center .login-overlay-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(102,126,234,.45)}
 
 /* Emphasize inline signup card to match tone */
-.inline-register{background:#fff;border:1px solid #e6edf6;border-radius:16px;box-shadow:var(--shadow-sm);
+.inline-register{background:#fff;background-image:linear-gradient(180deg,#fafbff,#ffffff);border:2px solid rgba(102,126,234,.55);border-radius:16px;box-shadow:0 10px 30px rgba(102,126,234,.18),0 1px 0 rgba(255,255,255,.6) inset;
   width:100%;max-width:360px;padding:20px;display:flex;flex-direction:column;gap:10px;text-align:center}
 .inline-register h3{margin:0 0 8px 0;font-size:18px;font-weight:800;color:var(--ink)}
 .inline-register input{padding:10px 12px;border:1px solid var(--line);border-radius:10px;font-size:14px;outline:none}
