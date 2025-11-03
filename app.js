@@ -64,14 +64,6 @@ function bindPreview(){
   console.log('bindPreview 완료');
 }
 
-// 게스트용: 가운데 회원가입 버튼 -> 회원가입 폼 열기
-document.addEventListener('click', function(e){
-  const t = e.target;
-  if (t && t.id === 'guestSignupBtn'){
-    try{ document.getElementById('showRegisterFormBtn')?.click(); }catch(_){ }
-  }
-});
-
 function updateBuildLog(msg){ console.log(msg); }
 
 /* ---- 내 파일 관련 기능 ---- */
