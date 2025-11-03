@@ -52,40 +52,10 @@
           <div class="t2">클릭만으로 만드는 학습지</div>
         </div>
       </div>
-      <a href="https://docs.google.com/forms/d/e/1FAIpQLScjQxJ_eOTmK74hgGkGCkqUaBz9cbGIku11_CbRAiXBUzfhSQ/viewform?usp=publish-editor"
-         target="_blank"
-         class="feedback-button"
-         style="
-           display: flex;
-           align-items: center;
-           gap: 8px;
-           background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-           color: white;
-           padding: 10px 20px;
-           border-radius: 8px;
-           text-decoration: none;
-           font-weight: 600;
-           font-size: 14px;
-           transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-           box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
-           white-space: nowrap;
-           position: relative;
-         "
-         onmouseover="this.style.transform='translateY(-4px) scale(1.02)'; this.style.boxShadow='0 8px 20px rgba(102, 126, 234, 0.5)'; this.style.background='linear-gradient(135deg, #7c8ff5 0%, #8b5dba 100%)'"
-         onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 2px 8px rgba(102, 126, 234, 0.3)'; this.style.background='linear-gradient(135deg, #667eea 0%, #764ba2 100%)'">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" style="flex-shrink: 0;">
-          <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 17L12 22L22 17" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 12L12 17L22 12" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>제로타이핑 평가하고 한 달 무료 이용권 받기 🎁</span>
-      </a>
+      
           <div class="user" id="userSection">
             <!-- 초기 버튼들 -->
-            <div class="auth-buttons" id="authButtons">
-              <button id="showLoginFormBtn" class="login-btn">로그인</button>
-              <button id="showRegisterFormBtn" class="register-btn">회원가입</button>
-            </div>
+            
 
             <!-- 사용자 정보 -->
             <div class="user-info" id="userInfo" style="display: none;">
@@ -149,7 +119,7 @@
           <!-- 게스트 잠금 중앙 안내 -->
           <div class="guest-lock-center" id="guestLockCenter" style="display:none;">
             <div class="login-icon">🔒</div>
-            <button type="button" class="login-overlay-btn" onclick="document.getElementById('showLoginFormBtn').click()">로그인하기</button>
+            <button type="button" class="login-overlay-btn" onclick="(function(){var lf=document.getElementById('loginForm');var rf=document.getElementById('registerForm');var mo=document.getElementById('modalOverlay');if(lf) lf.style.display='flex'; if(rf) rf.style.display='none'; if(mo) mo.style.display='block';})();">로그인하기</button>
           </div>
 
           <!-- 툴바 -->
