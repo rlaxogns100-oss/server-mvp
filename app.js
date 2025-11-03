@@ -24,8 +24,6 @@ document.addEventListener('DOMContentLoaded', function(){
   bindMyFiles();
   console.log('MathJax 타입셋');
   safeTypeset();
-  // 비로그인 모드 UI 목업 렌더 (게스트 전용)
-  setTimeout(()=>{ try{ renderNonLoginMockIfGuest(); }catch(_){ } }, 50);
   console.log('모든 초기화 완료');
 });
 
@@ -300,9 +298,7 @@ function bindAuth() {
     const dashboard = document.getElementById('dashboard');
     const overlay = document.getElementById('loginRequiredOverlay');
     if (dashboard) dashboard.classList.add('disabled');
-    if (overlay) overlay.style.display = 'none'; // 기본 오버레이 숨김 (목업 표시용)
-    // 게스트 전용 목업 표시
-    try{ renderNonLoginMockIfGuest(); }catch(_){ }
+    if (overlay) overlay.style.display = 'flex';
   }
 
   // 이벤트 리스너 등록
@@ -515,133 +511,4 @@ function bindAuth() {
   }
 
   console.log('인증 기능 초기화 완료');
-}
-
-/* ===== 비로그인 목업 화면 ===== */
-function renderNonLoginMockIfGuest(){
-  // 이미 렌더했거나 로그인 상태면 스킵
-  if (window.__NLOGIN_RENDERED__) return;
-  if (typeof currentUser !== 'undefined' && currentUser) return;
-
-  const explorerCard = document.getElementById('dashboard');
-  const previewWrap = document.querySelector('.preview-wrap');
-  const examPreview = document.querySelector('.exam-preview');
-  if (!explorerCard || !previewWrap || !examPreview) return;
-
-  window.__NLOGIN_RENDERED__ = true;
-
-  // 1) 탐색기: 샘플 폴더/파일 구성
-  try{
-    window.__FS__ = window.__FS__ || { name:'ROOT', type:'root', children:[] };
-    let my = (window.__FS__.children||[]).find(c=>c.name==='내 파일');
-    if(!my){ my = { name:'내 파일', type:'folder', children:[] }; (window.__FS__.children||[]).push(my); }
-    my.children = [
-      { name:'수업자료', type:'folder', children:[
-        { name:'도형_연습.pdf', type:'file', problemCount:18 },
-        { name:'함수_기초.pdf', type:'file', problemCount:12 }
-      ]},
-      { name:'모의고사', type:'folder', children:[
-        { name:'6월모의.pdf', type:'file', problemCount:25 }
-      ]},
-      { name:'sample8.pdf', type:'file', problemCount:28 },
-      { name:'presentation_sample.pdf', type:'file', problemCount:9 }
-    ];
-    if (window.renderDirectory) window.renderDirectory();
-  }catch(_){ }
-
-  // 2) 미리보기: sample8 이미지 문제 일부 채워 넣기
-  (async function(){
-    let problems=[];
-    try{
-      const r = await fetch('/history/sample8/problems.json');
-      problems = await r.json();
-    }catch(_){
-      // fetch 실패 시 최소 폴백 3개 (이미지 포함)
-      problems = [
-        { id:1, content:["![](https://cdn.mathpix.com/cropped/2025_10_07_60cb6ef9d99c6842c3bcg-1.jpg?height=466&width=674&top_left_y=798&top_left_x=268)"]},
-        { id:2, content:["![](https://cdn.mathpix.com/cropped/2025_10_07_60cb6ef9d99c6842c3bcg-1.jpg?height=440&width=677&top_left_y=1951&top_left_x=268)"]},
-        { id:7, content:["![](https://cdn.mathpix.com/cropped/2025_10_07_fe33e71c165f3c72b963g-1.jpg?height=634&width=672&top_left_y=1517&top_left_x=233)"]}
-      ];
-    }
-    const imageItems = [];
-    problems.forEach(p=>{
-      if (!p || !p.content) return;
-      const imgLine = p.content.find(x=>typeof x==='string' && x.includes('http') && x.includes('cdn.mathpix'));
-      if (imgLine){
-        const m = imgLine.match(/!\[]\(([^)]+)\)/); // markdown 이미지 추출
-        if (m && m[1]) imageItems.push({ id:p.id, url:m[1] });
-      }
-    });
-    const chosen = imageItems.slice(0,6); // 화면 채우기용 6개
-
-    // 탭 모양
-    try{
-      const tabs = document.getElementById('problemTabs');
-      if (tabs){
-        tabs.innerHTML = '<div class="tab active"><div class="tab-icon">📄</div><span>sample8.pdf</span></div>';
-      }
-    }catch(_){ }
-
-    // 미리보기 그리드 채움 (일부 선택 표시)
-    const c1 = document.getElementById('column1');
-    const c2 = document.getElementById('column2');
-    if (c1 && c2){ c1.innerHTML=''; c2.innerHTML=''; }
-    chosen.forEach((it, idx)=>{
-      const el = document.createElement('div');
-      el.className = 'problem' + (idx%3===0 ? ' selected':'');
-      el.innerHTML = '<div class="pbody"><img src="'+it.url+'" alt="problem" style="max-width:100%;display:block;border:1px solid #e5e7eb;border-radius:8px;background:#fff"/></div>';
-      if (idx%2===0) c1 && c1.appendChild(el); else c2 && c2.appendChild(el);
-    });
-
-    // 3) 시험지 미리보기 구성 (선택된 것만)
-    try{
-      const selected = chosen.filter((_,i)=>i%3===0);
-      const exam = document.getElementById('examProblems');
-      const statsN = document.getElementById('totalProblems');
-      const eta = document.getElementById('estimatedTime');
-      if (exam){
-        exam.innerHTML = '';
-        const page = document.createElement('div');
-        page.className = 'exam-page';
-        page.innerHTML = '<div class="exam-page-header"><div class="exam-page-title">수학 시험지</div><div class="exam-page-subtitle">샘플 미리보기</div></div>'+
-          '<div class="exam-page-content"><div class="exam-page-column">'+
-          selected.map((s,i)=>'<div class="exam-problem"><div style="font-weight:800;margin-bottom:6px">'+(i+1)+'.</div><img src="'+s.url+'" style="max-width:100%;border:1px solid #e5e7eb;border-radius:6px"/></div>').join('')+
-          '</div><div class="exam-page-column"></div></div>'+
-          '<div class="exam-page-footer"><span class="exam-page-number">1</span></div>';
-        exam.appendChild(page);
-      }
-      if (statsN) statsN.textContent = String((chosen.filter((_,i)=>i%3===0)).length);
-      if (eta) eta.textContent = '4분';
-    }catch(_){ }
-
-    // 4) 섹션 비활성화 (회색 처리 + 인터랙션 차단)
-    try{
-      explorerCard.classList.add('nologin-dim');
-      previewWrap.classList.add('nologin-dim');
-      examPreview.classList.add('nologin-dim');
-      ;['.explorer .ex-dashboard','.preview-wrap','.exam-preview'].forEach(sel=>{
-        const host = document.querySelector(sel);
-        if (!host) return;
-        if (host.querySelector('.section-mask')) return;
-        const mask = document.createElement('div'); mask.className='section-mask'; host.style.position='relative'; host.appendChild(mask);
-      });
-    }catch(_){ }
-
-    // 5) 말풍선 (작고 닫기 가능)
-    try{
-      spawnHint('#uploadTile','Pdf 파일을 업로드하면 ai가 자동으로 문제를 추출해요');
-      spawnHint('.preview-wrap','추출한 문제를 원클릭으로 선택해요');
-      spawnHint('.exam-preview','원하는 양식을 골라서 시험지 완성!');
-    }catch(_){ }
-  })();
-}
-
-function spawnHint(targetSel, text){
-  const host = document.querySelector(targetSel); if(!host) return;
-  const b = document.createElement('div'); b.className='hint-bubble'; b.innerHTML = '<div class="hint-close">×</div>'+text;
-  host.style.position = host.style.position || 'relative';
-  // 기본 위치: 상단 좌측 살짝 띄워서
-  b.style.top = '8px'; b.style.left = '8px';
-  const close = b.querySelector('.hint-close'); close.addEventListener('click',()=> b.remove());
-  host.appendChild(b);
 }
