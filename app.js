@@ -65,11 +65,43 @@ function bindPreview(){
   console.log('bindPreview 완료');
 }
 
-// 오버레이의 빠른 회원가입 버튼 처리
+// 인라인 회원가입 폼 처리 (오버레이 하단)
 document.addEventListener('click', function(e){
   const t = e.target;
-  if (t && t.id === 'quickRegisterBtn'){
-    try{ document.getElementById('showRegisterFormBtn')?.click(); }catch(_){ }
+  // 역할 선택 토글
+  if (t && t.classList && t.classList.contains('inline-role-btn')){
+    const group = document.querySelectorAll('.inline-role-btn');
+    let selectedRole = null;
+    group.forEach(b=>{ b.classList.remove('selected'); });
+    t.classList.add('selected');
+    selectedRole = t.getAttribute('data-role');
+    t.closest('.inline-register').dataset.role = selectedRole || '';
+  }
+  // 회원가입 제출
+  if (t && t.id === 'inlineRegisterBtn'){
+    const wrap = document.getElementById('inlineRegisterForm');
+    if (!wrap) return;
+    const username = document.getElementById('inlineRegisterUsername')?.value || '';
+    const email = document.getElementById('inlineRegisterEmail')?.value || '';
+    const password = document.getElementById('inlineRegisterPassword')?.value || '';
+    const role = wrap.dataset.role || '';
+    if (!username || !email || !password || !role){ alert('모든 필드를 입력해주세요.'); return; }
+    (async()=>{
+      try{
+        const response = await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, email, password, role }) });
+        const data = await response.json();
+        if (data.success){
+          currentUser = data.user;
+          if (typeof displayUserInfo === 'function') displayUserInfo(currentUser);
+          alert('회원가입 성공! 로그인되었습니다.');
+          if (window.loadMyFiles) window.loadMyFiles();
+        } else { alert('회원가입 실패: ' + (data.message||'')); }
+      }catch(err){ console.error('회원가입 오류', err); alert('회원가입 중 오류가 발생했습니다.'); }
+    })();
+  }
+  // 로그인 폼 열기
+  if (t && t.id === 'inlineShowLoginBtn'){
+    try{ document.getElementById('showLoginFormBtn')?.click(); }catch(_){ }
   }
 });
 
