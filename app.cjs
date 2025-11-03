@@ -709,6 +709,9 @@ function sendProgress(sessionId, progress, message) {
 }
 
 const server = http.createServer((req, res) => {
+  // URL 파싱 (쿼리스트링 제거된 pathname 사용)
+  const urlObj = new URL(req.url, `http://${req.headers.host}`);
+  const pathname = urlObj.pathname;
   // 이미지 파일 서빙
   if (req.method === 'GET' && req.url.startsWith('/images/')) {
     const imagePath = path.join(process.cwd(), req.url);
@@ -735,7 +738,7 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  if (req.method === 'GET' && req.url === '/') {
+  if (req.method === 'GET' && pathname === '/') {
     // 방문자 추적
     (async () => {
       try {
@@ -988,6 +991,19 @@ const server = http.createServer((req, res) => {
       </body>
       </html>
     `);
+  } else if (req.method === 'GET' && pathname.endsWith('.html')) {
+    // 정적 HTML 파일 서빙 (쿼리스트링 무시)
+    const filePath = path.join(__dirname, pathname);
+    if (fs.existsSync(filePath)) {
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, must-revalidate'
+      });
+      fs.createReadStream(filePath, 'utf8').pipe(res);
+    } else {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('File not found');
+    }
   } else if (req.method === 'GET' && (req.url.includes('.js') || req.url.includes('.css') || req.url.includes('.ico'))) {
     // 정적 파일 서빙 (쿼리스트링 무시)
     const urlObj = new URL(req.url, `http://${req.headers.host}`);
