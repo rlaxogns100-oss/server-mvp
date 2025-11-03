@@ -26,11 +26,7 @@ document.addEventListener('DOMContentLoaded', function(){
   safeTypeset();
   // 비로그인 초기 상태: sample8 1~4번을 JSON에서 읽어 미리보기 표시 (DB 미사용)
   setTimeout(()=>{ try{ if(!currentUser){ guestPreviewSample8First4(); } }catch(_){ } }, 150);
-  // 게스트 전용 섹션별 회원가입 버튼 노출
-  setTimeout(()=>{ try{ if(!currentUser){
-    const bp=document.getElementById('signupBtnPreview'); if(bp) bp.style.display='inline-flex';
-    const be=document.getElementById('signupBtnExam'); if(be) be.style.display='inline-flex';
-  } }catch(_){ } }, 200);
+  // 섹션 버튼 노출 제거 (요구사항 변경)
   console.log('모든 초기화 완료');
 });
 
@@ -69,10 +65,10 @@ function bindPreview(){
   console.log('bindPreview 완료');
 }
 
-// 섹션 회원가입 버튼 클릭 시 회원가입 폼 열기
+// 오버레이의 빠른 회원가입 버튼 처리
 document.addEventListener('click', function(e){
   const t = e.target;
-  if (t && (t.id === 'signupBtnPreview' || t.id === 'signupBtnExam')){
+  if (t && t.id === 'quickRegisterBtn'){
     try{ document.getElementById('showRegisterFormBtn')?.click(); }catch(_){ }
   }
 });
