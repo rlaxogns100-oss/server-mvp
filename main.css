@@ -483,7 +483,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   display:flex;align-items:center;justify-content:space-between;padding:8px 12px
 }
 .tabs{
-  display:flex;gap:4px;flex:1;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-behavior:smooth
+  display:flex;gap:4px;flex:1;min-width:0;overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth
 }
 .tabs::-webkit-scrollbar{height:0}
 .tab{
@@ -591,11 +591,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   .mobile-hide{display:none !important}
 }
 
-/* Tabs scroll controls */
-.tab-scroll-btn{display:none}
-@media (max-width: 768px){
-  .tab-scroll-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border:1px solid #e5e7eb;border-radius:8px;background:#fff;color:#334155}
-}
+/* (removed) tab scroll buttons */
 
 @media (max-width: 768px){
   .small-tile .open-btn{position:absolute;right:10px;top:10px;padding:4px 8px;border-radius:8px;border:1px solid #e5e7eb;background:#fff;font-size:12px;color:#334155}

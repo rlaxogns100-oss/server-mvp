@@ -754,21 +754,8 @@ function renderTabs() {
     
     tabsContainer.appendChild(tabElement);
   });
-  // 모바일 스크롤 버튼 연결 및 스와이프 보정
-  try {
-    const controls = document.querySelector('.tabs-container .tab-controls');
-    if (controls && !controls.dataset.bound) {
-      controls.dataset.bound = '1';
-      const left = document.createElement('button'); left.type='button'; left.className='tab-scroll-btn'; left.textContent='‹';
-      const right = document.createElement('button'); right.type='button'; right.className='tab-scroll-btn'; right.textContent='›';
-      left.addEventListener('click', ()=> tabsContainer.scrollBy({left:-160, behavior:'smooth'}));
-      right.addEventListener('click', ()=> tabsContainer.scrollBy({left:160, behavior:'smooth'}));
-      controls.innerHTML = '';
-      controls.appendChild(left);
-      controls.appendChild(right);
-    }
-    tabsContainer.style.touchAction = 'pan-x';
-  } catch(_) {}
+  // 스와이프 보정
+  try { tabsContainer.style.touchAction = 'pan-x'; } catch(_) {}
 }
 
 function clearProblems() {
