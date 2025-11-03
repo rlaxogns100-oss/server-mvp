@@ -347,6 +347,7 @@ function bindAuth() {
     if (overlay) overlay.style.display = 'none';
     const inlineReg = document.getElementById('inlineRegisterForm');
     if (inlineReg) inlineReg.style.display = 'none';
+    if (dashboard) dashboard.classList.remove('guest-locked');
     // 게스트 비활성화 상태 해제
     try{ document.querySelector('.preview-wrap')?.classList.remove('guest-disabled'); }catch(_){ }
     try{ document.querySelector('.exam-preview')?.classList.remove('guest-disabled'); }catch(_){ }
@@ -366,6 +367,7 @@ function bindAuth() {
     if (overlay) overlay.style.display = 'none'; // 오버레이 사용 안 함
     const inlineReg = document.getElementById('inlineRegisterForm');
     if (inlineReg) inlineReg.style.display = 'block';
+    if (dashboard) dashboard.classList.add('guest-locked');
   }
 
   // 이벤트 리스너 등록
