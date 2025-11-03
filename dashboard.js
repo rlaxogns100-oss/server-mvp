@@ -749,13 +749,38 @@ function renderTabs() {
     tabElement.appendChild(closeBtn);
     
     tabElement.addEventListener('click', () => {
+      if (window.__TABS_DRAGGING__) return; // 드래그 중 클릭 방지
       switchToTab(tab.id);
     });
     
     tabsContainer.appendChild(tabElement);
   });
-  // 스와이프 보정
-  try { tabsContainer.style.touchAction = 'pan-x'; } catch(_) {}
+  // 스와이프(드래그 스크롤) 활성화 - 한 번만 바인딩
+  enableTabsDragScroll(tabsContainer);
+}
+
+// 수평 드래그 스크롤 헬퍼 (모바일/데스크톱 공용)
+function enableTabsDragScroll(el){
+  if (!el || el.dataset.swipeBound) return;
+  el.dataset.swipeBound = '1';
+  try { el.style.touchAction = 'pan-x'; } catch(_) {}
+
+  let isDown = false; let startX = 0; let startLeft = 0; let moved = false;
+
+  const onDown = (clientX)=>{ isDown = true; moved = false; startX = clientX; startLeft = el.scrollLeft; };
+  const onMove = (clientX, ev)=>{ if(!isDown) return; const dx = startX - clientX; if (Math.abs(dx) > 2) { moved = true; window.__TABS_DRAGGING__ = true; } el.scrollLeft = startLeft + dx; if (ev && ev.cancelable) ev.preventDefault(); };
+  const onUp = ()=>{ isDown = false; setTimeout(()=>{ window.__TABS_DRAGGING__ = false; }, 40); };
+
+  // Touch
+  el.addEventListener('touchstart', (e)=> onDown((e.touches[0]||e.changedTouches[0]).clientX), {passive:true});
+  el.addEventListener('touchmove', (e)=> onMove((e.touches[0]||e.changedTouches[0]).clientX, e), {passive:false});
+  el.addEventListener('touchend', onUp, {passive:true});
+  el.addEventListener('touchcancel', onUp, {passive:true});
+
+  // Mouse (데스크톱 지원)
+  el.addEventListener('mousedown', (e)=> onDown(e.clientX));
+  window.addEventListener('mousemove', (e)=>{ if(!isDown) return; onMove(e.clientX, e); });
+  window.addEventListener('mouseup', onUp);
 }
 
 function clearProblems() {
