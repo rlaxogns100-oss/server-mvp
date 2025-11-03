@@ -184,6 +184,29 @@ function bindMyFiles() {
         });
       }
 
+      // 비로그인 게스트: 예시 폴더/파일 시드
+      try{
+        if (!currentUser && myFilesFolder && Array.isArray(myFilesFolder.children) && myFilesFolder.children.length===0){
+          // 루트에 예시 파일들
+          myFilesFolder.children.push(
+            { name: '도형의 방정식_고난도.pdf', type: 'file' },
+            { name: 'OO고1_25년_중간고사.pdf', type: 'file' },
+            { name: '함수그래프_기본.pdf', type: 'file' }
+          );
+          // 예시 폴더들
+          myFilesFolder.children.push(
+            { name: '수업자료', type: 'folder', children: [
+              { name: '도형의 방정식_고난도_풀이.pdf', type: 'file' },
+              { name: '기하벡터_연습.pdf', type: 'file' }
+            ]},
+            { name: '모의고사', type: 'folder', children: [
+              { name: 'OO고1_25년_중간고사.pdf', type: 'file' },
+              { name: '전국연합_수학_기출.pdf', type: 'file' }
+            ]}
+          );
+        }
+      }catch(_){ }
+
       // 파일 시스템 다시 렌더링
       if (window.renderDirectory) {
         window.renderDirectory();
