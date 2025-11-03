@@ -523,8 +523,21 @@ async function guestPreviewSample8First4(){
     const first4 = (Array.isArray(data)?data:[])
       .filter(p=>[1,2,3,4].includes(p.id))
       .map(p=>{ return Object.assign({}, p, { _id: 'sample8-'+p.id }); });
-    if (first4.length && typeof window.displayProblems === 'function'){
-      window.displayProblems(first4);
+    if (first4.length){
+      // 탭 두 개 생성 (사진용): 선택된 탭/선택 안된 탭 제목 적용
+      try{
+        window.PROBLEMS_DATA = window.PROBLEMS_DATA || {};
+        window.PROBLEMS_DATA['guest1'] = first4;
+        window.PROBLEMS_DATA['guest2'] = first4;
+        if (typeof window.createTab === 'function'){
+          window.createTab('guest1', '도형의 방정식_고난도');
+          window.createTab('guest2', 'OO고1_25년_중간고사');
+          // 첫 번째 탭을 활성으로 전환
+          if (typeof window.switchToTab === 'function') window.switchToTab('guest1');
+        } else if (typeof window.displayProblems === 'function') {
+          window.displayProblems(first4);
+        }
+      }catch(_){ if (typeof window.displayProblems === 'function') window.displayProblems(first4); }
       // 1,4번만 선택 표시
       setTimeout(()=>{
         try{
