@@ -253,6 +253,15 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .resize-handle:active{
   background:#1e40af;
 }
+
+/* Center floating signup button */
+.center-signup-btn{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+  z-index:1000;padding:10px 16px;border-radius:999px;border:1px solid #94a3b8;
+  background:linear-gradient(135deg,#f8fafc,#eef2ff);color:#0f172a;font-weight:800;
+  box-shadow:0 10px 30px rgba(2,6,23,.12);cursor:pointer;white-space:nowrap
+}
+.center-signup-btn:hover{background:linear-gradient(135deg,#eef2ff,#e0e7ff)}
 .explorer{
   display:grid;grid-template-rows:auto auto auto 1fr auto;gap:12px; /* logo gap handled by topbar */
 }

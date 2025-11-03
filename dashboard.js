@@ -899,6 +899,8 @@ function updateResizeHandlePosition() {
     // DOM이 아직 준비되지 않은 경우, 기본 위치로 설정
     const defaultLeft = 324 + 18 + (mainRect.width - 324 - 36) / 2 - 3;
     resizeHandle.style.left = defaultLeft + 'px';
+    const cbtn = document.getElementById('centerSignupBtn');
+    if (cbtn) { cbtn.style.left = '50%'; cbtn.style.top = (mainRect.height/2) + 'px'; }
     return;
   }
   
@@ -907,6 +909,8 @@ function updateResizeHandlePosition() {
   // 핸들을 왼쪽 컬럼의 오른쪽 경계에 위치
   const handleLeft = leftColumnRect.right - mainRect.left - 3; // 3px는 핸들 너비의 절반
   resizeHandle.style.left = handleLeft + 'px';
+  const cbtn = document.getElementById('centerSignupBtn');
+  if (cbtn) { cbtn.style.left = handleLeft + 'px'; cbtn.style.top = (mainRect.height/2) + 'px'; }
 }
 
 function startResize(e) {

@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', function(){
   safeTypeset();
   // 비로그인 초기 상태: sample8 1~4번을 JSON에서 읽어 미리보기 표시 (DB 미사용)
   setTimeout(()=>{ try{ if(!currentUser){ guestPreviewSample8First4(); } }catch(_){ } }, 150);
+  // 게스트 전용 중앙 회원가입 버튼 노출
+  setTimeout(()=>{ try{ if(!currentUser){ const b=document.getElementById('centerSignupBtn'); if(b) b.style.display='inline-flex'; } }catch(_){ } }, 200);
   console.log('모든 초기화 완료');
 });
 
@@ -63,6 +65,14 @@ function bindPreview(){
 
   console.log('bindPreview 완료');
 }
+
+// 중앙 회원가입 버튼 클릭 시 회원가입 폼 열기
+document.addEventListener('click', function(e){
+  const t = e.target;
+  if (t && t.id === 'centerSignupBtn'){
+    try{ document.getElementById('showRegisterFormBtn')?.click(); }catch(_){ }
+  }
+});
 
 function updateBuildLog(msg){ console.log(msg); }
 
