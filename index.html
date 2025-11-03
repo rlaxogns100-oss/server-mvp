@@ -146,6 +146,12 @@
             <button id="inlineRegisterBtn" class="inline-register-btn">회원가입</button>
           </div>
 
+          <!-- 게스트 잠금 중앙 안내 -->
+          <div class="guest-lock-center" id="guestLockCenter" style="display:none;">
+            <div class="login-icon">🔒</div>
+            <button type="button" class="login-overlay-btn" onclick="document.getElementById('showLoginFormBtn').click()">로그인하기</button>
+          </div>
+
           <!-- 툴바 -->
           <div class="ex-toolbar" style="border-top:1px solid #eef2f7">
             <span class="counter" id="selectionCounter">선택 0개</span>
