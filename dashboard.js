@@ -1469,6 +1469,7 @@ function initDashboard(){
   window.addEventListener('resize', ()=>{
     if (window.__RESIZE_LOCKED__) { applyGuestFixedSplit(); }
     else { updateResizeHandlePosition(); }
+    try{ if (window.__RESIZE_LOCKED__ && typeof showGuestGuideBubbles==='function') showGuestGuideBubbles(); }catch(_){ }
   });
 
   // 모바일 탭 설정

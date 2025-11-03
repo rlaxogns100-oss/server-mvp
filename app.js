@@ -95,29 +95,46 @@ document.addEventListener('click', function(e){
 
 function updateBuildLog(msg){ console.log(msg); }
 
-// ----- Guide bubble (guest, preview column) -----
-function showPreviewGuideBubble(){
+// ----- Guide bubbles (guest) -----
+function createOrMoveBubble(targetEl, id, html, offsetY){
+  if (!targetEl) return;
+  let el = document.getElementById(id);
+  if (!el){
+    el = document.createElement('div');
+    el.id = id;
+    el.className = 'guide-bubble';
+    el.innerHTML = '<button class="close" aria-label="close">×</button>' + html;
+    document.body.appendChild(el);
+    el.querySelector('.close').addEventListener('click', ()=>{ el.remove(); });
+  }
+  const r = targetEl.getBoundingClientRect();
+  const top = Math.max(10, r.top - (offsetY||70));
+  const left = r.left + (r.width/2);
+  el.style.top = top + 'px';
+  el.style.left = left + 'px';
+  el.style.transform = 'translateX(-50%)';
+}
+
+function showGuestGuideBubbles(){
   try{
-    if (window.currentUser) return; // 로그인 시 표시 안 함
-    if (document.getElementById('guideBubblePreview')) return; // 이미 있음
-    const anchor = document.getElementById('problemsPreview') || document.querySelector('.preview-wrap');
-    if (!anchor) return;
-    const r = anchor.getBoundingClientRect();
-    const bubble = document.createElement('div');
-    bubble.id = 'guideBubblePreview';
-    bubble.className = 'guide-bubble';
-    bubble.innerHTML = '<button class="close" aria-label="close">×</button>'+
-      '원하는 파일의 원하는 문제를 클릭으로 선택하세요!';
-    document.body.appendChild(bubble);
-    // 위치: 앵커 상단 중앙, 약간 위로
-    const top = Math.max(10, r.top - 70);
-    const left = r.left + (r.width/2);
-    bubble.style.top = top + 'px';
-    bubble.style.left = left + 'px';
-    bubble.style.transform = 'translateX(-50%)';
-    bubble.querySelector('.close').addEventListener('click', ()=>{
-      bubble.remove();
-    });
+    if (window.currentUser) return;
+    const up = document.getElementById('uploadTile');
+    const prev = document.getElementById('problemsPreview') || document.querySelector('.preview-wrap');
+    const exam = document.querySelector('.exam-preview');
+    // 텍스트(줄바꿈 포함)
+    const t1 = '형식불문! pdf 파일을 업로드하면<br>ai가 자동으로 문제만 추출합니다.';
+    const t2 = '원하는 파일의 원하는 문제를<br>원클릭으로 선택하세요!';
+    const t3 = '마음에 드는 레이아웃을 선택하고<br>생성하면 학습지 완성!';
+    up && createOrMoveBubble(up, 'guideBubbleUpload', t1, 80);
+    prev && createOrMoveBubble(prev, 'guideBubblePreview', t2, 80);
+    exam && createOrMoveBubble(exam, 'guideBubbleExam', t3, 80);
+  }catch(_){ }
+}
+
+function removeGuestGuideBubbles(){
+  try{
+    ['guideBubbleUpload','guideBubblePreview','guideBubbleExam']
+      .forEach(id=>document.getElementById(id)?.remove());
   }catch(_){ }
 }
 
@@ -373,7 +390,7 @@ function bindAuth() {
     if (dashboard) dashboard.classList.remove('guest-locked');
     try{ document.getElementById('guestLockCenter').style.display='none'; }catch(_){ }
     try{ if (window.setResizeMode) window.setResizeMode(false); }catch(_){ }
-    try{ document.getElementById('guideBubblePreview')?.remove(); }catch(_){ }
+    removeGuestGuideBubbles();
     // 게스트 비활성화 상태 해제
     try{ document.querySelector('.preview-wrap')?.classList.remove('guest-disabled'); }catch(_){ }
     try{ document.querySelector('.exam-preview')?.classList.remove('guest-disabled'); }catch(_){ }
@@ -404,8 +421,8 @@ function bindAuth() {
         const firstItem = document.querySelector('#fileGridBody > *');
         const h = firstItem ? firstItem.getBoundingClientRect().height : 56;
         lock.style.transform = `translate(-50%, calc(-50% - ${Math.round(h*2)}px))`;
-        // 가이드 버블 표시
-        showPreviewGuideBubble();
+        // 가이드 버블 표시(3개)
+        showGuestGuideBubbles();
       });
     }catch(_){ }
   }
