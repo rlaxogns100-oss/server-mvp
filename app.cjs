@@ -777,7 +777,10 @@ const server = http.createServer((req, res) => {
         res.end('index.html not found');
         return;
       }
-      res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+      res.writeHead(200, {
+        'Content-Type': 'text/html; charset=utf-8',
+        'Cache-Control': 'no-store, must-revalidate'
+      });
       res.end(data);
     });
   } else if (req.method === 'GET' && req.url.startsWith('/api/progress/')) {
@@ -985,18 +988,24 @@ const server = http.createServer((req, res) => {
       </body>
       </html>
     `);
-  } else if (req.method === 'GET' && (req.url.endsWith('.js') || req.url.endsWith('.css'))) {
-    // 정적 파일 서빙 (JS, CSS)
-    const filePath = path.join(__dirname, req.url);
+  } else if (req.method === 'GET' && (req.url.includes('.js') || req.url.includes('.css') || req.url.includes('.ico'))) {
+    // 정적 파일 서빙 (쿼리스트링 무시)
+    const urlObj = new URL(req.url, `http://${req.headers.host}`);
+    const pathname = urlObj.pathname; // '/app.js?v=123' -> '/app.js'
+    const filePath = path.join(__dirname, pathname);
     if (fs.existsSync(filePath)) {
-      const ext = path.extname(filePath);
+      const ext = path.extname(filePath).toLowerCase();
       const mimeTypes = {
         '.js': 'application/javascript',
-        '.css': 'text/css'
+        '.css': 'text/css',
+        '.ico': 'image/x-icon'
       };
-      const contentType = mimeTypes[ext] || 'text/plain';
+      const contentType = mimeTypes[ext] || 'application/octet-stream';
 
-      res.writeHead(200, { 'Content-Type': contentType + '; charset=utf-8' });
+      res.writeHead(200, {
+        'Content-Type': contentType + '; charset=utf-8',
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      });
       fs.createReadStream(filePath).pipe(res);
     } else {
       res.writeHead(404, { 'Content-Type': 'text/plain' });
@@ -2196,7 +2205,10 @@ const server = http.createServer((req, res) => {
   } else if (req.method === 'GET' && req.url === '/admin') {
     // 관리자 페이지 제공
     const adminHtml = fs.readFileSync(path.join(__dirname, 'admin.html'), 'utf8');
-    res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, must-revalidate'
+    });
     res.end(adminHtml);
 
   } else if (req.method === 'POST' && req.url === '/api/admin/auth') {
@@ -2395,7 +2407,10 @@ const server = http.createServer((req, res) => {
   } else if (req.method === 'GET' && req.url === '/admin/v2') {
     // 관리자 v2 페이지 제공
     const adminV2Html = fs.readFileSync(path.join(__dirname, 'admin/v2.html'), 'utf8');
-    res.writeHead(200, {'Content-Type': 'text/html; charset=utf-8'});
+    res.writeHead(200, {
+      'Content-Type': 'text/html; charset=utf-8',
+      'Cache-Control': 'no-store, must-revalidate'
+    });
     res.end(adminV2Html);
 
   } else if (req.method === 'GET' && req.url.startsWith('/api/admin/v2/')) {
