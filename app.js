@@ -370,6 +370,16 @@ function bindAuth() {
     if (inlineReg) inlineReg.style.display = 'block';
     if (dashboard) dashboard.classList.add('guest-locked');
     try{ document.getElementById('guestLockCenter').style.display='flex'; }catch(_){ }
+    // Position lock/login slightly higher: move up by 2x first file row height
+    try{
+      requestAnimationFrame(()=>{
+        const lock = document.getElementById('guestLockCenter');
+        if(!lock) return;
+        const firstItem = document.querySelector('#fileGridBody > *');
+        const h = firstItem ? firstItem.getBoundingClientRect().height : 56;
+        lock.style.transform = `translate(-50%, calc(-50% - ${Math.round(h*2)}px))`;
+      });
+    }catch(_){ }
   }
 
   // 이벤트 리스너 등록
