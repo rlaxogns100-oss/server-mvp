@@ -334,11 +334,7 @@ function bindAuth() {
     // 게스트 예시 탭/데이터 정리
     try{
       if (window.PROBLEMS_DATA){ delete window.PROBLEMS_DATA['guest1']; delete window.PROBLEMS_DATA['guest2']; }
-      if (Array.isArray(window.openTabs)){
-        window.openTabs = window.openTabs.filter(function(t){ return t && t.id !== 'guest1' && t.id !== 'guest2'; });
-        if (window.activeTabId === 'guest1' || window.activeTabId === 'guest2') window.activeTabId = null;
-        if (typeof window.renderTabs === 'function') window.renderTabs();
-      }
+      if (typeof window.clearAllTabs === 'function') window.clearAllTabs();
       if (typeof window.clearProblems === 'function') window.clearProblems();
       try{ document.getElementById('clearExam')?.click(); }catch(_){ }
     }catch(_){ }

@@ -718,6 +718,16 @@ function closeTab(tabId) {
   renderTabs();
 }
 
+// 전역으로 노출 및 전체 탭 정리 유틸
+window.closeTab = closeTab;
+function clearAllTabs(){
+  openTabs = [];
+  activeTabId = null;
+  renderTabs();
+  clearProblems();
+}
+window.clearAllTabs = clearAllTabs;
+
 function renderTabs() {
   const tabsContainer = document.getElementById('problemTabs');
   if (!tabsContainer) return;
