@@ -349,6 +349,7 @@ function bindAuth() {
     if (inlineReg) inlineReg.style.display = 'none';
     if (dashboard) dashboard.classList.remove('guest-locked');
     try{ document.getElementById('guestLockCenter').style.display='none'; }catch(_){ }
+    try{ if (window.setResizeMode) window.setResizeMode(false); }catch(_){ }
     // 게스트 비활성화 상태 해제
     try{ document.querySelector('.preview-wrap')?.classList.remove('guest-disabled'); }catch(_){ }
     try{ document.querySelector('.exam-preview')?.classList.remove('guest-disabled'); }catch(_){ }
@@ -370,6 +371,7 @@ function bindAuth() {
     if (inlineReg) inlineReg.style.display = 'block';
     if (dashboard) dashboard.classList.add('guest-locked');
     try{ document.getElementById('guestLockCenter').style.display='flex'; }catch(_){ }
+    try{ if (window.setResizeMode) window.setResizeMode(true); }catch(_){ }
     // Position lock/login slightly higher: move up by 2x first file row height
     try{
       requestAnimationFrame(()=>{

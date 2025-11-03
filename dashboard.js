@@ -889,10 +889,20 @@ function initResizeHandle() {
   const resizeHandle = document.getElementById('resizeHandle');
   if (!resizeHandle) return;
 
-  resizeHandle.addEventListener('mousedown', startResize);
+  // 로그인 여부에 따른 동작 제어(게스트: 잠금)
+  window.__RESIZE_LOCKED__ = !window.currentUser;
+  if (!window.__RESIZE_LOCKED__) {
+    resizeHandle.style.pointerEvents = '';
+    resizeHandle.addEventListener('mousedown', startResize);
+  } else {
+    resizeHandle.style.pointerEvents = 'none';
+    // 게스트 초기 분할 비율 적용 (가운데에서 50px 왼쪽)
+    setTimeout(applyGuestFixedSplit, 0);
+  }
+
   document.addEventListener('mousemove', handleResize);
   document.addEventListener('mouseup', stopResize);
-  
+
   // 초기 위치 설정
   updateResizeHandlePosition();
 }
@@ -924,6 +934,7 @@ function updateResizeHandlePosition() {
 }
 
 function startResize(e) {
+  if (window.__RESIZE_LOCKED__) return;
   isResizing = true;
   startX = e.clientX;
   
@@ -980,6 +991,39 @@ function stopResize() {
   document.body.style.cursor = '';
   document.body.style.userSelect = '';
 }
+
+// 게스트 고정 분할 적용: 가운데 기준에서 50px 왼쪽으로 이동
+function applyGuestFixedSplit(){
+  try{
+    const main = document.querySelector('.main');
+    if (!main) return;
+    const rect = main.getBoundingClientRect();
+    const available = rect.width - 324 - 36; // 좌측 대시보드 + 간격 제외
+    const half = available / 2;
+    const leftPx = Math.max(0, half - 50);
+    const leftRatio = leftPx / available;
+    const rightRatio = Math.max(0, 1 - leftRatio);
+    main.style.gridTemplateColumns = `324px ${leftRatio}fr ${rightRatio}fr`;
+    updateResizeHandlePosition();
+  }catch(_){ }
+}
+
+// 외부에서 리사이즈 잠금 토글(로그인/로그아웃 시 사용)
+function setResizeMode(locked){
+  const resizeHandle = document.getElementById('resizeHandle');
+  window.__RESIZE_LOCKED__ = !!locked;
+  if (!resizeHandle) return;
+  if (window.__RESIZE_LOCKED__){
+    resizeHandle.style.pointerEvents = 'none';
+    applyGuestFixedSplit();
+  } else {
+    resizeHandle.style.pointerEvents = '';
+    const main = document.querySelector('.main');
+    if (main) main.style.gridTemplateColumns = '324px 1fr 1fr';
+    updateResizeHandlePosition();
+  }
+}
+window.setResizeMode = setResizeMode;
 
 /* ---- Exam Preview Functions ---- */
 function addProblemToExam(uniqueProblemId, problemData) {
@@ -1421,8 +1465,11 @@ function initDashboard(){
   // 리사이즈 핸들 초기화
   initResizeHandle();
   
-  // 윈도우 리사이즈 시 핸들 위치 업데이트
-  window.addEventListener('resize', updateResizeHandlePosition);
+  // 윈도우 리사이즈 시 - 게스트는 고정분할 유지, 로그인은 핸들 위치만 업데이트
+  window.addEventListener('resize', ()=>{
+    if (window.__RESIZE_LOCKED__) { applyGuestFixedSplit(); }
+    else { updateResizeHandlePosition(); }
+  });
 
   // 모바일 탭 설정
   setupMobileTabs();
