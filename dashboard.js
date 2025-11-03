@@ -757,6 +757,7 @@ function renderTabs() {
   });
   // 스와이프(드래그 스크롤) 활성화 - 한 번만 바인딩
   enableTabsDragScroll(tabsContainer);
+  ensureTabsDragBar(tabsContainer);
 }
 
 // 수평 드래그 스크롤 헬퍼 (모바일/데스크톱 공용)
@@ -781,6 +782,50 @@ function enableTabsDragScroll(el){
   el.addEventListener('mousedown', (e)=> onDown(e.clientX));
   window.addEventListener('mousemove', (e)=>{ if(!isDown) return; onMove(e.clientX, e); });
   window.addEventListener('mouseup', onUp);
+}
+
+// 가로 드래그 바(thumb)로 탭 스크롤 제어
+function ensureTabsDragBar(tabsEl){
+  const parent = tabsEl.parentElement; if(!parent) return;
+  let bar = parent.querySelector('.tabs-dragbar');
+  if(!bar){
+    bar = document.createElement('div'); bar.className='tabs-dragbar';
+    const thumb = document.createElement('div'); thumb.className='thumb'; bar.appendChild(thumb);
+    parent.appendChild(bar);
+  }
+  const thumb = bar.querySelector('.thumb');
+
+  function refresh(){
+    const trackW = bar.clientWidth || 1;
+    const viewW = tabsEl.clientWidth || 1;
+    const totalW = tabsEl.scrollWidth || 1;
+    const maxScroll = Math.max(0, totalW - viewW);
+    const minThumb = 24;
+    const thumbW = Math.max(minThumb, Math.round((viewW/totalW)*trackW));
+    const maxLeft = Math.max(0, trackW - thumbW);
+    const left = maxScroll>0 ? Math.round((tabsEl.scrollLeft/maxScroll)*maxLeft) : 0;
+    thumb.style.width = thumbW+'px';
+    thumb.style.left = left+'px';
+  }
+
+  let dragging=false, startX=0, startLeft=0;
+  function onDown(clientX){ dragging=true; startX=clientX; startLeft=parseInt(thumb.style.left||'0',10)||0; }
+  function onMove(clientX, ev){ if(!dragging) return; const trackW = bar.clientWidth||1; const thumbW = thumb.clientWidth||24; const maxLeft = Math.max(0, trackW-thumbW); let newLeft = Math.min(maxLeft, Math.max(0, startLeft + (clientX-startX))); const viewW=tabsEl.clientWidth||1; const totalW=tabsEl.scrollWidth||1; const maxScroll=Math.max(0,totalW-viewW); const scrollLeft = maxLeft>0 ? (newLeft/maxLeft)*maxScroll : 0; tabsEl.scrollLeft = scrollLeft; thumb.style.left=newLeft+'px'; if(ev&&ev.cancelable) ev.preventDefault(); }
+  function onUp(){ dragging=false; }
+
+  // Thumb drag events
+  thumb.addEventListener('mousedown',(e)=>onDown(e.clientX));
+  window.addEventListener('mousemove',(e)=>onMove(e.clientX,e));
+  window.addEventListener('mouseup',onUp);
+  thumb.addEventListener('touchstart',(e)=>onDown((e.touches[0]||e.changedTouches[0]).clientX),{passive:true});
+  thumb.addEventListener('touchmove',(e)=>onMove((e.touches[0]||e.changedTouches[0]).clientX,e),{passive:false});
+  thumb.addEventListener('touchend',onUp,{passive:true});
+  thumb.addEventListener('touchcancel',onUp,{passive:true});
+
+  // Sync thumb when tabs scroll/resize
+  tabsEl.addEventListener('scroll', refresh, {passive:true});
+  window.addEventListener('resize', refresh);
+  setTimeout(refresh,0);
 }
 
 function clearProblems() {
