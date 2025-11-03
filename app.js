@@ -525,6 +525,17 @@ async function guestPreviewSample8First4(){
       .map(p=>{ return Object.assign({}, p, { _id: 'sample8-'+p.id }); });
     if (first4.length && typeof window.displayProblems === 'function'){
       window.displayProblems(first4);
+      // 1,4번만 선택 표시
+      setTimeout(()=>{
+        try{
+          const s1=document.querySelector('.problem[data-problem="sample8-1"]');
+          const s4=document.querySelector('.problem[data-problem="sample8-4"]');
+          s1 && s1.classList.add('selected');
+          s4 && s4.classList.add('selected');
+        }catch(_){ }
+        // 영역 흑백 + 비활성화
+        try{ document.querySelector('.preview-wrap')?.classList.add('guest-disabled'); }catch(_){ }
+      }, 50);
     }
   }catch(err){ console.error('guestPreviewSample8First4 실패:', err); }
 }

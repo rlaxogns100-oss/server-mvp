@@ -470,6 +470,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .preview-wrap{
   display:grid;grid-template-rows:auto 1fr auto;gap:12px;height:100%;overflow:hidden
 }
+.preview-wrap.guest-disabled{filter:grayscale(100%);opacity:.85;pointer-events:none}
 .preview-toolbar{
   background:#fff;border:1px solid #e6edf6;border-radius:16px;box-shadow:var(--shadow-sm)
 }
