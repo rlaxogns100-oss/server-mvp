@@ -95,6 +95,32 @@ document.addEventListener('click', function(e){
 
 function updateBuildLog(msg){ console.log(msg); }
 
+// ----- Guide bubble (guest, preview column) -----
+function showPreviewGuideBubble(){
+  try{
+    if (window.currentUser) return; // 로그인 시 표시 안 함
+    if (document.getElementById('guideBubblePreview')) return; // 이미 있음
+    const anchor = document.getElementById('problemsPreview') || document.querySelector('.preview-wrap');
+    if (!anchor) return;
+    const r = anchor.getBoundingClientRect();
+    const bubble = document.createElement('div');
+    bubble.id = 'guideBubblePreview';
+    bubble.className = 'guide-bubble';
+    bubble.innerHTML = '<button class="close" aria-label="close">×</button>'+
+      '원하는 파일의 원하는 문제를 클릭으로 선택하세요!';
+    document.body.appendChild(bubble);
+    // 위치: 앵커 상단 중앙, 약간 위로
+    const top = Math.max(10, r.top - 70);
+    const left = r.left + (r.width/2);
+    bubble.style.top = top + 'px';
+    bubble.style.left = left + 'px';
+    bubble.style.transform = 'translateX(-50%)';
+    bubble.querySelector('.close').addEventListener('click', ()=>{
+      bubble.remove();
+    });
+  }catch(_){ }
+}
+
 /* ---- 내 파일 관련 기능 ---- */
 function bindMyFiles() {
   console.log('bindMyFiles 시작');
@@ -347,6 +373,7 @@ function bindAuth() {
     if (dashboard) dashboard.classList.remove('guest-locked');
     try{ document.getElementById('guestLockCenter').style.display='none'; }catch(_){ }
     try{ if (window.setResizeMode) window.setResizeMode(false); }catch(_){ }
+    try{ document.getElementById('guideBubblePreview')?.remove(); }catch(_){ }
     // 게스트 비활성화 상태 해제
     try{ document.querySelector('.preview-wrap')?.classList.remove('guest-disabled'); }catch(_){ }
     try{ document.querySelector('.exam-preview')?.classList.remove('guest-disabled'); }catch(_){ }
@@ -377,6 +404,8 @@ function bindAuth() {
         const firstItem = document.querySelector('#fileGridBody > *');
         const h = firstItem ? firstItem.getBoundingClientRect().height : 56;
         lock.style.transform = `translate(-50%, calc(-50% - ${Math.round(h*2)}px))`;
+        // 가이드 버블 표시
+        showPreviewGuideBubble();
       });
     }catch(_){ }
   }

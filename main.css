@@ -853,6 +853,14 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 }
 .inline-register .inline-register-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(102,126,234,.45)}
 
+/* Gradient guide bubble (closable) */
+.guide-bubble{position:fixed;z-index:10000;max-width:520px;color:#fff;padding:12px 16px;border-radius:12px;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);box-shadow:0 10px 30px rgba(102,126,234,.35)}
+.guide-bubble .close{position:absolute;top:6px;right:8px;background:transparent;border:0;color:#fff;opacity:.9;cursor:pointer;font-size:16px;line-height:1}
+.guide-bubble .close:hover{opacity:1}
+.guide-bubble:after{content:"";position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+  width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-top:8px solid #764ba2}
+
 /* ====== PDF 설정 모달 ====== */
 .settings-modal-overlay {
   position: fixed;
