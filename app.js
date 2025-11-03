@@ -68,27 +68,24 @@ function bindPreview(){
 // 인라인 회원가입 폼 처리 (오버레이 하단)
 document.addEventListener('click', function(e){
   const t = e.target;
-  // 회원가입 제출
+  // 회원가입 제출 → 정식 회원가입 모달로 이동(필드 채워서)
   if (t && t.id === 'inlineRegisterBtn'){
     const wrap = document.getElementById('inlineRegisterForm');
     if (!wrap) return;
     const username = document.getElementById('inlineRegisterUsername')?.value || '';
     const email = document.getElementById('inlineRegisterEmail')?.value || '';
     const password = document.getElementById('inlineRegisterPassword')?.value || '';
-    const role = 'teacher';
     if (!username || !email || !password){ alert('모든 필드를 입력해주세요.'); return; }
-    (async()=>{
-      try{
-        const response = await fetch('/api/register', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ username, email, password, role }) });
-        const data = await response.json();
-        if (data.success){
-          currentUser = data.user;
-          if (typeof displayUserInfo === 'function') displayUserInfo(currentUser);
-          alert('회원가입 성공! 로그인되었습니다.');
-          if (window.loadMyFiles) window.loadMyFiles();
-        } else { alert('회원가입 실패: ' + (data.message||'')); }
-      }catch(err){ console.error('회원가입 오류', err); alert('회원가입 중 오류가 발생했습니다.'); }
-    })();
+
+    // 정식 회원가입 폼에 값 채우고 모달 오픈
+    try{
+      const ru = document.getElementById('registerUsername'); if (ru) ru.value = username;
+      const re = document.getElementById('registerEmail'); if (re) re.value = email;
+      const rp = document.getElementById('registerPassword'); if (rp) rp.value = password;
+      const rf = document.getElementById('registerForm'); if (rf) rf.style.display = 'flex';
+      const lf = document.getElementById('loginForm'); if (lf) lf.style.display = 'none';
+      const mo = document.getElementById('modalOverlay'); if (mo) mo.style.display = 'block';
+    }catch(err){ console.error('회원가입 폼 표시 오류', err); }
   }
   // 로그인 폼 열기
   if (t && t.id === 'inlineShowLoginBtn'){
