@@ -427,6 +427,8 @@ async function aggregateTables(db, filters) {
         role: 1,
         plan: 1,
         isPaid: 1,
+        userAgent: 1,
+        signupUserAgent: 1,
         createdAt: 1,
         lastActivityAt: 1,
         pdfCount: 1
@@ -481,7 +483,8 @@ async function aggregateTables(db, filters) {
       isPaid: u.isPaid || false,
       createdAt: u.createdAt ? new Date(u.createdAt).toLocaleDateString('ko-KR') : 'N/A',
       lastActivity: u.lastActivityAt ? new Date(u.lastActivityAt).toLocaleDateString('ko-KR') : 'N/A',
-      pdfCount: u.pdfCount
+      pdfCount: u.pdfCount,
+      userAgent: (u.signupUserAgent || u.userAgent || '-')
     })),
     visitLogs: visitLogs.map(v => ({
       timestamp: v.timestamp ? new Date(v.timestamp).toLocaleString('ko-KR') : 'N/A',

@@ -729,6 +729,7 @@
             <th>유료 여부</th>
             <th>가입일</th>
             <th>최근 활동</th>
+            <th>User Agent</th>
             <th>PDF 수</th>
           </tr>
         </thead>
@@ -743,6 +744,7 @@
           <td>${user.isPaid ? '✅' : '❌'}</td>
           <td>${user.createdAt}</td>
           <td>${user.lastActivity}</td>
+            <td style="max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;" title="${user.userAgent}">${user.userAgent}</td>
           <td><strong>${user.pdfCount}</strong></td>
         </tr>`;
       });
