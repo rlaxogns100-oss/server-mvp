@@ -260,7 +260,13 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
   const signupByDevice = await db.collection('users').aggregate([
     { $match: { ...userFilter, createdAt: { $gte: dateRange.from, $lt: toEndOfDay } } },
     { $addFields: { ua: { $ifNull: ['$signupUserAgent', '$userAgent'] } } },
-    { $addFields: { device: { $cond: [ { $regexMatch: { input: '$ua', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } }, 'mobile', 'desktop' ] } } },
+    { $addFields: { device: {
+      $cond: [
+        { $or: [
+          { $regexMatch: { input: '$ua', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } },
+          { $regexMatch: { input: '$ua', regex: /(facebook|fb|instagram)/i } }
+        ] },
+        'mobile', 'desktop'] } } },
     { $group: {
         _id: {
           date: { $dateToString: { format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U', date: '$createdAt', timezone: 'Asia/Seoul' } },
@@ -298,7 +304,13 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
   try {
     visitByDevice = await db.collection('visits').aggregate([
       { $match: { timestamp: { $gte: dateRange.from, $lt: toEndOfDay } } },
-      { $addFields: { device: { $cond: [ { $regexMatch: { input: '$userAgent', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } }, 'mobile', 'desktop' ] } } },
+      { $addFields: { device: {
+        $cond: [
+          { $or: [
+            { $regexMatch: { input: '$userAgent', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } },
+            { $regexMatch: { input: '$userAgent', regex: /(facebook|fb|instagram)/i } }
+          ] },
+          'mobile', 'desktop' ] } } },
       { $group: {
           _id: {
             date: { $dateToString: { format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U', date: '$timestamp', timezone: 'Asia/Seoul' } },
@@ -430,7 +442,12 @@ async function aggregateTables(db, filters) {
     visitLogs = await db.collection('visits').aggregate([
       { $sort: { timestamp: -1 } },
       { $limit: 100 },
-      { $addFields: { device: { $cond: [ { $regexMatch: { input: '$userAgent', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } }, '모바일', '컴퓨터' ] } } },
+      { $addFields: { device: {
+        $cond: [
+          { $or: [
+            { $regexMatch: { input: '$userAgent', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } },
+            { $regexMatch: { input: '$userAgent', regex: /(facebook|fb|instagram)/i } }
+          ] }, '모바일', '컴퓨터'] } } },
       {
         $lookup: {
           from: 'users',
