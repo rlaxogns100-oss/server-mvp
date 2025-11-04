@@ -269,7 +269,8 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
         _id: {
           $dateToString: {
             format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U',
-            date: '$createdAt'
+            date: '$createdAt',
+            timezone: 'Asia/Seoul'
           }
         },
         total: { $sum: 1 },
@@ -296,7 +297,8 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
         _id: {
           $dateToString: {
             format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U',
-            date: '$uploadDate'
+            date: '$uploadDate',
+            timezone: 'Asia/Seoul'
           }
         },
         count: { $sum: 1 }
@@ -320,7 +322,8 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
             date: {
               $dateToString: {
                 format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U',
-                date: '$timestamp'
+                date: '$timestamp',
+                timezone: 'Asia/Seoul'
               }
             }
           },
@@ -358,7 +361,8 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
           _id: {
             $dateToString: {
               format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U',
-              date: '$createdAt'
+              date: '$createdAt',
+              timezone: 'Asia/Seoul'
             }
           },
           revenue: { $sum: '$amount' },
@@ -504,8 +508,13 @@ function generateDateLabels(from, to, interval) {
   const current = new Date(from);
   const end = new Date(to);
 
+  const formatYMDKST = (d) => {
+    const t = new Date(d.getTime() + 9 * 60 * 60 * 1000); // KST(+09:00)
+    return t.toISOString().split('T')[0];
+  };
+
   while (current <= end) {
-    labels.push(current.toISOString().split('T')[0]);
+    labels.push(formatYMDKST(current));
 
     if (interval === 'day') {
       current.setDate(current.getDate() + 1);

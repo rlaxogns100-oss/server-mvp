@@ -120,6 +120,8 @@ function createOrMoveBubble(targetEl, id, html, offsetY){
 function showGuestGuideBubbles(){
   try{
     if (window.currentUser) return;
+    const isMobile = (window.innerWidth || document.documentElement.clientWidth) <= 768;
+    if (isMobile) { removeGuestGuideBubbles(); return; }
     const up = document.getElementById('uploadTile');
     const prev = document.getElementById('problemsPreview') || document.querySelector('.preview-wrap');
     const exam = document.querySelector('.exam-preview');
@@ -298,8 +300,8 @@ function bindMyFiles() {
   // 로그인 성공 시 파일 목록 자동 로드
   window.loadMyFiles = loadMyFiles;
   
-  // 초기 로드
-  loadMyFiles();
+  // 초기 로드: 비로그인 상태에서는 서버 파일 불러오지 않음(게스트 UI 유지)
+  if (window.currentUser) loadMyFiles();
 }
 
 /* ---- 인증 관련 기능 ---- */
