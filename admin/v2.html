@@ -783,7 +783,10 @@
             <td>${log.email}</td>
             <td><code style="font-size: 11px;">${log.ip}</code></td>
             <td><span class="badge ${log.device === '모바일' ? 'trial' : 'basic'}">${log.device || '-'}</span></td>
-            <td style="font-size: 11px; max-width: 300px; overflow: hidden; text-overflow: ellipsis;" title="${log.userAgent}">${log.userAgent}</td>
+            <td style="font-size: 11px; max-width: 520px; overflow: hidden; text-overflow: ellipsis;">
+              <span class="badge ${log.device === '모바일' ? 'trial' : 'basic'}" style="margin-right:6px;">${log.device || '-'}</span>
+              <span title="${log.userAgent}">${log.userAgent}</span>
+            </td>
           </tr>`;
         });
 

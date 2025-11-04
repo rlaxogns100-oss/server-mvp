@@ -488,6 +488,7 @@ async function aggregateTables(db, filters) {
       username: v.username,
       email: v.email,
       ip: v.ip,
+      device: v.device || '-',
       userAgent: v.userAgent || 'Unknown'
     })),
     pagination: {
