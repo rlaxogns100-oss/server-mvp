@@ -614,12 +614,21 @@
     }
 
     function renderCharts(timeseries) {
-      // 가입자 추이 (모바일/컴퓨터)
+      // 가입자 추이 (전체/모바일/컴퓨터)
       new Chart(document.getElementById('userTrendChart'), {
         type: 'line',
         data: {
           labels: timeseries.labels,
           datasets: [
+            {
+              label: '전체 가입자',
+              data: timeseries.totalSignups || [],
+              borderColor: '#111827',
+              backgroundColor: 'rgba(17, 24, 39, 0.08)',
+              borderWidth: 2,
+              tension: 0.35,
+              fill: true
+            },
             {
               label: '모바일 가입자',
               data: timeseries.mobileSignups || [],
@@ -663,12 +672,21 @@
         }
       });
 
-      // 방문자 추이 (모바일/컴퓨터)
+      // 방문자 추이 (전체/모바일/컴퓨터)
       new Chart(document.getElementById('visitorTrendChart'), {
         type: 'line',
         data: {
           labels: timeseries.labels,
           datasets: [
+            {
+              label: '전체 방문자',
+              data: timeseries.totalVisits || [],
+              borderColor: '#374151',
+              backgroundColor: 'rgba(55, 65, 81, 0.08)',
+              borderWidth: 2,
+              tension: 0.35,
+              fill: true
+            },
             {
               label: '모바일 방문자',
               data: timeseries.mobileVisits || [],
@@ -752,6 +770,7 @@
               <th>사용자명</th>
               <th>이메일</th>
               <th>IP</th>
+              <th>기기</th>
               <th>User Agent</th>
             </tr>
           </thead>
@@ -763,6 +782,7 @@
             <td><span class="badge ${log.username === '익명' ? 'trial' : 'pro'}">${log.username}</span></td>
             <td>${log.email}</td>
             <td><code style="font-size: 11px;">${log.ip}</code></td>
+            <td><span class="badge ${log.device === '모바일' ? 'trial' : 'basic'}">${log.device || '-'}</span></td>
             <td style="font-size: 11px; max-width: 300px; overflow: hidden; text-overflow: ellipsis;" title="${log.userAgent}">${log.userAgent}</td>
           </tr>`;
         });

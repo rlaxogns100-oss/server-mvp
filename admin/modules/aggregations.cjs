@@ -355,7 +355,8 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
     }
     return {
       mobile: labelsArr.map(l => mob[l] || 0),
-      desktop: labelsArr.map(l => desk[l] || 0)
+      desktop: labelsArr.map(l => desk[l] || 0),
+      total: labelsArr.map(l => (mob[l] || 0) + (desk[l] || 0))
     };
   }
 
@@ -367,8 +368,10 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
     revenue: revenueData,
     mobileSignups: signupSeries.mobile,
     desktopSignups: signupSeries.desktop,
+    totalSignups: signupSeries.total,
     mobileVisits: visitSeries.mobile,
-    desktopVisits: visitSeries.desktop
+    desktopVisits: visitSeries.desktop,
+    totalVisits: visitSeries.total
   };
 }
 
@@ -427,6 +430,7 @@ async function aggregateTables(db, filters) {
     visitLogs = await db.collection('visits').aggregate([
       { $sort: { timestamp: -1 } },
       { $limit: 100 },
+      { $addFields: { device: { $cond: [ { $regexMatch: { input: '$userAgent', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } }, '모바일', '컴퓨터' ] } } },
       {
         $lookup: {
           from: 'users',
@@ -441,6 +445,7 @@ async function aggregateTables(db, filters) {
           timestamp: 1,
           ip: 1,
           userAgent: 1,
+          device: 1,
           username: { $ifNull: ['$user.username', '익명'] },
           email: { $ifNull: ['$user.email', '-'] }
         }
