@@ -252,37 +252,23 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
   // 날짜 레이블 생성
   const labels = generateDateLabels(dateRange.from, dateRange.to, interval);
 
-  // 가입자 추이
+  // 가입자 추이 (모바일/컴퓨터 구분)
   // to 날짜의 끝까지 포함하도록 하루 더하기
   const toEndOfDay = new Date(dateRange.to);
   toEndOfDay.setDate(toEndOfDay.getDate() + 1);
 
-  const userTrend = await db.collection('users').aggregate([
-    {
-      $match: {
-        ...userFilter,
-        createdAt: { $gte: dateRange.from, $lt: toEndOfDay }
-      }
-    },
-    {
-      $group: {
+  const signupByDevice = await db.collection('users').aggregate([
+    { $match: { ...userFilter, createdAt: { $gte: dateRange.from, $lt: toEndOfDay } } },
+    { $addFields: { ua: { $ifNull: ['$signupUserAgent', '$userAgent'] } } },
+    { $addFields: { device: { $cond: [ { $regexMatch: { input: '$ua', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } }, 'mobile', 'desktop' ] } } },
+    { $group: {
         _id: {
-          $dateToString: {
-            format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U',
-            date: '$createdAt',
-            timezone: 'Asia/Seoul'
-          }
+          date: { $dateToString: { format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U', date: '$createdAt', timezone: 'Asia/Seoul' } },
+          device: '$device'
         },
-        total: { $sum: 1 },
-        paid: {
-          $sum: { $cond: [{ $eq: ['$isPaid', true] }, 1, 0] }
-        },
-        trial: {
-          $sum: { $cond: [{ $eq: ['$isTrial', true] }, 1, 0] }
-        }
-      }
-    },
-    { $sort: { _id: 1 } }
+        count: { $sum: 1 }
+    }},
+    { $sort: { '_id.date': 1 } }
   ]).toArray();
 
   // PDF 변환 추이
@@ -307,40 +293,20 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
     { $sort: { _id: 1 } }
   ]).toArray();
 
-  // 방문자 추이
-  let visitTrend = [];
+  // 방문자 추이 (모바일/컴퓨터 구분)
+  let visitByDevice = [];
   try {
-    visitTrend = await db.collection('visits').aggregate([
-      {
-        $match: {
-          timestamp: { $gte: dateRange.from, $lt: toEndOfDay }
-        }
-      },
-      {
-        $group: {
+    visitByDevice = await db.collection('visits').aggregate([
+      { $match: { timestamp: { $gte: dateRange.from, $lt: toEndOfDay } } },
+      { $addFields: { device: { $cond: [ { $regexMatch: { input: '$userAgent', regex: /(Mobile|Android|iPhone|iPad|iPod)/i } }, 'mobile', 'desktop' ] } } },
+      { $group: {
           _id: {
-            date: {
-              $dateToString: {
-                format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U',
-                date: '$timestamp',
-                timezone: 'Asia/Seoul'
-              }
-            }
+            date: { $dateToString: { format: interval === 'day' ? '%Y-%m-%d' : '%Y-%U', date: '$timestamp', timezone: 'Asia/Seoul' } },
+            device: '$device'
           },
-          totalVisits: { $sum: 1 },
-          uniqueVisitors: {
-            $addToSet: '$userId'
-          }
-        }
-      },
-      {
-        $project: {
-          _id: '$_id.date',
-          totalVisits: 1,
-          uniqueVisitors: { $size: '$uniqueVisitors' }
-        }
-      },
-      { $sort: { _id: 1 } }
+          count: { $sum: 1 }
+      }},
+      { $sort: { '_id.date': 1 } }
     ]).toArray();
   } catch (e) {
     // visits 컬렉션이 없으면 빈 배열
@@ -376,23 +342,33 @@ async function aggregateTimeseries(db, filters, interval = 'day') {
   }
 
   // 데이터 매핑
-  const userData = mapTimeseriesData(labels, userTrend, 'total');
-  const paidData = mapTimeseriesData(labels, userTrend, 'paid');
-  const trialData = mapTimeseriesData(labels, userTrend, 'trial');
-  const conversionData = mapTimeseriesData(labels, conversionTrend, 'count');
   const revenueData = mapTimeseriesData(labels, revenueTrend, 'revenue');
-  const visitData = mapTimeseriesData(labels, visitTrend, 'totalVisits');
-  const uniqueVisitorData = mapTimeseriesData(labels, visitTrend, 'uniqueVisitors');
+
+  function mapDeviceSeries(labelsArr, docs) {
+    const mob = Object.create(null);
+    const desk = Object.create(null);
+    for (const d of docs) {
+      const date = d._id.date || d._id; // tolerate different shapes
+      const cnt = d.count || 0;
+      if ((d._id.device || '').toLowerCase() === 'mobile') mob[date] = (mob[date] || 0) + cnt;
+      else desk[date] = (desk[date] || 0) + cnt;
+    }
+    return {
+      mobile: labelsArr.map(l => mob[l] || 0),
+      desktop: labelsArr.map(l => desk[l] || 0)
+    };
+  }
+
+  const signupSeries = mapDeviceSeries(labels, signupByDevice);
+  const visitSeries = mapDeviceSeries(labels, visitByDevice);
 
   return {
     labels: labels.map(l => l.substring(5)), // MM-DD 형식
-    users: userData,
-    paid: paidData,
-    trial: trialData,
-    conversions: conversionData,
     revenue: revenueData,
-    visits: visitData,
-    uniqueVisitors: uniqueVisitorData
+    mobileSignups: signupSeries.mobile,
+    desktopSignups: signupSeries.desktop,
+    mobileVisits: visitSeries.mobile,
+    desktopVisits: visitSeries.desktop
   };
 }
 

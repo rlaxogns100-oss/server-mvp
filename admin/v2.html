@@ -614,33 +614,25 @@
     }
 
     function renderCharts(timeseries) {
-      // 가입자/유료 추이
+      // 가입자 추이 (모바일/컴퓨터)
       new Chart(document.getElementById('userTrendChart'), {
         type: 'line',
         data: {
           labels: timeseries.labels,
           datasets: [
             {
-              label: '전체 가입자',
-              data: timeseries.users,
-              borderColor: '#667eea',
-              backgroundColor: 'rgba(102, 126, 234, 0.1)',
+              label: '모바일 가입자',
+              data: timeseries.mobileSignups || [],
+              borderColor: '#ec4899',
+              backgroundColor: 'rgba(236, 72, 153, 0.1)',
               tension: 0.4,
               fill: true
             },
             {
-              label: '유료 사용자',
-              data: timeseries.paid,
-              borderColor: '#f59e0b',
-              backgroundColor: 'rgba(245, 158, 11, 0.1)',
-              tension: 0.4,
-              fill: true
-            },
-            {
-              label: '체험 사용자',
-              data: timeseries.trial,
-              borderColor: '#10b981',
-              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              label: '컴퓨터 가입자',
+              data: timeseries.desktopSignups || [],
+              borderColor: '#6366f1',
+              backgroundColor: 'rgba(99, 102, 241, 0.1)',
               tension: 0.4,
               fill: true
             }
@@ -671,25 +663,25 @@
         }
       });
 
-      // 방문자 추이
+      // 방문자 추이 (모바일/컴퓨터)
       new Chart(document.getElementById('visitorTrendChart'), {
         type: 'line',
         data: {
           labels: timeseries.labels,
           datasets: [
             {
-              label: '총 방문 수',
-              data: timeseries.visits || [],
-              borderColor: '#8b5cf6',
-              backgroundColor: 'rgba(139, 92, 246, 0.1)',
+              label: '모바일 방문자',
+              data: timeseries.mobileVisits || [],
+              borderColor: '#22c55e',
+              backgroundColor: 'rgba(34, 197, 94, 0.1)',
               tension: 0.4,
               fill: true
             },
             {
-              label: '고유 방문자',
-              data: timeseries.uniqueVisitors || [],
-              borderColor: '#ec4899',
-              backgroundColor: 'rgba(236, 72, 153, 0.1)',
+              label: '컴퓨터 방문자',
+              data: timeseries.desktopVisits || [],
+              borderColor: '#8b5cf6',
+              backgroundColor: 'rgba(139, 92, 246, 0.1)',
               tension: 0.4,
               fill: true
             }
