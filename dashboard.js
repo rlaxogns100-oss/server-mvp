@@ -585,9 +585,12 @@ async function uploadToServer(file) {
 
     const response = await fetch('/upload', {
       method: 'POST',
-      headers: {
-        'X-Session-Id': sessionId
-      },
+      headers: (function(){
+        const h = { 'X-Session-Id': sessionId };
+        try{ if (window.authSessionId) h['Authorization'] = 'Bearer ' + window.authSessionId; }catch(_){ }
+        return h;
+      })(),
+      credentials: 'include',
       body: formData
     });
 

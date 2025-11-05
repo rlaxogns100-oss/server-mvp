@@ -1269,6 +1269,7 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({
           success: true,
           message: '회원가입이 완료되었습니다.',
+          sessionId: sessionId,
           user: {
             id: createdUserId,
             username: newUser.username,
@@ -1359,6 +1360,7 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({
           success: true,
           message: '로그인 성공',
+          sessionId: sessionId,
           user: {
             id: user._id,
             username: user.username,
@@ -2025,11 +2027,16 @@ const server = http.createServer((req, res) => {
     // 쿠키에서 세션 ID 가져오기
     const cookies = parseCookies(req.headers.cookie);
     const sessionId = cookies.sessionId;
+    // Bearer 헤더 허용 (프런트에서 전달 가능한 보조 수단)
+    const authHeader = req.headers['authorization'] || '';
+    const bearer = authHeader.startsWith('Bearer ')? authHeader.slice(7).trim(): null;
     
     // 세션 확인
     let userId = null;
     if (sessionId && sessions.has(sessionId)) {
       userId = sessions.get(sessionId).userId;
+    } else if (bearer && sessions.has(bearer)) {
+      userId = sessions.get(bearer).userId;
     }
     
     if (!userId) {

@@ -487,6 +487,7 @@ function bindAuth() {
 
           if (data.success) {
             currentUser = data.user;
+            try{ window.authSessionId = data.sessionId || window.authSessionId; }catch(_){ }
             displayUserInfo(currentUser);
             alert('로그인 성공!');
             // 로그인 성공 시 내 파일 목록 로드
@@ -540,6 +541,7 @@ function bindAuth() {
 
           if (data.success) {
             currentUser = data.user;
+            try{ window.authSessionId = data.sessionId || window.authSessionId; }catch(_){ }
             displayUserInfo(currentUser);
             alert('회원가입 성공! 로그인되었습니다.');
             // 회원가입 성공 시 내 파일 목록 로드 (초기에는 비어있음)
