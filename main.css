@@ -588,6 +588,13 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   .topbar{grid-template-columns:1fr;gap:8px}
   .feedback-button{width:100%; justify-content:center}
   .user{justify-self:end}
+  /* --- 모바일 전용: 가로 넘침 방지 --- */
+  body, .app { overflow-x: hidden; }
+  .preview-wrap, .preview { width: 100%; overflow-x: hidden; }
+  .preview-column { width: 100%; min-width: 0; }
+  .problem { max-width: 100%; }
+  .preview .table { max-width: 100%; table-layout: fixed; word-wrap: break-word; }
+  .preview .table td { word-wrap: break-word; }
 }
 
 /* Mobile tabs */
@@ -597,6 +604,10 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   .mobile-tabs .tab-btn{flex:1;min-width:0;height:44px;padding:0 12px;border:1px solid #e5e7eb;border-radius:10px;background:#fff;color:#0f172a;font-weight:700;display:flex;align-items:center;justify-content:center;white-space:nowrap}
   .mobile-tabs .tab-btn.active{background:linear-gradient(135deg,#4f9aff,#2563eb);color:#fff;border-color:#2563eb}
   .mobile-hide{display:none !important}
+  /* --- 모바일 전용: 단계 번호 뱃지 표시 --- */
+  .mobile-tabs .tab-btn{position:relative;padding-left:36px}
+  .mobile-tabs .tab-btn::before{content:attr(data-step);position:absolute;left:10px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:999px;background:#e5e7eb;color:#111;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800}
+  .mobile-tabs .tab-btn.active::before{background:#2563eb;color:#fff}
 }
 
 /* (removed) tab scroll buttons */

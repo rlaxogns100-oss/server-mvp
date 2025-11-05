@@ -688,15 +688,7 @@ async function guestPreviewSample8First4(){
         }catch(_){ }
       }, 50);
 
-      // 모바일 환경에서는 초기 탭을 '문항 선택(프리뷰)'로 자동 전환하여 빈 화면처럼 보이지 않도록 함
-      setTimeout(()=>{
-        try{
-          const isMobile = (window.innerWidth || document.documentElement.clientWidth) <= 768;
-          if (isMobile && typeof window.switchMobileTab === 'function') {
-            window.switchMobileTab('preview');
-          }
-        }catch(_){ }
-      }, 80);
+      // 모바일 자동 탭 전환 제거 (요청 사항)
     }
   }catch(err){ console.error('guestPreviewSample8First4 실패:', err); }
 }
