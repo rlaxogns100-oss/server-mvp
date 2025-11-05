@@ -574,7 +574,10 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   .resize-handle{display:none}
   .explorer,.preview-wrap,.exam-preview{min-height:unset;max-height:none}
   .ex-dashboard .grid{max-height:none;overflow:visible}
-  .preview{flex-direction:column;max-height:none;min-height:unset;padding:12px;gap:12px}
+  /* 문항 선택을 하나의 카드처럼 보여 동일 폭 연출 */
+  .preview-wrap{background:#fff;border:1px solid #e6edf6;border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden}
+  .preview-toolbar{border:0 !important;border-radius:0 !important}
+  .preview{flex-direction:column;max-height:none;min-height:unset;padding:12px;gap:12px;border:0 !important;border-radius:0 !important}
   .preview.empty{min-height:140px}
   .preview-toolbar,.exam-header{position:relative}
   .exam-controls{flex-wrap:wrap}
