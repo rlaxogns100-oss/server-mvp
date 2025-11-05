@@ -595,6 +595,16 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   .problem { max-width: 100%; }
   .preview .table { max-width: 100%; table-layout: fixed; word-wrap: break-word; }
   .preview .table td { word-wrap: break-word; }
+  /* --- 모바일 전용: MathJax 인라인 수식 줄바꿈/블록화 이슈 수정 --- */
+  mjx-container[jax="CHTML"][display="false"]{
+    display:inline !important; /* 인라인 수식을 블록으로 보이게 하지 않음 */
+    white-space: normal !important;
+  }
+  mjx-container[jax="CHTML"]{
+    max-width:100%;
+    overflow-x:auto; /* 너무 긴 수식은 가로 스크롤 허용 */
+    -webkit-overflow-scrolling:touch;
+  }
 }
 
 /* Mobile tabs */
