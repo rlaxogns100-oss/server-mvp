@@ -995,6 +995,13 @@ function stopResize() {
 // 게스트 고정 분할 적용: 가운데 기준에서 50px 왼쪽으로 이동
 function applyGuestFixedSplit(){
   try{
+    // 모바일에서는 고정 분할을 적용하지 않고 1열로 강제
+    if ((window.innerWidth || document.documentElement.clientWidth) <= 768) {
+      const mainMobile = document.querySelector('.main');
+      if (mainMobile) mainMobile.style.gridTemplateColumns = '1fr';
+      updateResizeHandlePosition();
+      return;
+    }
     const main = document.querySelector('.main');
     if (!main) return;
     const rect = main.getBoundingClientRect();
@@ -1015,11 +1022,22 @@ function setResizeMode(locked){
   if (!resizeHandle) return;
   if (window.__RESIZE_LOCKED__){
     resizeHandle.style.pointerEvents = 'none';
-    applyGuestFixedSplit();
+    // 모바일에서는 1열 유지
+    if ((window.innerWidth || document.documentElement.clientWidth) <= 768) {
+      const main = document.querySelector('.main');
+      if (main) main.style.gridTemplateColumns = '1fr';
+      updateResizeHandlePosition();
+    } else {
+      applyGuestFixedSplit();
+    }
   } else {
     resizeHandle.style.pointerEvents = '';
     const main = document.querySelector('.main');
-    if (main) main.style.gridTemplateColumns = '324px 1fr 1fr';
+    if ((window.innerWidth || document.documentElement.clientWidth) <= 768) {
+      if (main) main.style.gridTemplateColumns = '1fr';
+    } else {
+      if (main) main.style.gridTemplateColumns = '324px 1fr 1fr';
+    }
     updateResizeHandlePosition();
   }
 }
@@ -1467,8 +1485,13 @@ function initDashboard(){
   
   // 윈도우 리사이즈 시 - 게스트는 고정분할 유지, 로그인은 핸들 위치만 업데이트
   window.addEventListener('resize', ()=>{
-    if (window.__RESIZE_LOCKED__) { applyGuestFixedSplit(); }
-    else { updateResizeHandlePosition(); }
+    // 모바일에서는 항상 1열 강제
+    if ((window.innerWidth || document.documentElement.clientWidth) <= 768) {
+      try{ const main = document.querySelector('.main'); if (main) main.style.gridTemplateColumns = '1fr'; }catch(_){ }
+    } else {
+      if (window.__RESIZE_LOCKED__) { applyGuestFixedSplit(); }
+      else { updateResizeHandlePosition(); }
+    }
     try{ if (window.__RESIZE_LOCKED__ && typeof showGuestGuideBubbles==='function') showGuestGuideBubbles(); }catch(_){ }
   });
 
@@ -1509,6 +1532,8 @@ function setupMobileTabs(){
       preview?.classList.remove('mobile-hide');
       exam?.classList.remove('mobile-hide');
       tabsBar.style.display = 'none';
+      // 데스크톱으로 복귀 시 그리드 인라인 값을 초기화하여 CSS가 적용되도록 함
+      try{ const main = document.querySelector('.main'); if (main) main.style.gridTemplateColumns = ''; }catch(_){ }
       if (!activeTabId) showPreviewPlaceholder(); else hidePreviewPlaceholder();
       return;
     }
@@ -1519,6 +1544,8 @@ function setupMobileTabs(){
     if (tab==='explorer') explorer?.classList.remove('mobile-hide');
     if (tab==='preview') preview?.classList.remove('mobile-hide');
     if (tab==='exam') exam?.classList.remove('mobile-hide');
+    // 모바일에서는 1열 레이아웃을 인라인 스타일로 강제해 JS 분할값을 무시
+    try{ const main = document.querySelector('.main'); if (main) main.style.gridTemplateColumns = '1fr'; }catch(_){ }
     if (tab==='preview' && !activeTabId) { showPreviewPlaceholder(); } else { hidePreviewPlaceholder(); }
     // 버튼 active
     A('#mobileTabs .tab-btn').forEach(b=>b.classList.remove('active'));
