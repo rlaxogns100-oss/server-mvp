@@ -260,6 +260,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .explorer{
   display:grid;grid-template-rows:auto auto auto 1fr auto;gap:12px; /* logo gap handled by topbar */
 }
+.explorer .ex-card{height:100%;display:flex}
 .ex-card{background:#fff;border:1px solid #e6edf6;border-radius:16px;box-shadow:var(--shadow-sm)}
 .ex-upload{padding:12px}
 .ex-upload .upload-tile{
@@ -527,7 +528,8 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .preview-empty-container{display:flex;align-items:center;justify-content:center;width:100%}
 .preview-empty{color:#64748b;text-align:center;padding:24px}
 .preview-empty .empty-icon{font-size:28px;margin-bottom:8px}
-.preview.empty{min-height:160px}
+.preview.empty{min-height:160px;align-items:center;justify-content:center}
+.preview.empty .preview-column{display:none}
 .preview::-webkit-scrollbar{
   width:8px;
 }
