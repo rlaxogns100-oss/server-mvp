@@ -1032,6 +1032,13 @@ function setResizeMode(locked){
     }
   } else {
     resizeHandle.style.pointerEvents = '';
+    // 로그인 해제(언락) 시 드래그 리스너가 없으면 연결
+    try{
+      if (!resizeHandle.__boundResize){
+        resizeHandle.addEventListener('mousedown', startResize);
+        resizeHandle.__boundResize = true;
+      }
+    }catch(_){ }
     const main = document.querySelector('.main');
     if ((window.innerWidth || document.documentElement.clientWidth) <= 768) {
       if (main) main.style.gridTemplateColumns = '1fr';

@@ -569,6 +569,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   .preview-wrap{height:calc(100vh - 120px)}
   .preview{max-height:none;height:100%}
   .explorer{height:calc(100vh - 120px)}
+  .exam-preview{height:calc(100vh - 120px);max-height:none}
 }
 
 @media (max-width:1100px){
