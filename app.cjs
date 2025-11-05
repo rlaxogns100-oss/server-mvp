@@ -1252,30 +1252,11 @@ const server = http.createServer((req, res) => {
 
         const result = await usersCollection.insertOne(newUser);
 
-        // 회원가입 직후 자동 로그인과 동일하게 세션 생성 및 쿠키 설정
-        const createdUserId = result.insertedId?.toString();
-        const sessionId = generateSessionId();
-        sessions.set(sessionId, {
-          userId: createdUserId,
-          username: newUser.username,
-          role: newUser.role,
-          createdAt: new Date()
-        });
-
-        res.writeHead(201, {
-          'Content-Type': 'application/json; charset=utf-8',
-          'Set-Cookie': `sessionId=${sessionId}; HttpOnly; Path=/; Max-Age=${24 * 60 * 60}`
-        });
+        // 자동 로그인 제거: 세션 생성/쿠키 설정 없이 성공 메시지만 반환
+        res.writeHead(201, { 'Content-Type': 'application/json; charset=utf-8' });
         res.end(JSON.stringify({
           success: true,
-          message: '회원가입이 완료되었습니다.',
-          sessionId: sessionId,
-          user: {
-            id: createdUserId,
-            username: newUser.username,
-            email: newUser.email,
-            role: newUser.role
-          }
+          message: '회원가입이 완료되었습니다.'
         }));
 
       } catch (error) {

@@ -540,14 +540,8 @@ function bindAuth() {
           const data = await response.json();
 
           if (data.success) {
-            currentUser = data.user;
-            try{ window.authSessionId = data.sessionId || window.authSessionId; }catch(_){ }
-            displayUserInfo(currentUser);
-            alert('회원가입 성공! 로그인되었습니다.');
-            // 회원가입 성공 시 내 파일 목록 로드 (초기에는 비어있음)
-            if (window.loadMyFiles) {
-              window.loadMyFiles();
-            }
+            // 자동 로그인 제거: 사용자 정보/세션 저장 안 함
+            alert('회원가입이 완료되었습니다. 로그인 후 이용해 주세요.');
           } else {
             alert('회원가입 실패: ' + data.message);
           }
