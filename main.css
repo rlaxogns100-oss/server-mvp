@@ -309,7 +309,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .ex-dashboard{display:flex;flex-direction:column;padding:0;height:100%;overflow:hidden;position:relative}
 /* guest: allow shadows of signup card to show fully */
 .ex-dashboard.guest-locked{overflow:visible}
-.ex-dashboard .grid{overflow-y:auto;max-height:calc(100vh - 420px)}
+.ex-dashboard .grid{overflow-y:auto;max-height:none;flex:1}
 
 /* í´ë” ì•„ì½”ë””ì–¸ */
 .folder-item{display:flex;flex-direction:column;gap:6px}
@@ -568,7 +568,7 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 @media (min-width: 769px){
   .preview-wrap{height:calc(100vh - 120px)}
   .preview{max-height:none;height:100%}
-  .explorer{height:calc(100vh - 120px)}
+  .explorer{height:720px}
   .exam-preview{height:calc(100vh - 120px);max-height:none}
 }
 
