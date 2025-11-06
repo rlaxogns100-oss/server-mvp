@@ -569,6 +569,9 @@ function bindAuth() {
       elements.planBadge.addEventListener('click', function(event) {
         event.stopPropagation();
         elements.planDropdown.classList.toggle('open');
+        if (elements.planMenu) {
+          elements.planMenu.style.display = elements.planDropdown.classList.contains('open') ? 'flex' : 'none';
+        }
       });
 
       planOptions.forEach(option => {
@@ -584,6 +587,7 @@ function bindAuth() {
           }
           planOptions.forEach(opt => opt.classList.toggle('active', opt === option));
           elements.planDropdown.classList.remove('open');
+          if (elements.planMenu) elements.planMenu.style.display = 'none';
           window.open(`/pricing.html#${selectedPlan}`, '_blank');
         });
       });
@@ -591,6 +595,7 @@ function bindAuth() {
       document.addEventListener('click', function(event) {
         if (!elements.planDropdown.contains(event.target)) {
           elements.planDropdown.classList.remove('open');
+          if (elements.planMenu) elements.planMenu.style.display = 'none';
         }
       });
     }
