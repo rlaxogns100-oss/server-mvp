@@ -697,6 +697,15 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 
 /* Tabs drag bar (mobile) */
 .tabs-dragbar{display:none;height:8px;background:#eef2f7;border-radius:999px;margin:6px 12px 0 12px;position:relative;user-select:none}
+
+/* ====== Site footer (사업자 필수정보) ====== */
+.site-footer{margin-top:24px;padding:20px 20px 32px;border-top:1px solid #e6edf7;background:#f9fbff}
+.site-footer .footer-inner{max-width:1200px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.site-footer .footer-biz{display:grid;grid-template-columns:auto 1fr;row-gap:6px;column-gap:16px;font-size:12px;color:#475569}
+.site-footer .biz-row{display:contents}
+.site-footer .biz-label{font-weight:700;color:#334155}
+.site-footer .biz-value{color:#0f172a}
+.site-footer .footer-copy{margin-top:8px;font-size:11px;color:#94a3b8}
 .tabs-dragbar .thumb{position:absolute;top:0;left:0;height:100%;background:#cbd5e1;border-radius:999px;min-width:24px}
 @media (max-width:768px){.tabs-dragbar{display:block}}
 
