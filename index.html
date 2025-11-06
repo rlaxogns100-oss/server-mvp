@@ -60,8 +60,16 @@
             <!-- 사용자 정보 -->
             <div class="user-info" id="userInfo" style="display: none;">
               <div class="user-profile-area" id="userProfileArea">
-                <a href="pricing.html" class="plan-link" id="planLink">요금제</a>
-                <div class="plan-badge" id="planBadge">Basic</div>
+                <div class="plan-dropdown" id="planDropdown">
+                  <button type="button" class="plan-badge" id="planBadge">
+                    <span id="planBadgeLabel">Basic</span>
+                    <span class="plan-arrow" aria-hidden="true">▼</span>
+                  </button>
+                  <div class="plan-menu" id="planMenu">
+                    <button type="button" class="plan-option" data-plan="basic">Basic</button>
+                    <button type="button" class="plan-option" data-plan="pro">Pro</button>
+                  </div>
+                </div>
                 <span id="userName">김태훈</span>
                 <span id="userRole">선생님</span>
               </div>

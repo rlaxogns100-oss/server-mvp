@@ -316,6 +316,10 @@ function bindAuth() {
     registerForm: document.getElementById('registerForm'),
     userInfo: document.getElementById('userInfo'),
     userProfileArea: document.getElementById('userProfileArea'),
+    planBadge: document.getElementById('planBadge'),
+    planBadgeLabel: document.getElementById('planBadgeLabel'),
+    planDropdown: document.getElementById('planDropdown'),
+    planMenu: document.getElementById('planMenu'),
     logoutBtn: document.getElementById('logoutBtn'),
     authButtons: document.getElementById('authButtons'),
     showLoginBtn: document.getElementById('showLoginBtn'),
@@ -364,12 +368,17 @@ function bindAuth() {
       elements.userInfo.style.display = 'flex';
       
       // 요금제 뱃지 설정 (임시로 Basic, 추후 서버에서 받아올 수 있음)
-      const planBadge = document.getElementById('planBadge');
-      const userPlan = user.plan || 'basic'; // 기본값은 basic
-      if (planBadge) {
-        planBadge.textContent = userPlan === 'pro' ? 'Pro' : 'Basic';
-        planBadge.className = 'plan-badge ' + userPlan;
+      const userPlan = user.plan && user.plan.toLowerCase() === 'pro' ? 'pro' : 'basic';
+      if (elements.planBadge) {
+        elements.planBadge.classList.remove('basic', 'pro');
+        elements.planBadge.classList.add(userPlan);
       }
+      if (elements.planBadgeLabel) {
+        elements.planBadgeLabel.textContent = userPlan === 'pro' ? 'Pro' : 'Basic';
+      }
+      document.querySelectorAll('.plan-option').forEach(option => {
+        option.classList.toggle('active', option.getAttribute('data-plan') === userPlan);
+      });
       
       document.getElementById('userName').textContent = user.username;
       document.getElementById('userRole').textContent = user.role === 'teacher' ? '선생님' : '학생';
@@ -554,17 +563,38 @@ function bindAuth() {
       console.log('registerBtn 요소를 찾을 수 없음');
     }
 
-    // 프로필 영역(로그아웃 버튼 제외) 클릭 시 요금제 안내 창으로 이동
-    if (elements.userProfileArea) {
-      console.log('userProfileArea 요소 찾음 - 클릭 이벤트 등록');
-      elements.userProfileArea.addEventListener('click', function(event) {
-        if (event.target.closest('#planLink')) {
-          return;
-        }
-        // 요금제 안내 페이지로 이동
-        window.open('/pricing.html', '_blank');
+    // 요금제 드롭다운 토글 및 옵션 동작
+    const planOptions = document.querySelectorAll('.plan-option');
+    if (elements.planBadge && elements.planDropdown) {
+      elements.planBadge.addEventListener('click', function(event) {
+        event.stopPropagation();
+        elements.planDropdown.classList.toggle('open');
       });
-    } else {
+
+      planOptions.forEach(option => {
+        option.addEventListener('click', function(event) {
+          event.stopPropagation();
+          const selectedPlan = this.getAttribute('data-plan');
+          if (elements.planBadge) {
+            elements.planBadge.classList.remove('basic', 'pro');
+            elements.planBadge.classList.add(selectedPlan);
+          }
+          if (elements.planBadgeLabel) {
+            elements.planBadgeLabel.textContent = selectedPlan === 'pro' ? 'Pro' : 'Basic';
+          }
+          planOptions.forEach(opt => opt.classList.toggle('active', opt === option));
+          elements.planDropdown.classList.remove('open');
+          window.open(`/pricing.html#${selectedPlan}`, '_blank');
+        });
+      });
+
+      document.addEventListener('click', function(event) {
+        if (!elements.planDropdown.contains(event.target)) {
+          elements.planDropdown.classList.remove('open');
+        }
+      });
+    }
+    if (!elements.userProfileArea) {
       console.log('userProfileArea 요소를 찾을 수 없음');
     }
 
