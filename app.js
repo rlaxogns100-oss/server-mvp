@@ -557,7 +557,10 @@ function bindAuth() {
     // 프로필 영역(로그아웃 버튼 제외) 클릭 시 요금제 안내 창으로 이동
     if (elements.userProfileArea) {
       console.log('userProfileArea 요소 찾음 - 클릭 이벤트 등록');
-      elements.userProfileArea.addEventListener('click', function() {
+      elements.userProfileArea.addEventListener('click', function(event) {
+        if (event.target.closest('#planLink')) {
+          return;
+        }
         // 요금제 안내 페이지로 이동
         window.open('/pricing.html', '_blank');
       });
