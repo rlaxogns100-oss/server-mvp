@@ -179,6 +179,7 @@
           <h2>시험지 제작하기</h2>
           <div class="exam-controls">
             <button class="btn primary" id="generatePdfBtn">PDF 생성</button>
+            <button class="btn" id="generateHwpBtn">한글파일 생성</button>
             <button class="btn ghost" id="clearExam">초기화</button>
             <button class="btn icon-btn" id="settingsBtn" title="설정">
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -369,6 +370,32 @@
       <div class="settings-footer">
         <button class="btn ghost" id="cancelSettingsBtn">취소</button>
         <button class="btn primary" id="applySettingsBtn">적용</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HWP 요청 모달 -->
+  <div class="settings-modal-overlay" id="hwpModalOverlay" style="display: none;">
+    <div class="settings-modal">
+      <div class="settings-header">
+        <h3>한글파일 생성 요청</h3>
+        <button class="close-btn" id="closeHwpModalBtn">×</button>
+      </div>
+      <div class="settings-content">
+        <div class="settings-section">
+          <p style="margin-bottom:10px;">1시간 이내 제작된 hwp 파일을 아래 메일로 보내드립니다.</p>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <input type="email" id="hwpEmailInput" placeholder="이메일 입력" style="flex:1;padding:10px;border:2px solid #e2e8f0;border-radius:8px;" />
+            <button class="btn ghost" id="editHwpEmailBtn" type="button">다른 메일로 받기</button>
+          </div>
+        </div>
+        <div class="settings-section" style="margin-top:12px;">
+          <small style="color:#64748b;">확인을 누르면 요청이 전송되고 관리자에게 알림이 도착합니다.</small>
+        </div>
+      </div>
+      <div class="settings-footer">
+        <button class="btn ghost" id="cancelHwpBtn">취소</button>
+        <button class="btn primary" id="confirmHwpBtn">확인</button>
       </div>
     </div>
   </div>

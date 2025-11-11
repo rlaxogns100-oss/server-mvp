@@ -2528,6 +2528,152 @@ const server = http.createServer((req, res) => {
       }
     })();
 
+  // ===== HWP 요청 API =====
+  } else if (req.method === 'POST' && req.url === '/api/hwp-request') {
+    // 한글파일(HWP) 생성 요청 수신
+    let body = '';
+    req.on('data', chunk => body += chunk);
+    req.on('end', async () => {
+      try{
+        const { email, problemIds, pdfData } = JSON.parse(body || '{}');
+        if (!email || !Array.isArray(problemIds) || problemIds.length === 0){
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({ success:false, message:'이메일과 문제 목록이 필요합니다.' }));
+          return;
+        }
+        // 세션에서 사용자 정보
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionId = cookies.sessionId;
+        let sessionUser = null;
+        if (sessionId && sessions.has(sessionId)) {
+          sessionUser = sessions.get(sessionId);
+        }
+        if (!db){
+          res.writeHead(503, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({ success:false, message:'Database not connected' }));
+          return;
+        }
+        const col = db.collection('hwp_requests');
+        const doc = {
+          userId: sessionUser ? new ObjectId(sessionUser.userId) : null,
+          username: sessionUser ? sessionUser.username : null,
+          email: String(email),
+          problemIds: problemIds.map(String),
+          status: 'NONE',
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          pdfPath: null
+        };
+        const ins = await col.insertOne(doc);
+        const reqId = ins.insertedId.toString();
+        // PDF 저장 (선택)
+        if (pdfData && typeof pdfData === 'string'){
+          const dir = path.join(process.cwd(), 'output', 'hwp_requests');
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          const filePath = path.join(dir, `${reqId}.pdf`);
+          try{
+            const buf = Buffer.from(pdfData, 'base64');
+            fs.writeFileSync(filePath, buf);
+            await col.updateOne({ _id: new ObjectId(reqId) }, { $set: { pdfPath: filePath, updatedAt: new Date() } });
+          }catch(e){
+            console.warn('요청 PDF 저장 실패:', e.message);
+          }
+        }
+        res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({ success:true, id: reqId }));
+      }catch(err){
+        console.error('HWP 요청 수신 오류:', err);
+        res.writeHead(500, {'Content-Type': 'application/json; charset=utf-8'});
+        res.end(JSON.stringify({ success:false, message:'요청 처리 중 오류가 발생했습니다.' }));
+      }
+    });
+
+  } else if (req.method === 'GET' && req.url.startsWith('/admin/requests/')) {
+    // 저장된 요청 PDF 파일 제공
+    const parts = req.url.split('/');
+    const filename = parts.pop();
+    const filePath = path.join(process.cwd(), 'output', 'hwp_requests', filename);
+    if (fs.existsSync(filePath)) {
+      res.writeHead(200, { 'Content-Type': 'application/pdf' });
+      fs.createReadStream(filePath).pipe(res);
+    } else {
+      res.writeHead(404, {'Content-Type':'text/plain'});
+      res.end('Not found');
+    }
+
+  } else if (req.method === 'GET' && req.url === '/api/admin/v2/hwp-requests') {
+    // 관리자: 요청 목록
+    const adminPassword = req.headers['x-admin-password'];
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+    if (adminPassword !== ADMIN_PASSWORD) {
+      res.writeHead(401, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({ error: '인증이 필요합니다.' }));
+      return;
+    }
+    if (!db){
+      res.writeHead(503, {'Content-Type':'application/json'});
+      res.end(JSON.stringify({ error:'Database not connected' }));
+      return;
+    }
+    try{
+      const list = await db.collection('hwp_requests').find({}).sort({ createdAt: -1 }).limit(100).toArray();
+      const requests = list.map(x => ({
+        id: x._id.toString(),
+        username: x.username || '-',
+        createdAt: x.createdAt ? new Date(x.createdAt).toLocaleString('ko-KR') : '-',
+        email: x.email || '-',
+        status: x.status || 'NONE',
+        pdfUrl: x.pdfPath ? `/admin/requests/${x._id.toString()}.pdf` : null
+      }));
+      res.writeHead(200, {'Content-Type':'application/json; charset=utf-8'});
+      res.end(JSON.stringify({ success:true, requests }));
+    }catch(err){
+      console.error('HWP 요청 목록 오류:', err);
+      res.writeHead(500, {'Content-Type':'application/json'});
+      res.end(JSON.stringify({ error:'서버 오류' }));
+    }
+
+  } else if (req.method === 'PUT' && req.url.startsWith('/api/admin/v2/hwp-requests/')) {
+    // 관리자: 상태 변경
+    const adminPassword = req.headers['x-admin-password'];
+    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+    if (adminPassword !== ADMIN_PASSWORD) {
+      res.writeHead(401, {'Content-Type': 'application/json'});
+      res.end(JSON.stringify({ error: '인증이 필요합니다.' }));
+      return;
+    }
+    let body='';
+    req.on('data', c => body += c);
+    req.on('end', async () => {
+      try{
+        const m = req.url.match(/\/api\/admin\/v2\/hwp-requests\/([^/]+)\/status/);
+        if (!m){ res.writeHead(404, {'Content-Type':'application/json'}); res.end(JSON.stringify({ error:'not found' })); return; }
+        const id = m[1];
+        const { status } = JSON.parse(body || '{}');
+        const allowed = ['NONE','작업 중','작업 완료'];
+        if (!allowed.includes(status)){
+          res.writeHead(400, {'Content-Type':'application/json'});
+          res.end(JSON.stringify({ success:false, message:'올바르지 않은 상태' }));
+          return;
+        }
+        if (!db){
+          res.writeHead(503, {'Content-Type':'application/json'});
+          res.end(JSON.stringify({ success:false, message:'Database not connected' }));
+          return;
+        }
+        const r = await db.collection('hwp_requests').updateOne(
+          { _id: new ObjectId(id) },
+          { $set: { status, updatedAt: new Date() } }
+        );
+        res.writeHead(200, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({ success:true }));
+      }catch(err){
+        console.error('HWP 상태 변경 오류:', err);
+        res.writeHead(500, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({ success:false, message:'서버 오류' }));
+      }
+    });
+
   } else {
     res.writeHead(404, {'Content-Type': 'text/html; charset=utf-8'});
     res.end('<h1>404 - 페이지를 찾을 수 없습니다</h1>');

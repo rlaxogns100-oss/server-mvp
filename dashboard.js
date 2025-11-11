@@ -1516,6 +1516,9 @@ function initDashboard(){
   if (generateBtn) generateBtn.addEventListener('click', generatePdf);
   if (clearBtn) clearBtn.addEventListener('click', clearExam);
   if (settingsBtn) settingsBtn.addEventListener('click', openSettingsModal);
+  // HWP 버튼 바인딩
+  const hwpBtn = document.getElementById('generateHwpBtn');
+  if (hwpBtn) hwpBtn.addEventListener('click', openHwpModal);
 
   // DOM이 완전히 로드된 후 핸들 위치 재설정
   setTimeout(() => {
@@ -1524,6 +1527,113 @@ function initDashboard(){
 
   // 초기 프리뷰 비어있음 표시
   showPreviewPlaceholder();
+}
+
+// ---- HWP 요청 모달 ----
+function openHwpModal(){
+  const overlay = document.getElementById('hwpModalOverlay');
+  const emailInput = document.getElementById('hwpEmailInput');
+  const editBtn = document.getElementById('editHwpEmailBtn');
+  const closeBtn = document.getElementById('closeHwpModalBtn');
+  const cancelBtn = document.getElementById('cancelHwpBtn');
+  const confirmBtn = document.getElementById('confirmHwpBtn');
+  if (!overlay) return;
+  try{
+    // 기본 이메일 값 (알 수 없으면 공란)
+    let defaultEmail = '';
+    try{ defaultEmail = (window.currentUser && window.currentUser.email) || ''; }catch(_){}
+    if (emailInput){ emailInput.value = defaultEmail; emailInput.readOnly = !!defaultEmail; }
+    if (editBtn){
+      editBtn.onclick = ()=>{
+        if (!emailInput) return;
+        emailInput.readOnly = false;
+        emailInput.focus();
+      };
+    }
+    if (closeBtn) closeBtn.onclick = ()=> overlay.style.display = 'none';
+    if (cancelBtn) cancelBtn.onclick = ()=> overlay.style.display = 'none';
+    if (confirmBtn) confirmBtn.onclick = submitHwpRequest;
+  }catch(_){}
+  overlay.style.display = 'flex';
+}
+
+async function submitHwpRequest(){
+  const overlay = document.getElementById('hwpModalOverlay');
+  const emailInput = document.getElementById('hwpEmailInput');
+  const email = (emailInput?.value || '').trim();
+  if (!email){
+    alert('이메일을 입력해주세요.');
+    return;
+  }
+  if (examProblems.length === 0){
+    alert('먼저 문항을 선택해주세요.');
+    return;
+  }
+  // 문제 ID 배열
+  const problemIds = examProblems
+    .map(p => p?.data?._id)
+    .filter(Boolean);
+  if (!problemIds.length){
+    alert('문항 데이터에 식별자가 없습니다. 다시 시도해주세요.');
+    return;
+  }
+  // 서버용 examData (PDF 미리보기 생성용)
+  const examData = {
+    problems: problemIds.map(_id => ({ _id })),
+    settings: {
+      answerType: (window.getPdfSettings && window.getPdfSettings().answerType) || 'none',
+      showMetaFile: !!(window.getPdfSettings && window.getPdfSettings().showMetaFile),
+      showMetaPage: !!(window.getPdfSettings && window.getPdfSettings().showMetaPage),
+      showMetaId: !!(window.getPdfSettings && window.getPdfSettings().showMetaId),
+      showProblemMeta: !!(window.getPdfSettings && window.getPdfSettings().showProblemMeta)
+    }
+  };
+  // 간단 진행 모달 재사용
+  showProgressOverlay();
+  updateModalProgress(10, '요청 접수 중...', 'PDF 미리보기를 생성하고 있습니다...');
+  let pdfBase64 = null;
+  try{
+    // 서버에서 PDF 생성 (다운로드 없이 base64만 수신)
+    const resp = await fetch('/api/generate-pdf', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(examData)
+    });
+    if (resp.ok){
+      const data = await resp.json();
+      if (data && data.success && data.pdfData){
+        pdfBase64 = data.pdfData;
+      }
+    }
+  }catch(err){
+    console.error('HWP 요청용 PDF 생성 실패(무시 가능):', err);
+  }
+  updateModalProgress(60, '요청 전송 중...', '관리자에게 요청을 전송합니다...');
+  try{
+    const payload = {
+      email,
+      problemIds,
+      pdfData: pdfBase64 || null
+    };
+    const r = await fetch('/api/hwp-request', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const j = await r.json();
+    if (!j.success){
+      throw new Error(j.message || '요청 전송 실패');
+    }
+    updateModalProgress(100, '요청 완료!', '관리자에게 알림이 전송되었습니다.');
+    setTimeout(()=>{ hideProgressOverlay(); }, 800);
+    if (overlay) overlay.style.display = 'none';
+    alert('요청이 접수되었습니다. 1시간 이내 메일로 보내드릴게요.');
+  }catch(err){
+    console.error('HWP 요청 전송 실패:', err);
+    updateModalProgress(0, '오류 발생', err.message || '요청 전송 중 문제가 발생했습니다.');
+    setTimeout(()=>{ hideProgressOverlay(); }, 1200);
+    alert('요청 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+  }
 }
 
 /* ---- Mobile Tabs ---- */
