@@ -1533,7 +1533,6 @@ function initDashboard(){
 function openHwpModal(){
   const overlay = document.getElementById('hwpModalOverlay');
   const emailInput = document.getElementById('hwpEmailInput');
-  const editBtn = document.getElementById('editHwpEmailBtn');
   const closeBtn = document.getElementById('closeHwpModalBtn');
   const cancelBtn = document.getElementById('cancelHwpBtn');
   const confirmBtn = document.getElementById('confirmHwpBtn');
@@ -1542,14 +1541,7 @@ function openHwpModal(){
     // 기본 이메일 값 (알 수 없으면 공란)
     let defaultEmail = '';
     try{ defaultEmail = (window.currentUser && window.currentUser.email) || ''; }catch(_){}
-    if (emailInput){ emailInput.value = defaultEmail; emailInput.readOnly = !!defaultEmail; }
-    if (editBtn){
-      editBtn.onclick = ()=>{
-        if (!emailInput) return;
-        emailInput.readOnly = false;
-        emailInput.focus();
-      };
-    }
+    if (emailInput){ emailInput.value = defaultEmail; emailInput.readOnly = false; }
     if (closeBtn) closeBtn.onclick = ()=> overlay.style.display = 'none';
     if (cancelBtn) cancelBtn.onclick = ()=> overlay.style.display = 'none';
     if (confirmBtn) confirmBtn.onclick = submitHwpRequest;
