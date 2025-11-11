@@ -1536,6 +1536,20 @@ function openHwpModal(){
   const closeBtn = document.getElementById('closeHwpModalBtn');
   const cancelBtn = document.getElementById('cancelHwpBtn');
   const confirmBtn = document.getElementById('confirmHwpBtn');
+
+  // 즉시 개수 제한 체크 (로그/진행창 없이 경고만)
+  try{
+    const count = Array.isArray(examProblems) ? examProblems.length : 0;
+    if (count === 0){
+      alert('먼저 문항을 선택해주세요.');
+      return;
+    }
+    if (count > 20){
+      alert('한 번에 최대 20개까지만 요청할 수 있습니다.\n선택 문항을 줄여주세요.');
+      return;
+    }
+  }catch(_){}
+
   if (!overlay) return;
   try{
     // 기본 이메일 값 (알 수 없으면 공란)
