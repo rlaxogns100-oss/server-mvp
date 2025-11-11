@@ -322,58 +322,7 @@
     </div>
 
     <div id="errorMessage"></div>
-
-    <!-- 필터 바 -->
-    <div class="filter-bar">
-      <div class="filter-title">📋 필터</div>
-      <div class="filter-row">
-        <div class="filter-group">
-          <label>시작 날짜</label>
-          <input type="date" id="filterFrom" />
-        </div>
-        <div class="filter-group">
-          <label>종료 날짜</label>
-          <input type="date" id="filterTo" />
-        </div>
-        <div class="filter-group">
-          <label>사용자 역할</label>
-          <select id="filterRole">
-            <option value="">전체</option>
-            <option value="teacher">선생님</option>
-            <option value="student">학생</option>
-            <option value="admin">관리자</option>
-          </select>
-        </div>
-        <div class="filter-group">
-          <label>플랜</label>
-          <select id="filterPlan">
-            <option value="">전체</option>
-            <option value="basic">Basic</option>
-            <option value="pro">Pro</option>
-            <option value="trial">Trial</option>
-          </select>
-        </div>
-      </div>
-      <div class="filter-row">
-        <div class="filter-group">
-          <label>최소 PDF 수</label>
-          <input type="number" id="filterMinPdf" placeholder="0" min="0" />
-        </div>
-        <div class="filter-group">
-          <label>최대 PDF 수</label>
-          <input type="number" id="filterMaxPdf" placeholder="제한 없음" min="0" />
-        </div>
-        <div class="filter-group">
-          <label>검색 (이메일/이름)</label>
-          <input type="text" id="filterSearch" placeholder="검색어 입력" />
-        </div>
-      </div>
-      <div class="filter-actions">
-        <button class="btn btn-secondary" onclick="resetFilters()">초기화</button>
-        <button class="btn btn-success" onclick="exportCSV()">CSV 내보내기</button>
-        <button class="btn btn-primary" onclick="applyFilters()">적용</button>
-      </div>
-    </div>
+    <!-- 상단 필터 바 제거됨 -->
 
     <!-- 통계 카드 -->
     <div id="statsCards" class="loading">로딩 중...</div>
@@ -450,42 +399,18 @@
     });
 
     function initFilters() {
-      // 기본 날짜: 최근 7일
-      const to = new Date();
-      const from = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-
-      document.getElementById('filterFrom').valueAsDate = from;
-      document.getElementById('filterTo').valueAsDate = to;
+      // 필터 UI 제거됨: 서버 기본값(최근 7일)을 사용
+      currentFilters = {};
     }
 
     function getFilters() {
-      const from = document.getElementById('filterFrom').value;
-      const to = document.getElementById('filterTo').value;
-      const role = document.getElementById('filterRole').value;
-      const plan = document.getElementById('filterPlan').value;
-      const minPdf = document.getElementById('filterMinPdf').value;
-      const maxPdf = document.getElementById('filterMaxPdf').value;
-      const search = document.getElementById('filterSearch').value;
-
-      const params = new URLSearchParams();
-      if (from) params.set('from', from);
-      if (to) params.set('to', to);
-      if (role) params.set('role', role);
-      if (plan) params.set('plan', plan);
-      if (minPdf) params.set('minPdf', minPdf);
-      if (maxPdf) params.set('maxPdf', maxPdf);
-      if (search) params.set('search', search);
-
-      return params.toString();
+      // 필터 UI 제거됨: 서버 기본값을 사용
+      return '';
     }
 
     function resetFilters() {
-      document.getElementById('filterRole').value = '';
-      document.getElementById('filterPlan').value = '';
-      document.getElementById('filterMinPdf').value = '';
-      document.getElementById('filterMaxPdf').value = '';
-      document.getElementById('filterSearch').value = '';
-      initFilters();
+      // 필터 UI 제거됨: 내부 상태만 초기화
+      currentFilters = {};
     }
 
     function applyFilters() {
