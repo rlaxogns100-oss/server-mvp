@@ -2566,6 +2566,11 @@ const server = http.createServer((req, res) => {
           res.end(JSON.stringify({ success:false, message:'이메일과 문제 목록이 필요합니다.' }));
           return;
         }
+        if (problemIds.length > 20){
+          res.writeHead(400, {'Content-Type': 'application/json; charset=utf-8'});
+          res.end(JSON.stringify({ success:false, message:'한 번에 최대 20개 문제까지만 요청할 수 있습니다.' }));
+          return;
+        }
         // 세션에서 사용자 정보
         const cookies = parseCookies(req.headers.cookie);
         const sessionId = cookies.sessionId;
