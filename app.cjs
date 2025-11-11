@@ -2584,7 +2584,8 @@ const server = http.createServer((req, res) => {
           username: sessionUser ? sessionUser.username : null,
           email: String(email),
           problemIds: problemIds.map(String),
-          status: 'NONE',
+          status: 'NULL',
+          assignee: null,
           createdAt: new Date(),
           updatedAt: new Date(),
           pdfPath: null
@@ -2648,7 +2649,8 @@ const server = http.createServer((req, res) => {
           username: x.username || '-',
           createdAt: x.createdAt ? new Date(x.createdAt).toLocaleString('ko-KR') : '-',
           email: x.email || '-',
-          status: x.status || 'NONE',
+          status: (x.status === 'NONE' ? 'NULL' : (x.status || 'NULL')),
+          assignee: x.assignee || null,
           pdfUrl: x.pdfPath ? `/admin/requests/${x._id.toString()}.pdf` : null
         }));
         res.writeHead(200, {'Content-Type':'application/json; charset=utf-8'});
@@ -2676,21 +2678,34 @@ const server = http.createServer((req, res) => {
         const m = req.url.match(/\/api\/admin\/v2\/hwp-requests\/([^/]+)\/status/);
         if (!m){ res.writeHead(404, {'Content-Type':'application/json'}); res.end(JSON.stringify({ error:'not found' })); return; }
         const id = m[1];
-        const { status } = JSON.parse(body || '{}');
-        const allowed = ['NONE','작업 중','작업 완료'];
-        if (!allowed.includes(status)){
+        const { status, assignee } = JSON.parse(body || '{}');
+
+        // 상태/담당자 유효성
+        const allowedStatus = ['NULL','작업 중','작업 완료'];
+        if (status && !allowedStatus.includes(status)){
           res.writeHead(400, {'Content-Type':'application/json'});
           res.end(JSON.stringify({ success:false, message:'올바르지 않은 상태' }));
           return;
         }
+        const allowedAssignees = [null,'김태훈','성민준','장서연'];
+        if (typeof assignee !== 'undefined' && !allowedAssignees.includes(assignee)){
+          res.writeHead(400, {'Content-Type':'application/json'});
+          res.end(JSON.stringify({ success:false, message:'올바르지 않은 담당자' }));
+          return;
+        }
+
         if (!db){
           res.writeHead(503, {'Content-Type':'application/json'});
           res.end(JSON.stringify({ success:false, message:'Database not connected' }));
           return;
         }
+        const updateFields = { updatedAt: new Date() };
+        if (status) updateFields.status = status;
+        if (typeof assignee !== 'undefined') updateFields.assignee = assignee;
+
         const r = await db.collection('hwp_requests').updateOne(
           { _id: new ObjectId(id) },
-          { $set: { status, updatedAt: new Date() } }
+          { $set: updateFields }
         );
         res.writeHead(200, {'Content-Type':'application/json'});
         res.end(JSON.stringify({ success:true }));

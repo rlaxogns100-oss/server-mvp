@@ -526,7 +526,7 @@
         <tbody>`;
 
       requests.forEach(r => {
-        const status = r.status || 'NONE';
+        const status = r.status || 'NULL';
         const pdfLink = r.pdfUrl ? `<a href="${r.pdfUrl}" target="_blank">PDF 보기</a>` : '-';
         html += `<tr>
           <td>${r.username || '-'}</td>
@@ -534,28 +534,39 @@
           <td>${pdfLink}</td>
           <td>${r.email || '-'}</td>
           <td>
-            <select data-id="${r.id}" class="hwp-status" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px">
-              <option ${status==='NONE'?'selected':''}>NONE</option>
-              <option ${status==='작업 중'?'selected':''}>작업 중</option>
-              <option ${status==='작업 완료'?'selected':''}>작업 완료</option>
-            </select>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <select data-id="${r.id}" class="hwp-status" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px">
+                <option value="NULL" ${status==='NULL'?'selected':''}>NULL</option>
+                <option value="작업 중" ${status==='작업 중'?'selected':''}>🚧 작업 중</option>
+                <option value="작업 완료" ${status==='작업 완료'?'selected':''}>✅ 작업 완료</option>
+              </select>
+              <select data-id="${r.id}" class="hwp-assignee" style="padding:6px 8px;border:1px solid #e2e8f0;border-radius:6px">
+                <option value="" ${!r.assignee?'selected':''}>담당자 없음</option>
+                <option value="김태훈" ${r.assignee==='김태훈'?'selected':''}>김태훈</option>
+                <option value="성민준" ${r.assignee==='성민준'?'selected':''}>성민준</option>
+                <option value="장서연" ${r.assignee==='장서연'?'selected':''}>장서연</option>
+              </select>
+            </div>
           </td>
         </tr>`;
       });
       html += `</tbody></table>`;
       el.innerHTML = html;
 
-      // 상태 변경 바인딩
-      document.querySelectorAll('.hwp-status').forEach(sel => {
+      // 상태/담당자 변경 바인딩
+      document.querySelectorAll('.hwp-status, .hwp-assignee').forEach(sel => {
         sel.addEventListener('change', () => {
           const id = sel.getAttribute('data-id');
-          const status = sel.value;
-          updateHwpStatus(id, status);
+          const row = sel.closest('tr');
+          const status = row.querySelector('.hwp-status').value;
+          const assigneeRaw = row.querySelector('.hwp-assignee').value;
+          const assignee = assigneeRaw === '' ? null : assigneeRaw;
+          updateHwpStatus(id, status, assignee);
         });
       });
     }
 
-    function updateHwpStatus(id, status) {
+    function updateHwpStatus(id, status, assignee) {
       const password = localStorage.getItem(ADMIN_PASSWORD_KEY);
       fetch(`/api/admin/v2/hwp-requests/${id}/status`, {
         method: 'PUT',
@@ -563,7 +574,7 @@
           'Content-Type': 'application/json',
           'X-Admin-Password': password
         },
-        body: JSON.stringify({ status })
+        body: JSON.stringify({ status, assignee })
       })
       .then(res => res.json())
       .then(data => {
