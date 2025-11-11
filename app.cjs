@@ -2499,6 +2499,31 @@ const server = http.createServer((req, res) => {
           res.writeHead(200, {'Content-Type': 'application/json'});
           res.end(JSON.stringify({ success: true, tables: result }));
 
+        // hwp-requests API (GET) - 관리자 알림 목록
+        } else if (pathname === '/api/admin/v2/hwp-requests') {
+          try {
+            const list = await db.collection('hwp_requests')
+              .find({})
+              .sort({ createdAt: -1 })
+              .limit(100)
+              .toArray();
+            const requests = list.map(x => ({
+              id: x._id.toString(),
+              username: x.username || '-',
+              createdAt: x.createdAt ? new Date(x.createdAt).toLocaleString('ko-KR') : '-',
+              email: x.email || '-',
+              status: x.status || 'NONE',
+              pdfUrl: x.pdfPath ? `/admin/requests/${x._id.toString()}.pdf` : null
+            }));
+
+            res.writeHead(200, {'Content-Type':'application/json; charset=utf-8'});
+            res.end(JSON.stringify({ success:true, requests }));
+          } catch (e) {
+            console.error('관리자 HWP 요청 목록 오류:', e);
+            res.writeHead(500, {'Content-Type':'application/json'});
+            res.end(JSON.stringify({ error:'서버 오류' }));
+          }
+
         // CSV export
         } else if (pathname === '/api/admin/v2/export/users.csv') {
           // 캐시 사용 안 함 (매번 최신 데이터)
