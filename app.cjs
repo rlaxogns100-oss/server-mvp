@@ -2602,36 +2602,38 @@ const server = http.createServer((req, res) => {
     }
 
   } else if (req.method === 'GET' && req.url === '/api/admin/v2/hwp-requests') {
-    // 관리자: 요청 목록
-    const adminPassword = req.headers['x-admin-password'];
-    const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
-    if (adminPassword !== ADMIN_PASSWORD) {
-      res.writeHead(401, {'Content-Type': 'application/json'});
-      res.end(JSON.stringify({ error: '인증이 필요합니다.' }));
-      return;
-    }
-    if (!db){
-      res.writeHead(503, {'Content-Type':'application/json'});
-      res.end(JSON.stringify({ error:'Database not connected' }));
-      return;
-    }
-    try{
-      const list = await db.collection('hwp_requests').find({}).sort({ createdAt: -1 }).limit(100).toArray();
-      const requests = list.map(x => ({
-        id: x._id.toString(),
-        username: x.username || '-',
-        createdAt: x.createdAt ? new Date(x.createdAt).toLocaleString('ko-KR') : '-',
-        email: x.email || '-',
-        status: x.status || 'NONE',
-        pdfUrl: x.pdfPath ? `/admin/requests/${x._id.toString()}.pdf` : null
-      }));
-      res.writeHead(200, {'Content-Type':'application/json; charset=utf-8'});
-      res.end(JSON.stringify({ success:true, requests }));
-    }catch(err){
-      console.error('HWP 요청 목록 오류:', err);
-      res.writeHead(500, {'Content-Type':'application/json'});
-      res.end(JSON.stringify({ error:'서버 오류' }));
-    }
+    // 관리자: 요청 목록 (비동기 IIFE로 처리)
+    (async () => {
+      const adminPassword = req.headers['x-admin-password'];
+      const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+      if (adminPassword !== ADMIN_PASSWORD) {
+        res.writeHead(401, {'Content-Type': 'application/json'});
+        res.end(JSON.stringify({ error: '인증이 필요합니다.' }));
+        return;
+      }
+      if (!db){
+        res.writeHead(503, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({ error:'Database not connected' }));
+        return;
+      }
+      try{
+        const list = await db.collection('hwp_requests').find({}).sort({ createdAt: -1 }).limit(100).toArray();
+        const requests = list.map(x => ({
+          id: x._id.toString(),
+          username: x.username || '-',
+          createdAt: x.createdAt ? new Date(x.createdAt).toLocaleString('ko-KR') : '-',
+          email: x.email || '-',
+          status: x.status || 'NONE',
+          pdfUrl: x.pdfPath ? `/admin/requests/${x._id.toString()}.pdf` : null
+        }));
+        res.writeHead(200, {'Content-Type':'application/json; charset=utf-8'});
+        res.end(JSON.stringify({ success:true, requests }));
+      }catch(err){
+        console.error('HWP 요청 목록 오류:', err);
+        res.writeHead(500, {'Content-Type':'application/json'});
+        res.end(JSON.stringify({ error:'서버 오류' }));
+      }
+    })();
 
   } else if (req.method === 'PUT' && req.url.startsWith('/api/admin/v2/hwp-requests/')) {
     // 관리자: 상태 변경
