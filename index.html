@@ -403,6 +403,22 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="dashboard.js?v=20251111-2"></script>
 <script src="app.js?v=20251111-2"></script>
+<script>
+  (function(){
+    function pad2(n){ return String(n).padStart(2,'0'); }
+    try{
+      var d = new Date();
+      var yy = String(d.getFullYear()).slice(-2);
+      var mm = pad2(d.getMonth()+1);
+      var dd = pad2(d.getDate());
+      var hh = pad2(d.getHours());
+      var mi = pad2(d.getMinutes());
+      var s = yy + '년' + mm + '월' + dd + '일 ' + hh + '시' + mi + '분';
+      var el = document.getElementById('lastUpdated');
+      if (el) el.textContent = s;
+    }catch(_){}
+  })();
+  </script>
 
   <!-- 사이트 하단: 사업자 필수정보 -->
   <footer class="site-footer">
@@ -415,6 +431,7 @@
         <div class="biz-row"><span class="biz-label">연락처</span><span class="biz-value" id="bizContact">010-2808-9914</span></div>
         <div class="biz-row"><span class="biz-label">통신판매업 신고번호</span><span class="biz-value" id="bizMailOrderNo">신고 준비중</span></div>
         <div class="biz-row"><span class="biz-label">과세유형</span><span class="biz-value">일반과세자</span></div>
+          <div class="biz-row"><span class="biz-label">마지막 업데이트</span><span class="biz-value" id="lastUpdated">-</span></div>
       </div>
       <div class="footer-copy">© 2025 Zerotyping. All rights reserved.</div>
     </div>

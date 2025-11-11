@@ -1561,6 +1561,11 @@ async function submitHwpRequest(){
     alert('먼저 문항을 선택해주세요.');
     return;
   }
+  // 프런트 즉시 제한: 최대 20문항
+  if (examProblems.length > 20){
+    alert('한 번에 최대 20개까지만 요청할 수 있습니다.\n선택 문항을 줄여주세요.');
+    return;
+  }
   // 문제 ID 배열
   const problemIds = examProblems
     .map(p => p?.data?._id)
@@ -1569,43 +1574,11 @@ async function submitHwpRequest(){
     alert('문항 데이터에 식별자가 없습니다. 다시 시도해주세요.');
     return;
   }
-  // 서버용 examData (PDF 미리보기 생성용)
-  const examData = {
-    problems: problemIds.map(_id => ({ _id })),
-    settings: {
-      answerType: (window.getPdfSettings && window.getPdfSettings().answerType) || 'none',
-      showMetaFile: !!(window.getPdfSettings && window.getPdfSettings().showMetaFile),
-      showMetaPage: !!(window.getPdfSettings && window.getPdfSettings().showMetaPage),
-      showMetaId: !!(window.getPdfSettings && window.getPdfSettings().showMetaId),
-      showProblemMeta: !!(window.getPdfSettings && window.getPdfSettings().showProblemMeta)
-    }
-  };
-  // 간단 진행 모달 재사용
-  showProgressOverlay();
-  updateModalProgress(10, '요청 접수 중...', 'PDF 미리보기를 생성하고 있습니다...');
-  let pdfBase64 = null;
-  try{
-    // 서버에서 PDF 생성 (다운로드 없이 base64만 수신)
-    const resp = await fetch('/api/generate-pdf', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(examData)
-    });
-    if (resp.ok){
-      const data = await resp.json();
-      if (data && data.success && data.pdfData){
-        pdfBase64 = data.pdfData;
-      }
-    }
-  }catch(err){
-    console.error('HWP 요청용 PDF 생성 실패(무시 가능):', err);
-  }
-  updateModalProgress(60, '요청 전송 중...', '관리자에게 요청을 전송합니다...');
   try{
     const payload = {
       email,
       problemIds,
-      pdfData: pdfBase64 || null
+      pdfData: null // 조용 처리: 서버에는 PDF 없이 접수만
     };
     const r = await fetch('/api/hwp-request', {
       method: 'POST',
@@ -1616,14 +1589,11 @@ async function submitHwpRequest(){
     if (!j.success){
       throw new Error(j.message || '요청 전송 실패');
     }
-    updateModalProgress(100, '요청 완료!', '관리자에게 알림이 전송되었습니다.');
-    setTimeout(()=>{ hideProgressOverlay(); }, 800);
     if (overlay) overlay.style.display = 'none';
-    alert('요청이 접수되었습니다. 1시간 이내 메일로 보내드릴게요.');
+    alert('접수되었습니다! 1시간 이내 메일로 보내드릴게요.');
   }catch(err){
     console.error('HWP 요청 전송 실패:', err);
-    updateModalProgress(0, '오류 발생', err.message || '요청 전송 중 문제가 발생했습니다.');
-    setTimeout(()=>{ hideProgressOverlay(); }, 1200);
+    if (overlay) overlay.style.display = 'none';
     alert('요청 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
   }
 }
