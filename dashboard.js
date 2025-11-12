@@ -1592,7 +1592,7 @@ async function submitHwpRequest(){
     const payload = {
       email,
       problemIds,
-      pdfData: null // 조용 처리: 서버에는 PDF 없이 접수만
+      pdfData: (window.LAST_GENERATED_PDF_BASE64 || null)
     };
     const r = await fetch('/api/hwp-request', {
       method: 'POST',
@@ -1604,7 +1604,7 @@ async function submitHwpRequest(){
       throw new Error(j.message || '요청 전송 실패');
     }
     if (overlay) overlay.style.display = 'none';
-    alert('접수되었습니다! 1시간 이내 메일로 보내드릴게요.');
+    alert('접수되었습니다! 3시간 이내 메일로 보내드릴게요.');
   }catch(err){
     console.error('HWP 요청 전송 실패:', err);
     if (overlay) overlay.style.display = 'none';
@@ -1755,6 +1755,7 @@ async function generatePdf() {
 
     // Base64 데이터를 Blob으로 변환하여 다운로드
     const pdfData = result.pdfData;
+    try { window.LAST_GENERATED_PDF_BASE64 = pdfData; } catch(_) {}
     const binaryString = atob(pdfData);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
