@@ -738,7 +738,8 @@ const server = http.createServer((req, res) => {
     }
   }
 
-  if (req.method === 'GET' && pathname === '/') {
+  if ((req.method === 'GET' || req.method === 'HEAD') && pathname === '/') {
+    const isHeadRequest = req.method === 'HEAD';
     // 방문자 추적
     (async () => {
       try {
@@ -772,19 +773,19 @@ const server = http.createServer((req, res) => {
       }
     })();
 
-    // Serve index.html
+    // Serve index.html (HEAD 요청은 바디 없이 헤더만 전송)
     const indexPath = path.join(__dirname, 'index.html');
     fs.readFile(indexPath, 'utf8', (err, data) => {
       if (err) {
         res.writeHead(404, {'Content-Type': 'text/plain'});
-        res.end('index.html not found');
+        res.end(isHeadRequest ? '' : 'index.html not found');
         return;
       }
       res.writeHead(200, {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'no-store, must-revalidate'
       });
-      res.end(data);
+      res.end(isHeadRequest ? '' : data);
     });
   } else if (req.method === 'GET' && req.url.startsWith('/api/progress/')) {
     // SSE 엔드포인트
