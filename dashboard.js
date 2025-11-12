@@ -1580,6 +1580,41 @@ async function submitHwpRequest(){
     alert('한 번에 최대 20개까지만 요청할 수 있습니다.\n선택 문항을 줄여주세요.');
     return;
   }
+  // 요청 전 PDF가 없으면 먼저 생성하여 첨부 준비
+  try{
+    if (!window.LAST_GENERATED_PDF_BASE64){
+      // 필요한 최소 데이터만 전송하여 조용히 PDF 생성
+      const examData = {
+        problems: examProblems.map(p => ({ _id: p?.data?._id })).filter(x => x._id),
+        settings: {
+          answerType: (window.getPdfSettings ? window.getPdfSettings().answerType : (window.pdfSettings?.answerType || 'none')),
+          showMetaFile: !!(window.getPdfSettings && window.getPdfSettings().showMetaFile),
+          showMetaPage: !!(window.getPdfSettings && window.getPdfSettings().showMetaPage),
+          showMetaId:   !!(window.getPdfSettings && window.getPdfSettings().showMetaId),
+          showProblemMeta: !!(window.getPdfSettings && window.getPdfSettings().showProblemMeta)
+        }
+      };
+      const resp = await fetch('/api/generate-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(examData)
+      });
+      if (!resp.ok){
+        const errJson = await resp.json().catch(()=>({}));
+        throw new Error(errJson.message || `PDF 생성 실패 (${resp.status})`);
+      }
+      const gen = await resp.json();
+      if (!gen.success || !gen.pdfData){
+        throw new Error('PDF 생성 결과가 올바르지 않습니다.');
+      }
+      try { window.LAST_GENERATED_PDF_BASE64 = gen.pdfData; } catch(_){}
+    }
+  }catch(err){
+    console.error('요청용 PDF 생성 실패:', err);
+    if (overlay) overlay.style.display = 'none';
+    alert('요청용 PDF 생성에 실패했습니다. 먼저 PDF를 생성한 뒤 다시 시도해주세요.');
+    return;
+  }
   // 문제 ID 배열
   const problemIds = examProblems
     .map(p => p?.data?._id)
