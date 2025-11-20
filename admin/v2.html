@@ -323,6 +323,12 @@
 
     <div id="errorMessage"></div>
 
+    <!-- HWP 요청 내역 -->
+    <div class="table-container">
+      <div class="chart-title">📝 HWP 요청 내역</div>
+      <div id="hwpRequestsTable" class="loading">로딩 중...</div>
+    </div>
+
     <!-- 필터 바 -->
     <div class="filter-bar">
       <div class="filter-title">📋 필터</div>
@@ -426,6 +432,7 @@
           document.getElementById('authOverlay').style.display = 'none';
           document.getElementById('mainContent').style.display = 'block';
           initFilters();
+          loadHwpRequests();
           loadDashboard();
         } else {
           document.getElementById('authError').textContent = '비밀번호가 올바르지 않습니다.';
@@ -448,6 +455,131 @@
         authenticate();
       }
     });
+
+    // HWP 요청 목록 로드
+    function loadHwpRequests() {
+      const password = localStorage.getItem(ADMIN_PASSWORD_KEY);
+      const container = document.getElementById('hwpRequestsTable');
+      if (!password) {
+        container.innerHTML = '<p>관리자 인증이 필요합니다.</p>';
+        return;
+      }
+
+      container.textContent = '로딩 중...';
+
+      fetch('/api/admin/v2/hwp-requests', {
+        headers: { 'X-Admin-Password': password }
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data || data.error) {
+          container.innerHTML = '<p>HWP 요청 목록을 불러오는 중 오류가 발생했습니다.</p>';
+          return;
+        }
+        const requests = data.requests || [];
+        if (!requests.length) {
+          container.innerHTML = '<p>요청 내역이 없습니다.</p>';
+          return;
+        }
+
+        const statusOptions = [
+          { value: 'NULL', label: '대기' },
+          { value: '작업 중', label: '작업 중' },
+          { value: '작업 완료', label: '작업 완료' }
+        ];
+        const assigneeOptions = [
+          { value: '', label: '미지정' },
+          { value: '김태훈', label: '김태훈' },
+          { value: '성민준', label: '성민준' },
+          { value: '장서연', label: '장서연' }
+        ];
+
+        let html = `<table>
+          <thead>
+            <tr>
+              <th>보낸 시간</th>
+              <th>보낸 사람</th>
+              <th>이메일</th>
+              <th>PDF 파일</th>
+              <th>진행 정도</th>
+              <th>담당자</th>
+            </tr>
+          </thead>
+          <tbody>`;
+
+        requests.forEach(req => {
+          const status = req.status || 'NULL';
+          const assignee = req.assignee || '';
+
+          html += `<tr data-id="${req.id}">
+            <td>${req.createdAt || '-'}</td>
+            <td>${req.username || '-'}</td>
+            <td>${req.email || '-'}</td>
+            <td>${
+              req.pdfUrl
+                ? `<a href="${req.pdfUrl}" target="_blank">다운로드</a>`
+                : '-'
+            }</td>
+            <td>
+              <select data-field="status" onchange="updateHwpRequest('${req.id}')">
+                ${statusOptions.map(opt => `
+                  <option value="${opt.value}" ${opt.value === status ? 'selected' : ''}>${opt.label}</option>
+                `).join('')}
+              </select>
+            </td>
+            <td>
+              <select data-field="assignee" onchange="updateHwpRequest('${req.id}')">
+                ${assigneeOptions.map(opt => `
+                  <option value="${opt.value}" ${opt.value === assignee ? 'selected' : ''}>${opt.label}</option>
+                `).join('')}
+              </select>
+            </td>
+          </tr>`;
+        });
+
+        html += '</tbody></table>';
+        container.innerHTML = html;
+      })
+      .catch(err => {
+        console.error('HWP 요청 목록 로드 오류:', err);
+        container.innerHTML = '<p>HWP 요청 목록을 불러오는 중 오류가 발생했습니다.</p>';
+      });
+    }
+
+    // HWP 요청 상태/담당자 업데이트
+    function updateHwpRequest(id) {
+      const password = localStorage.getItem(ADMIN_PASSWORD_KEY);
+      const row = document.querySelector(`#hwpRequestsTable tr[data-id="${id}"]`);
+      if (!row || !password) return;
+
+      const statusSelect = row.querySelector('select[data-field="status"]');
+      const assigneeSelect = row.querySelector('select[data-field="assignee"]');
+      const status = statusSelect ? statusSelect.value : null;
+      const rawAssignee = assigneeSelect ? assigneeSelect.value : '';
+      const assignee = rawAssignee === '' ? null : rawAssignee;
+
+      fetch(`/api/admin/v2/hwp-requests/${id}/status`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Password': password
+        },
+        body: JSON.stringify({ status, assignee })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if (!data || data.error || data.success === false) {
+          alert(data && data.message ? data.message : '업데이트에 실패했습니다.');
+          // 실패 시 기존 값으로 되돌리기 위해 목록을 다시 로드
+          loadHwpRequests();
+        }
+      })
+      .catch(err => {
+        console.error('HWP 요청 상태 업데이트 오류:', err);
+        alert('업데이트 중 오류가 발생했습니다.');
+        loadHwpRequests();
+      });
+    }
 
     function initFilters() {
       // 기본 날짜: 최근 7일
