@@ -11,7 +11,15 @@
 \usepackage[a4paper, top=16mm, bottom=20mm, left=13mm, right=13mm]{geometry}
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{0pt}
-\IfFontExistsTF{Noto Sans KR}{\setmainfont{Noto Sans KR}}{\setmainfont{Malgun Gothic}}
+\IfFontExistsTF{Noto Sans CJK KR}{\setmainfont{Noto Sans CJK KR}}{
+  \IfFontExistsTF{Noto Sans KR}{\setmainfont{Noto Sans KR}}{
+    \IfFontExistsTF{NanumGothic}{\setmainfont{NanumGothic}}{
+      \IfFontExistsTF{Nanum Gothic}{\setmainfont{Nanum Gothic}}{
+        \setmainfont{DejaVu Sans}
+      }
+    }
+  }
+}
 \definecolor{examBlue}{HTML}{245BD1}
 \definecolor{ruleGray}{gray}{0.6}
 \pagestyle{fancy}
@@ -25,7 +33,7 @@
 \makeatother
 \renewcommand{\headrulewidth}{0.8pt}
 \renewcommand{\footrulewidth}{0.4pt}
-\fancyhead[L]{고1}\fancyhead[C]{모의고사}\fancyhead[R]{시험지}\fancyfoot[L]{수학학습실}\fancyfoot[C]{\thepage}\fancyfoot[R]{https://www.math114.net}
+\fancyhead[L]{}\fancyhead[C]{}\fancyhead[R]{\vspace*{-6pt}\textcolor{ruleGray}{\small 문항 추출기를 이용하여 제작한 시험지입니다. https://tzyping.com}}\fancyfoot[L]{}\fancyfoot[C]{\thepage}\fancyfoot[R]{https://tzyping.com}
 
 \setlength{\columnsep}{9mm}
 \setlength{\columnseprule}{0.5pt}
@@ -34,7 +42,7 @@
 
 \thispagestyle{fancy}
 \vspace*{-6mm}
-\noindent{\bfseries\Large 수학학원명}\hfill{\bfseries 모의고사}
+\noindent\hfill{\bfseries 모의고사}
 \begin{center}{\bfseries\LARGE 시험지}\end{center}
 {\color{examBlue}\rule{\linewidth}{0.9pt}}
 \vspace{2mm}
@@ -46,39 +54,35 @@
 \begin{multicols}{2}
 \begin{enumerate}
 \item \leavevmode\begin{minipage}[t]{\linewidth}
-$5^{\sqrt{2}+1} \times\left(\frac{1}{5}\right)^{\sqrt{2}}$ 의 값은? [2점]
+그림과 같이 $\overline{A B}=2 \sqrt{2}, \overline{B C}=3, \overline{C A}=\sqrt{5}$ 인 삼 각형 $A B C$ 에 대하여 세 선분 $A B, B C, C A$ 위의 점을 각각 $D, E, F$ 라 하자. 삼각형 $D E F$ 의 둘레의 길이의 최솟값이 $\frac{q}{p} \sqrt{10}$ 일 때, $p+q$ 의 값은? (단, $p, q$ 는 서로소인 자연수이다.)
+\par\medskip\begin{center}\includegraphics[width=0.8\linewidth]{images/img_137bc6b71292c3085cac535107750741.jpg}\end{center}\par\medskip
 \vspace{0.5em}
 \begin{enumerate}[label={\textcircled{\arabic*}}, itemsep=0.2em, topsep=0.2em, leftmargin=*, align=left]
-\item $\frac{1}{25}$
-\item $\frac{1}{5}$
-\item 1
-\item 5
-\item 25
+\item (1) 11
+\item (2) 12
+\item (3) 13
+\item (4) 14
+\item (5) 15
 \end{enumerate}
-\par\vspace{12\baselineskip}
+\par\vspace{6\baselineskip}
 \end{minipage}
 \item \leavevmode\begin{minipage}[t]{\linewidth}
-수열 $\left\{a_{n}\right\}$ 에 대하여 $\sum_{k=1}^{6}\left(2 a_{k}-1\right)=30$ 일 때, $\sum_{k=1}^{6} a_{k}$ 의 값은?
-\vspace{0.5em}
-\begin{enumerate}[label={\textcircled{\arabic*}}, itemsep=0.2em, topsep=0.2em, leftmargin=*, align=left]
-\item 2
-\item 6
-\item 10
-\item 14
-\item 18
-\end{enumerate}
-\par\vspace{12\baselineskip}
+전체집합 $U$ 에 대하여 두 조건 $p, q$ 의 진리집합을 각각 $P, Q$ 라 하자. 두 집합 $P, Q$ 가 그림과 같을 때, 명제 ' $p$ 이면 $\sim q$ 이다.' 가 거짓임을 보여주는 원소를 구하시오.
+\par\medskip\begin{center}\includegraphics[width=0.8\linewidth]{images/img_fa5e8316713c30ae19751313c752fee8.jpg}\end{center}\par\medskip
+\par\vspace{6\baselineskip}
 \end{minipage}
 \item \leavevmode\begin{minipage}[t]{\linewidth}
-함수 $f(x)=x^{2}-4 x+2$ 에 대하여 $\lim _{h \rightarrow 0} \frac{f(4+h)-f(4)}{h}$ 의 값은? [2점]
-\vspace{0.5em}
-\begin{enumerate}[label={\textcircled{\arabic*}}, itemsep=0.2em, topsep=0.2em, leftmargin=*, align=left]
-\item 1
-\item 2
-\item 3
-\item 4
-\item 5
-\end{enumerate}
-\par\vspace{12\baselineskip}
+【논술형 2】최고차항의 계수가 1 인 이차함수 $f(x)$ 와 최고차항의 계수가 -1 인 이차함수 $g(x)$ 에 대하여，세 집합 $A=\{a \mid a$ 는 9 의 양의 약수 $\}$ ，$B=\{x \mid f(x)=a, a \in A\}$, $C=\{x \mid g(x)=a, a \in A\}$ 가 다음 조건을 만족시킨다．
+（가）$n(A \cup B)=9, n(C)=5$
+（나）$B \cap C=\{2-\sqrt{6}, 2+\sqrt{6}\}$
+（다）$f(0) \in\{x \mid 0<x<3, x$ 는 실수 $\}$
+다음 물음에 답하시오．［총 8．0점］
+\vspace{1em}
+2－1．집합 $A$ 를 원소나열법으로 나타내시오．［2．0점］
+\vspace{1em}
+2－2．$g(1)-f(4)$ 의 값을 구하고，그 과정을 서술하시오．［6．0점］
+\par\medskip\begin{center}\includegraphics[width=0.8\linewidth]{images/img_beed6c72753b3c82cbaabe2145ef1db9.jpg}\end{center}\par\medskip
+\par\vspace{6\baselineskip}
 \end{minipage}
-\end{enumerate}\end{multicols}\end{document}
+\end{enumerate}\end{multicols}
+\end{document}

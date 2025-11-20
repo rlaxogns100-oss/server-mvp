@@ -1566,24 +1566,52 @@ function openHwpModal(){
 async function submitHwpRequest(){
   const overlay = document.getElementById('hwpModalOverlay');
   const emailInput = document.getElementById('hwpEmailInput');
+  const confirmBtn = document.getElementById('confirmHwpBtn');
+
+  // 중복 제출 방지
+  if (window.__HWP_SUBMITTING__) return;
+  window.__HWP_SUBMITTING__ = true;
+  if (confirmBtn) confirmBtn.disabled = true;
+
   const email = (emailInput?.value || '').trim();
   if (!email){
     alert('이메일을 입력해주세요.');
+    window.__HWP_SUBMITTING__ = false;
+    if (confirmBtn) confirmBtn.disabled = false;
     return;
   }
   if (examProblems.length === 0){
     alert('먼저 문항을 선택해주세요.');
+    window.__HWP_SUBMITTING__ = false;
+    if (confirmBtn) confirmBtn.disabled = false;
     return;
   }
   // 프런트 즉시 제한: 최대 20문항
   if (examProblems.length > 20){
     alert('한 번에 최대 20개까지만 요청할 수 있습니다.\n선택 문항을 줄여주세요.');
+    window.__HWP_SUBMITTING__ = false;
+    if (confirmBtn) confirmBtn.disabled = false;
     return;
   }
-  // 요청 전 PDF가 없으면 먼저 생성하여 첨부 준비
+
+  // 문제 ID 배열 (사전 검증)
+  const problemIds = examProblems
+    .map(p => p?.data?._id)
+    .filter(Boolean);
+  if (!problemIds.length){
+    alert('문항 데이터에 식별자가 없습니다. 다시 시도해주세요.');
+    window.__HWP_SUBMITTING__ = false;
+    if (confirmBtn) confirmBtn.disabled = false;
+    return;
+  }
+
+  // 즉시 UI 피드백: 창 닫기 + 접수 안내
+  if (overlay) overlay.style.display = 'none';
+  alert('접수되었습니다! 3시간 이내 메일로 보내드릴게요.');
+
+  // 백그라운드 처리: PDF 생성(없으면) 후 요청 전송
   try{
     if (!window.LAST_GENERATED_PDF_BASE64){
-      // 필요한 최소 데이터만 전송하여 조용히 PDF 생성
       const examData = {
         problems: examProblems.map(p => ({ _id: p?.data?._id })).filter(x => x._id),
         settings: {
@@ -1611,18 +1639,9 @@ async function submitHwpRequest(){
     }
   }catch(err){
     console.error('요청용 PDF 생성 실패:', err);
-    if (overlay) overlay.style.display = 'none';
-    alert('요청용 PDF 생성에 실패했습니다. 먼저 PDF를 생성한 뒤 다시 시도해주세요.');
-    return;
+    // 이미 접수 안내를 했으므로 추가 알림은 띄우지 않음
   }
-  // 문제 ID 배열
-  const problemIds = examProblems
-    .map(p => p?.data?._id)
-    .filter(Boolean);
-  if (!problemIds.length){
-    alert('문항 데이터에 식별자가 없습니다. 다시 시도해주세요.');
-    return;
-  }
+
   try{
     const payload = {
       email,
@@ -1638,12 +1657,13 @@ async function submitHwpRequest(){
     if (!j.success){
       throw new Error(j.message || '요청 전송 실패');
     }
-    if (overlay) overlay.style.display = 'none';
-    alert('접수되었습니다! 3시간 이내 메일로 보내드릴게요.');
+    // 성공 시 추가 알림 없음 (이미 접수 안내 완료)
   }catch(err){
     console.error('HWP 요청 전송 실패:', err);
-    if (overlay) overlay.style.display = 'none';
-    alert('요청 전송에 실패했습니다. 잠시 후 다시 시도해주세요.');
+    // 이미 접수 안내를 했으므로 추가 알림은 띄우지 않음
+  } finally {
+    window.__HWP_SUBMITTING__ = false;
+    if (confirmBtn) confirmBtn.disabled = false;
   }
 }
 

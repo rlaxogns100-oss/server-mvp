@@ -5,7 +5,62 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const { MongoClient, ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
+
+// 이메일 전송 설정 (HWP 요청 알림용)
+const EMAIL_HOST = process.env.EMAIL_HOST;
+const EMAIL_PORT = parseInt(process.env.EMAIL_PORT || '587', 10);
+const EMAIL_USER = process.env.EMAIL_USER;
+const EMAIL_PASS = process.env.EMAIL_PASS;
+const EMAIL_FROM = process.env.EMAIL_FROM || EMAIL_USER;
+const HWP_NOTIFY_EMAILS = (process.env.HWP_NOTIFY_EMAILS || '')
+  .split(',')
+  .map(e => e.trim())
+  .filter(Boolean);
+
+let mailTransporter = null;
+if (EMAIL_HOST && EMAIL_USER && EMAIL_PASS) {
+  mailTransporter = nodemailer.createTransport({
+    host: EMAIL_HOST,
+    port: EMAIL_PORT,
+    secure: EMAIL_PORT === 465, // 465면 TLS, 그 외엔 STARTTLS
+    auth: {
+      user: EMAIL_USER,
+      pass: EMAIL_PASS
+    }
+  });
+} else {
+  console.warn('⚠️ 이메일 환경변수(EMAIL_HOST/EMAIL_USER/EMAIL_PASS)가 설정되지 않아 HWP 알림 메일이 비활성화됩니다.');
+}
+
+async function sendHwpRequestNotification(hwpDoc) {
+  try {
+    if (!mailTransporter) return;
+    if (!Array.isArray(HWP_NOTIFY_EMAILS) || HWP_NOTIFY_EMAILS.length === 0) return;
+
+    const subject = `[HWP 요청] 새 요청 접수 (${hwpDoc.username || '게스트'})`;
+    const textLines = [
+      '새로운 HWP 변환 요청이 접수되었습니다.',
+      '',
+      `요청 ID: ${hwpDoc._id?.toString?.() || hwpDoc.id || '-'}`,
+      `요청자 이메일: ${hwpDoc.email || '-'}`,
+      `요청자 이름: ${hwpDoc.username || '-'}`,
+      `문항 개수: ${(hwpDoc.problemIds || []).length}`,
+      '',
+      '관리자 페이지에서 상세 내용을 확인하고 처리해주세요.'
+    ];
+
+    await mailTransporter.sendMail({
+      from: EMAIL_FROM,
+      to: HWP_NOTIFY_EMAILS,
+      subject,
+      text: textLines.join('\n')
+    });
+  } catch (e) {
+    console.error('HWP 요청 알림 메일 발송 실패:', e);
+  }
+}
 
 // 마크다운 렌더링 함수들
 function renderMarkdownTable(text) {
@@ -2611,6 +2666,17 @@ const server = http.createServer((req, res) => {
             console.warn('요청 PDF 저장 실패:', e.message);
           }
         }
+
+        // 관리자 알림 메일 전송 (실패해도 요청 자체는 성공 처리)
+        try {
+          const savedDoc = await col.findOne({ _id: new ObjectId(reqId) });
+          if (savedDoc) {
+            await sendHwpRequestNotification(savedDoc);
+          }
+        } catch (e) {
+          console.warn('HWP 요청 알림 메일 처리 중 경고:', e.message);
+        }
+
         res.writeHead(200, {'Content-Type': 'application/json; charset=utf-8'});
         res.end(JSON.stringify({ success:true, id: reqId }));
       }catch(err){
