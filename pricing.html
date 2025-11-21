@@ -324,11 +324,12 @@
       return 'guest_' + Math.random().toString(36).slice(2, 12);
     }
 
-    // 토스페이먼츠 클라이언트 키 (API 개별 연동 > 테스트 클라이언트 키로 교체)
-    const TOSS_BILLING_CLIENT_KEY = 'TOSS_BILLING_CLIENT_KEY_HERE';
+    // 토스페이먼츠 클라이언트 키 (API 개별 연동 > 테스트 클라이언트 키)
+    // .env에 설정한 TOSS_BILLING_CLIENT_KEY(test_ck_...)와 동일하게 맞춰주세요.
+    const TOSS_BILLING_CLIENT_KEY = 'test_ck_vZnjEJeQVxePJdEMyexZrPm0OoBN0';
 
     let tossPayments = null;
-    if (window.TossPayments && TOSS_BILLING_CLIENT_KEY && TOSS_BILLING_CLIENT_KEY !== 'TOSS_BILLING_CLIENT_KEY_HERE') {
+    if (window.TossPayments && TOSS_BILLING_CLIENT_KEY) {
       tossPayments = TossPayments(TOSS_BILLING_CLIENT_KEY);
     }
 
