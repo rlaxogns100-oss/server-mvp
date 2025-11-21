@@ -282,7 +282,10 @@
   </div>
 
   <!-- 토스페이먼츠 SDK (v2) - 자동결제(빌링)용 -->
-  <script src="https://js.tosspayments.com/v2"></script>
+  <!-- 토스페이먼츠 JS SDK (단건/빌링 공통) -->
+  <!-- billing 가이드에는 /v2 로 되어 있지만, 현재 /v2는 403(AccessDenied)이 발생해서
+       실제로 JS를 내려주는 /v2/standard 를 사용합니다. -->
+  <script src="https://js.tosspayments.com/v2/standard"></script>
 
   <script>
     console.log('[pricing] 요금제 페이지 스크립트 로드됨');
