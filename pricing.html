@@ -377,7 +377,8 @@
 
       try {
         const payment = tossPayments.payment({ customerKey });
-        await payment.requestBillingAuth('CARD', {
+        await payment.requestBillingAuth({
+          method: 'CARD',
           successUrl: window.location.origin + '/billing-success.html',
           failUrl: window.location.origin + '/billing-fail.html'
         });
