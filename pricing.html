@@ -243,7 +243,13 @@
           <li>클래스 관리 기능</li>
           <li>이메일 지원</li>
         </ul>
-        <button class="plan-button" id="pro-upgrade-button">Pro로 업그레이드</button>
+        <button class="plan-button" id="pro-upgrade-button">Pro로 업그레이드 (정기결제)</button>
+        <button
+          class="plan-button"
+          id="pro-onetime-button"
+          style="margin-top: 10px; background: #e5e7eb; color: #111827; box-shadow: none;">
+          단건 결제창 테스트
+        </button>
       </div>
     </div>
 
@@ -281,10 +287,7 @@
     </section>
   </div>
 
-  <!-- 토스페이먼츠 SDK (v2) - 자동결제(빌링)용 -->
-  <!-- 토스페이먼츠 JS SDK (단건/빌링 공통) -->
-  <!-- billing 가이드에는 /v2 로 되어 있지만, 현재 /v2는 403(AccessDenied)이 발생해서
-       실제로 JS를 내려주는 /v2/standard 를 사용합니다. -->
+  <!-- 토스페이먼츠 JS SDK v2 (표준/빌링 공통) -->
   <script src="https://js.tosspayments.com/v2/standard"></script>
 
   <script>
@@ -346,9 +349,11 @@
       console.log('[pricing] window.TossPayments 타입:', typeof window.TossPayments);
 
       if (!window.TossPayments) {
-        alert('토스 결제 설정이 완료되지 않았습니다.\n' +
-              '브라우저에서 js.tosspayments.com/v2 스크립트를 불러오지 못했습니다.\n' +
-              '광고 차단/추적 차단 확장 프로그램을 끄거나, 다른 브라우저에서 다시 시도해 주세요.');
+        alert(
+          '토스 결제 설정이 완료되지 않았습니다.\n' +
+          '브라우저에서 토스 결제 스크립트를 불러오지 못했습니다.\n' +
+          '광고 차단/추적 차단 확장 프로그램을 끄거나, 다른 브라우저에서 다시 시도해 주세요.'
+        );
         return;
       }
 
@@ -359,6 +364,7 @@
 
       let tossPayments;
       try {
+        // 토스 공식 가이드 패턴: TossPayments(clientKey)를 생성한 뒤 requestBillingAuth 호출
         tossPayments = TossPayments(TOSS_BILLING_CLIENT_KEY);
       } catch (e) {
         console.error('[pricing] TossPayments 초기화 오류:', e);
@@ -370,8 +376,8 @@
       console.log('[pricing] customerKey:', customerKey);
 
       try {
-        const payment = tossPayments.payment({ customerKey });
-        await payment.requestBillingAuth('CARD', {
+        await tossPayments.requestBillingAuth('CARD', {
+          customerKey,
           successUrl: window.location.origin + '/billing-success.html',
           failUrl: window.location.origin + '/billing-fail.html'
         });
@@ -380,6 +386,14 @@
         alert('카드 등록 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
       }
     });
+
+    // 단건 결제창(일반 결제 위젯) 테스트: 기존 샘플 페이지로 이동
+    const oneTimeBtn = document.getElementById('pro-onetime-button');
+    if (oneTimeBtn) {
+      oneTimeBtn.addEventListener('click', function () {
+        window.open('/tosspay/html-node/public/checkout.html', '_blank');
+      });
+    }
   </script>
 </body>
 </html>
