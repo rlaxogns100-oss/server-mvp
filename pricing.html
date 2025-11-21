@@ -285,6 +285,8 @@
   <script src="https://js.tosspayments.com/v2"></script>
 
   <script>
+    console.log('[pricing] 요금제 페이지 스크립트 로드됨');
+
     // Basic 버튼: 서버에 basic 플랜 요청 (옵션)
     document.getElementById('basic-button').addEventListener('click', async function () {
       if (!confirm('Basic 플랜으로 유지하시겠어요?')) return;
@@ -325,13 +327,9 @@
     }
 
     // 토스페이먼츠 클라이언트 키 (API 개별 연동 > 테스트 클라이언트 키)
-    // .env에 설정한 TOSS_BILLING_CLIENT_KEY(test_ck_...)와 동일하게 맞춰주세요.
+    // 아래 값이 토스 개발자센터의 "API 개별 연동 키 > 클라이언트 키"와 동일해야 합니다.
     const TOSS_BILLING_CLIENT_KEY = 'test_ck_vZnjEJeQVxePJdEMyexZrPm0OoBN0';
-
-    let tossPayments = null;
-    if (window.TossPayments && TOSS_BILLING_CLIENT_KEY) {
-      tossPayments = TossPayments(TOSS_BILLING_CLIENT_KEY);
-    }
+    console.log('[pricing] 설정된 TOSS_BILLING_CLIENT_KEY:', TOSS_BILLING_CLIENT_KEY);
 
     // Pro 업그레이드 버튼: 카드 등록 + 빌링키 발급/정기결제 플로우 시작
     document.getElementById('pro-upgrade-button').addEventListener('click', async function () {
@@ -341,12 +339,32 @@
       );
       if (!ok) return;
 
-      if (!tossPayments) {
+      console.log('[pricing] Pro 업그레이드 버튼 클릭');
+      console.log('[pricing] window.TossPayments 타입:', typeof window.TossPayments);
+
+      if (!window.TossPayments) {
+        alert('토스 결제 설정이 완료되지 않았습니다.\n' +
+              '브라우저에서 js.tosspayments.com/v2 스크립트를 불러오지 못했습니다.\n' +
+              '광고 차단/추적 차단 확장 프로그램을 끄거나, 다른 브라우저에서 다시 시도해 주세요.');
+        return;
+      }
+
+      if (!TOSS_BILLING_CLIENT_KEY) {
         alert('토스 결제 설정이 완료되지 않았습니다.\n관리자에게 문의해주세요.\n(클라이언트 키 미설정)');
         return;
       }
 
+      let tossPayments;
+      try {
+        tossPayments = TossPayments(TOSS_BILLING_CLIENT_KEY);
+      } catch (e) {
+        console.error('[pricing] TossPayments 초기화 오류:', e);
+        alert('토스 결제 설정 중 오류가 발생했습니다. 콘솔 로그를 확인해 주세요.');
+        return;
+      }
+
       const customerKey = getCustomerKey();
+      console.log('[pricing] customerKey:', customerKey);
 
       try {
         const payment = tossPayments.payment({ customerKey });
