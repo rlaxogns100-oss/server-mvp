@@ -306,45 +306,16 @@
       }
     });
 
-    // Pro 업그레이드 버튼: users.plan='pro' 저장 후 토스 결제창 페이지로 이동
-    document.getElementById('pro-upgrade-button').addEventListener('click', async function () {
-      if (!confirm('ZeroTyping Pro (9,900원/월)으로 업그레이드하시겠어요?\n현재는 카드 심사 진행 중으로 실제 결제는 이루어지지 않습니다.')) {
-        return;
-      }
+    // Pro 업그레이드 버튼: 요금제 변경 없이 결제창(토스 위젯 샘플)으로만 이동
+    document.getElementById('pro-upgrade-button').addEventListener('click', function () {
+      const ok = confirm(
+        'ZeroTyping Pro (9,900원/월) 결제창으로 이동할까요?\n' +
+        '현재는 카드 심사 진행 중으로 테스트 모드이며, 실제 결제는 이루어지지 않습니다.'
+      );
+      if (!ok) return;
 
-      try {
-        const res = await fetch('/api/plan', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ plan: 'pro' })
-        });
-        const json = await res.json();
-
-        if (!res.ok || !json.success) {
-          throw new Error(json.message || '요금제 변경에 실패했습니다.');
-        }
-        
-        alert('Pro 플랜으로 업그레이드 상태가 저장되었습니다.\n이어서 결제창으로 이동합니다. (테스트 모드, 실제 과금 없음)');
-
-        // 결제위젯 샘플 페이지로 이동하여 결제창 띄우기
-        window.location.href = '/tosspay/html-node/public/checkout.html';
-
-        // 메인 창이 열려 있으면 새로고침 요청 (선택 사항)
-        try {
-          if (window.opener && !window.opener.closed) {
-            window.opener.location.reload();
-          }
-        } catch (e) {
-          console.warn('메인 창 새로고침 실패(무시 가능):', e);
-        }
-      } catch (e) {
-        console.error(e);
-        if (e?.message && e.message.includes('로그인이 필요')) {
-          alert('로그인이 필요합니다.\n메인 화면에서 로그인 후 다시 시도해주세요.');
-        } else {
-          alert('요금제 변경 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-        }
-      }
+      // 토스페이먼츠 결제위젯 샘플 페이지로 이동
+      window.location.href = '/tosspay/html-node/public/checkout.html';
     });
   </script>
 </body>
