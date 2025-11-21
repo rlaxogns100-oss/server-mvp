@@ -364,7 +364,7 @@
 
       let tossPayments;
       try {
-        // 토스 공식 가이드 패턴: TossPayments(clientKey)를 생성한 뒤 requestBillingAuth 호출
+        // 토스 공식 v2 패턴: TossPayments(clientKey) → payment({ customerKey }) → requestBillingAuth
         tossPayments = TossPayments(TOSS_BILLING_CLIENT_KEY);
       } catch (e) {
         console.error('[pricing] TossPayments 초기화 오류:', e);
@@ -376,8 +376,8 @@
       console.log('[pricing] customerKey:', customerKey);
 
       try {
-        await tossPayments.requestBillingAuth('CARD', {
-          customerKey,
+        const payment = tossPayments.payment({ customerKey });
+        await payment.requestBillingAuth('CARD', {
           successUrl: window.location.origin + '/billing-success.html',
           failUrl: window.location.origin + '/billing-fail.html'
         });
