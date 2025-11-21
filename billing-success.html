@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>카드 등록 완료 - ZeroTyping</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background: #f4f4f9;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 16px;
+      padding: 32px 28px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+      max-width: 480px;
+      width: 100%;
+    }
+    h1 {
+      font-size: 22px;
+      margin-bottom: 8px;
+      color: #111827;
+    }
+    p {
+      font-size: 14px;
+      color: #4b5563;
+      line-height: 1.6;
+      margin: 4px 0;
+    }
+    pre {
+      background: #f3f4f6;
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 12px;
+      overflow-x: auto;
+      max-height: 220px;
+    }
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      background: #10b981;
+      color: #ecfdf5;
+      border-radius: 999px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .btn {
+      margin-top: 18px;
+      padding: 10px 16px;
+      border-radius: 999px;
+      border: none;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg,#fbbf24,#f59e0b);
+      color: #fff;
+      box-shadow: 0 8px 18px rgba(251,191,36,0.4);
+    }
+    .btn-secondary {
+      background: #e5e7eb;
+      color: #111827;
+      margin-left: 8px;
+    }
+    .status {
+      font-size: 13px;
+      margin-top: 10px;
+      color: #374151;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="badge">카드 등록 처리 중</div>
+    <h1>ZeroTyping Pro 자동결제 카드 등록</h1>
+    <p>잠시만 기다려 주세요. 카드 등록 정보를 확인하고, 정기결제 테스트 결제를 한 번 진행합니다.</p>
+    <p>이 환경에서는 <strong>테스트 키</strong>만 사용되므로 실제로 과금되지 않습니다.</p>
+    <p class="status" id="statusText">빌링키를 발급하고 있습니다...</p>
+    <pre id="resultBox" aria-live="polite"></pre>
+    <div>
+      <button class="btn btn-primary" id="retryChargeBtn" style="display:none;">정기결제 다시 시도</button>
+      <button class="btn btn-secondary" id="closeBtn">창 닫기</button>
+    </div>
+  </div>
+
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const authKey = urlParams.get('authKey');
+    const customerKey = urlParams.get('customerKey');
+
+    const statusText = document.getElementById('statusText');
+    const resultBox = document.getElementById('resultBox');
+    const retryChargeBtn = document.getElementById('retryChargeBtn');
+    const closeBtn = document.getElementById('closeBtn');
+
+    closeBtn.addEventListener('click', function () {
+      window.close();
+    });
+
+    retryChargeBtn.addEventListener('click', function () {
+      chargeNow(true);
+    });
+
+    async function issueBillingKey() {
+      if (!authKey || !customerKey) {
+        statusText.textContent = '필수 파라미터(authKey, customerKey)를 찾을 수 없습니다.';
+        return;
+      }
+
+      try {
+        statusText.textContent = '빌링키 발급 중...';
+
+        const res = await fetch('/api/billing/issue', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ authKey, customerKey })
+        });
+        const json = await res.json();
+
+        if (!res.ok || !json.success) {
+          statusText.textContent = '카드 등록(빌링키 발급)에 실패했습니다.';
+          resultBox.textContent = JSON.stringify(json, null, 2);
+          return;
+        }
+
+        statusText.textContent = '카드 등록이 완료되었습니다. 정기결제 테스트를 진행합니다...';
+        resultBox.textContent = JSON.stringify(json, null, 2);
+
+        await chargeNow(false);
+      } catch (e) {
+        console.error(e);
+        statusText.textContent = '카드 등록 처리 중 오류가 발생했습니다.';
+        resultBox.textContent = e?.message || String(e);
+      }
+    }
+
+    async function chargeNow(isRetry) {
+      try {
+        statusText.textContent = isRetry
+          ? '정기결제를 다시 시도하는 중입니다...'
+          : '정기결제(첫 회)를 진행하는 중입니다...';
+
+        const res = await fetch('/api/billing/charge-now', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: 9900 })
+        });
+        const json = await res.json();
+
+        if (!res.ok || !json.success) {
+          statusText.textContent = '정기결제 승인에 실패했습니다. 응답을 확인해주세요.';
+          resultBox.textContent = JSON.stringify(json, null, 2);
+          retryChargeBtn.style.display = 'inline-block';
+          return;
+        }
+
+        statusText.textContent = '정기결제가 정상적으로 승인되었습니다. 메인 화면을 새로고침하면 Pro 뱃지가 표시됩니다.';
+        resultBox.textContent = JSON.stringify(json, null, 2);
+        retryChargeBtn.style.display = 'none';
+
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.location.reload();
+          }
+        } catch (e) {
+          console.warn('메인 창 새로고침 실패(무시 가능):', e);
+        }
+      } catch (e) {
+        console.error(e);
+        statusText.textContent = '정기결제 처리 중 오류가 발생했습니다.';
+        resultBox.textContent = e?.message || String(e);
+        retryChargeBtn.style.display = 'inline-block';
+      }
+    }
+
+    issueBillingKey();
+  </script>
+</body>
+</html>
+
+

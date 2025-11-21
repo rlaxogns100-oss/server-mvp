@@ -281,6 +281,9 @@
     </section>
   </div>
 
+  <!-- 토스페이먼츠 SDK (v2) - 자동결제(빌링)용 -->
+  <script src="https://js.tosspayments.com/v2"></script>
+
   <script>
     // Basic 버튼: 서버에 basic 플랜 요청 (옵션)
     document.getElementById('basic-button').addEventListener('click', async function () {
@@ -306,16 +309,54 @@
       }
     });
 
-    // Pro 업그레이드 버튼: 요금제 변경 없이 결제창(토스 위젯 샘플)으로만 이동
-    document.getElementById('pro-upgrade-button').addEventListener('click', function () {
+    // 현재 창을 연 메인 대시보드 창에서 사용자 정보 가져오기 (동일 도메인 가정)
+    function getCustomerKey() {
+      try {
+        if (window.opener && !window.opener.closed && window.opener.currentUser) {
+          const user = window.opener.currentUser;
+          // 토스 권장: 서비스에서 사용하는 고유한 고객 식별자 사용
+          return `user_${user.id || user._id || user.email || user.username}`;
+        }
+      } catch (e) {
+        console.warn('opener에서 사용자 정보를 가져올 수 없습니다:', e);
+      }
+      // 로그인 정보가 없을 때는 테스트용 임시 키
+      return 'guest_' + Math.random().toString(36).slice(2, 12);
+    }
+
+    // 토스페이먼츠 클라이언트 키 (API 개별 연동 > 테스트 클라이언트 키로 교체)
+    const TOSS_BILLING_CLIENT_KEY = 'TOSS_BILLING_CLIENT_KEY_HERE';
+
+    let tossPayments = null;
+    if (window.TossPayments && TOSS_BILLING_CLIENT_KEY && TOSS_BILLING_CLIENT_KEY !== 'TOSS_BILLING_CLIENT_KEY_HERE') {
+      tossPayments = TossPayments(TOSS_BILLING_CLIENT_KEY);
+    }
+
+    // Pro 업그레이드 버튼: 카드 등록 + 빌링키 발급/정기결제 플로우 시작
+    document.getElementById('pro-upgrade-button').addEventListener('click', async function () {
       const ok = confirm(
-        'ZeroTyping Pro (9,900원/월) 결제창으로 이동할까요?\n' +
-        '현재는 카드 심사 진행 중으로 테스트 모드이며, 실제 결제는 이루어지지 않습니다.'
+        'ZeroTyping Pro (9,900원/월) 카드 자동결제를 위한 등록을 진행할까요?\n' +
+        '현재는 테스트 키로 연동되어 있어 실제 결제는 이루어지지 않습니다.'
       );
       if (!ok) return;
 
-      // 토스페이먼츠 결제위젯 샘플 페이지로 이동
-      window.location.href = '/tosspay/html-node/public/checkout.html';
+      if (!tossPayments) {
+        alert('토스 결제 설정이 완료되지 않았습니다.\n관리자에게 문의해주세요.\n(클라이언트 키 미설정)');
+        return;
+      }
+
+      const customerKey = getCustomerKey();
+
+      try {
+        const payment = tossPayments.payment({ customerKey });
+        await payment.requestBillingAuth('CARD', {
+          successUrl: window.location.origin + '/billing-success.html',
+          failUrl: window.location.origin + '/billing-fail.html'
+        });
+      } catch (error) {
+        console.error('카드 등록 요청 중 오류:', error);
+        alert('카드 등록 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+      }
     });
   </script>
 </body>

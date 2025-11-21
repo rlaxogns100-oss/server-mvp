@@ -6,6 +6,7 @@ const { spawn } = require('child_process');
 const { MongoClient, ObjectId } = require('mongodb');
 const bcrypt = require('bcryptjs');
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 require('dotenv').config();
 
 // 이메일 전송 설정 (HWP 요청 알림용)
@@ -18,6 +19,12 @@ const HWP_NOTIFY_EMAILS = (process.env.HWP_NOTIFY_EMAILS || '')
   .split(',')
   .map(e => e.trim())
   .filter(Boolean);
+
+// 토스페이먼츠 자동결제(빌링) 설정
+// - TOSS_BILLING_CLIENT_KEY: API 개별 연동 "클라이언트 키" (테스트/라이브)
+// - TOSS_BILLING_SECRET_KEY: API 개별 연동 "시크릿 키"   (테스트/라이브)
+const TOSS_BILLING_CLIENT_KEY = process.env.TOSS_BILLING_CLIENT_KEY || '';
+const TOSS_BILLING_SECRET_KEY = process.env.TOSS_BILLING_SECRET_KEY || '';
 
 let mailTransporter = null;
 if (EMAIL_HOST && EMAIL_USER && EMAIL_PASS) {
@@ -1535,6 +1542,289 @@ const server = http.createServer((req, res) => {
         res.end(JSON.stringify({
           success: false,
           message: '요금제 변경 중 오류가 발생했습니다.'
+        }));
+      }
+    });
+  } else if (req.method === 'POST' && req.url === '/api/billing/issue') {
+    // 토스 자동결제(빌링) - 카드 등록 성공 후 빌링키 발급 및 사용자 DB에 저장
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionId = cookies.sessionId;
+        const session = sessionId && sessions.get(sessionId);
+
+        if (!session) {
+          res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '로그인이 필요합니다.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스에 연결할 수 없습니다.'
+          }));
+          return;
+        }
+
+        if (!TOSS_BILLING_SECRET_KEY) {
+          res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '자동결제용 토스 시크릿 키가 설정되지 않았습니다. (TOSS_BILLING_SECRET_KEY)'
+          }));
+          return;
+        }
+
+        let parsed;
+        try {
+          parsed = JSON.parse(body || '{}');
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '잘못된 요청 형식입니다.'
+          }));
+          return;
+        }
+
+        const authKey = parsed.authKey;
+        const customerKey = parsed.customerKey;
+
+        if (!authKey || !customerKey) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: 'authKey와 customerKey가 필요합니다.'
+          }));
+          return;
+        }
+
+        const basicToken = Buffer.from(TOSS_BILLING_SECRET_KEY + ':').toString('base64');
+
+        try {
+          const tossRes = await axios.post(
+            'https://api.tosspayments.com/v1/billing/authorizations/issue',
+            {
+              authKey,
+              customerKey
+            },
+            {
+              headers: {
+                Authorization: `Basic ${basicToken}`,
+                'Content-Type': 'application/json'
+              },
+              timeout: 10000
+            }
+          );
+
+          const billingData = tossRes.data || {};
+          const billingKey = billingData.billingKey;
+
+          if (!billingKey) {
+            res.writeHead(502, { 'Content-Type': 'application/json; charset=utf-8' });
+            res.end(JSON.stringify({
+              success: false,
+              message: '토스페이먼츠에서 billingKey를 반환하지 않았습니다.',
+              raw: billingData
+            }));
+            return;
+          }
+
+          const usersCollection = db.collection('users');
+          const userId = new ObjectId(session.userId);
+
+          await usersCollection.updateOne(
+            { _id: userId },
+            {
+              $set: {
+                billingKey,
+                billingCustomerKey: customerKey,
+                billingCardInfo: billingData.card || null,
+                billingStatus: 'registered',
+                billingUpdatedAt: new Date()
+              }
+            }
+          );
+
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: true,
+            billingKey,
+            customerKey
+          }));
+        } catch (err) {
+          console.error('빌링키 발급 오류:', err.response?.data || err.message || err);
+
+          const status = err.response?.status || 500;
+          const data = err.response?.data || {
+            message: '빌링키 발급 중 오류가 발생했습니다.'
+          };
+
+          res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            ...data
+          }));
+        }
+      } catch (error) {
+        console.error('빌링키 발급 처리 오류:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({
+          success: false,
+          message: '빌링키 발급 처리 중 오류가 발생했습니다.'
+        }));
+      }
+    });
+  } else if (req.method === 'POST' && req.url === '/api/billing/charge-now') {
+    // 토스 자동결제(빌링) - 발급된 billingKey로 즉시 한 번 결제 (테스트/데모용)
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionId = cookies.sessionId;
+        const session = sessionId && sessions.get(sessionId);
+
+        if (!session) {
+          res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '로그인이 필요합니다.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스에 연결할 수 없습니다.'
+          }));
+          return;
+        }
+
+        if (!TOSS_BILLING_SECRET_KEY) {
+          res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '자동결제용 토스 시크릿 키가 설정되지 않았습니다. (TOSS_BILLING_SECRET_KEY)'
+          }));
+          return;
+        }
+
+        let parsed;
+        try {
+          parsed = JSON.parse(body || '{}');
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '잘못된 요청 형식입니다.'
+          }));
+          return;
+        }
+
+        const defaultAmount = 9900;
+        const amount = Number(parsed.amount || defaultAmount);
+
+        const usersCollection = db.collection('users');
+        const userId = new ObjectId(session.userId);
+        const user = await usersCollection.findOne({ _id: userId });
+
+        const billingKey = parsed.billingKey || user?.billingKey;
+        const customerKey = parsed.customerKey || user?.billingCustomerKey;
+
+        if (!billingKey || !customerKey) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '등록된 결제 카드가 없습니다. 먼저 카드 등록을 완료해주세요.'
+          }));
+          return;
+        }
+
+        const orderId = parsed.orderId || `ZTYPING_SUB_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+        const basicToken = Buffer.from(TOSS_BILLING_SECRET_KEY + ':').toString('base64');
+
+        try {
+          const tossRes = await axios.post(
+            `https://api.tosspayments.com/v1/billing/${billingKey}`,
+            {
+              customerKey,
+              amount,
+              orderId,
+              orderName: 'ZeroTyping Pro 월 정기결제',
+              currency: 'KRW'
+            },
+            {
+              headers: {
+                Authorization: `Basic ${basicToken}`,
+                'Content-Type': 'application/json'
+              },
+              timeout: 10000
+            }
+          );
+
+          const payment = tossRes.data || {};
+
+          // 결제가 성공했으면 사용자 플랜/결제 상태 업데이트
+          await usersCollection.updateOne(
+            { _id: userId },
+            {
+              $set: {
+                plan: 'pro',
+                isPaid: true,
+                billingStatus: 'active',
+                lastPaidAt: payment.approvedAt ? new Date(payment.approvedAt) : new Date()
+              }
+            }
+          );
+
+          // 세션에도 반영
+          const sess = sessions.get(sessionId);
+          if (sess) {
+            sess.plan = 'pro';
+          }
+
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: true,
+            payment
+          }));
+        } catch (err) {
+          console.error('정기결제 승인 오류:', err.response?.data || err.message || err);
+
+          const status = err.response?.status || 500;
+          const data = err.response?.data || {
+            message: '정기결제 승인 중 오류가 발생했습니다.'
+          };
+
+          res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            ...data
+          }));
+        }
+      } catch (error) {
+        console.error('정기결제 처리 오류:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({
+          success: false,
+          message: '정기결제 처리 중 오류가 발생했습니다.'
         }));
       }
     });
