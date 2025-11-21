@@ -225,7 +225,7 @@
           <li>문제 인식 기능</li>
           <li>채점 결과 저장</li>
         </ul>
-        <button class="plan-button">현재 플랜</button>
+        <button class="plan-button" id="basic-button">현재 플랜</button>
       </div>
 
       <!-- Pro Plan -->
@@ -243,7 +243,7 @@
           <li>클래스 관리 기능</li>
           <li>이메일 지원</li>
         </ul>
-        <button class="plan-button">Pro로 업그레이드</button>
+        <button class="plan-button" id="pro-upgrade-button">Pro로 업그레이드</button>
       </div>
     </div>
 
@@ -282,11 +282,66 @@
   </div>
 
   <script>
-    // 버튼 클릭 이벤트
-    document.querySelectorAll('.plan-button').forEach(button => {
-      button.addEventListener('click', function() {
-        alert('결제 기능은 준비 중입니다!');
-      });
+    // Basic 버튼: 서버에 basic 플랜 요청 (옵션)
+    document.getElementById('basic-button').addEventListener('click', async function () {
+      if (!confirm('Basic 플랜으로 유지하시겠어요?')) return;
+      try {
+        const res = await fetch('/api/plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: 'basic' })
+        });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.message || '요금제 변경에 실패했습니다.');
+        }
+        alert('Basic 플랜으로 설정되었습니다.\n메인 화면을 새로고침하면 반영됩니다.');
+      } catch (e) {
+        console.error(e);
+        if (e?.message && e.message.includes('로그인이 필요')) {
+          alert('로그인이 필요합니다.\n메인 화면에서 로그인 후 다시 시도해주세요.');
+        } else {
+          alert('요금제 변경 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
+      }
+    });
+
+    // Pro 업그레이드 버튼: 결제 없이 users 컬렉션에 plan='pro'만 기록
+    document.getElementById('pro-upgrade-button').addEventListener('click', async function () {
+      if (!confirm('ZeroTyping Pro (9,900원/월)으로 업그레이드하시겠어요?\n현재는 카드 심사 진행 중으로 실제 결제는 이루어지지 않습니다.')) {
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ plan: 'pro' })
+        });
+        const json = await res.json();
+
+        if (!res.ok || !json.success) {
+          throw new Error(json.message || '요금제 변경에 실패했습니다.');
+        }
+
+        alert('Pro 플랜으로 업그레이드 상태가 저장되었습니다.\n메인 화면을 새로고침하면 Pro 뱃지가 표시됩니다.');
+
+        // 메인 창이 열려 있으면 새로고침 요청 (선택 사항)
+        try {
+          if (window.opener && !window.opener.closed) {
+            window.opener.location.reload();
+          }
+        } catch (e) {
+          console.warn('메인 창 새로고침 실패(무시 가능):', e);
+        }
+      } catch (e) {
+        console.error(e);
+        if (e?.message && e.message.includes('로그인이 필요')) {
+          alert('로그인이 필요합니다.\n메인 화면에서 로그인 후 다시 시도해주세요.');
+        } else {
+          alert('요금제 변경 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+        }
+      }
     });
   </script>
 </body>

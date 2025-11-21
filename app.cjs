@@ -1297,13 +1297,19 @@ const server = http.createServer((req, res) => {
         const hashedPassword = await bcrypt.hash(password, saltRounds);
 
         // 사용자 생성
+        const now = new Date();
         const newUser = {
           username,
           email,
           password: hashedPassword,
           role,
-          createdAt: new Date(),
-          updatedAt: new Date()
+          // 기본 요금제/결제 상태 (카드사 심사 전이므로 모두 basic + 미결제 상태)
+          plan: 'basic',
+          isPaid: false,
+          isTrial: false,
+          createdAt: now,
+          updatedAt: now,
+          signupUserAgent: req.headers['user-agent'] || null
         };
 
         const result = await usersCollection.insertOne(newUser);
@@ -1386,6 +1392,7 @@ const server = http.createServer((req, res) => {
           userId: user._id.toString(),
           username: user.username,
           role: user.role,
+          plan: user.plan || 'basic',
           createdAt: new Date()
         });
 
@@ -1402,7 +1409,9 @@ const server = http.createServer((req, res) => {
             id: user._id,
             username: user.username,
             email: user.email,
-            role: user.role
+            role: user.role,
+            plan: user.plan || 'basic',
+            isPaid: !!user.isPaid
           }
         }));
 
@@ -1432,6 +1441,103 @@ const server = http.createServer((req, res) => {
       success: true,
       message: '로그아웃 성공'
     }));
+  } else if (req.method === 'POST' && req.url === '/api/plan') {
+    // 요금제 변경 API (basic/pro만, 결제 없이 상태만 기록)
+    let body = '';
+    req.on('data', chunk => {
+      body += chunk.toString();
+    });
+
+    req.on('end', async () => {
+      try {
+        const cookies = parseCookies(req.headers.cookie);
+        const sessionId = cookies.sessionId;
+        const session = sessionId && sessions.get(sessionId);
+
+        if (!session) {
+          res.writeHead(401, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '로그인이 필요합니다.'
+          }));
+          return;
+        }
+
+        if (!db) {
+          res.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '데이터베이스에 연결할 수 없습니다.'
+          }));
+          return;
+        }
+
+        let parsed;
+        try {
+          parsed = JSON.parse(body || '{}');
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '잘못된 요청 형식입니다.'
+          }));
+          return;
+        }
+
+        const plan = (parsed.plan || '').toLowerCase();
+        const allowedPlans = ['basic', 'pro'];
+        if (!allowedPlans.includes(plan)) {
+          res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '허용되지 않는 요금제입니다.'
+          }));
+          return;
+        }
+
+        const usersCollection = db.collection('users');
+        const userId = new ObjectId(session.userId);
+
+        const updateDoc = {
+          plan,
+          updatedAt: new Date()
+          // isPaid는 실제 결제 연동 이후에만 true로 설정 (현재는 모두 false 유지)
+        };
+
+        const result = await usersCollection.updateOne(
+          { _id: userId },
+          { $set: updateDoc }
+        );
+
+        if (result.matchedCount === 0) {
+          res.writeHead(404, { 'Content-Type': 'application/json; charset=utf-8' });
+          res.end(JSON.stringify({
+            success: false,
+            message: '사용자를 찾을 수 없습니다.'
+          }));
+          return;
+        }
+
+        // 메모리 세션에도 반영 (선택 사항)
+        const sess = sessions.get(sessionId);
+        if (sess) {
+          sess.plan = plan;
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({
+          success: true,
+          plan
+        }));
+      } catch (error) {
+        console.error('요금제 변경 오류:', error);
+        res.writeHead(500, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({
+          success: false,
+          message: '요금제 변경 중 오류가 발생했습니다.'
+        }));
+      }
+    });
   } else if (req.method === 'GET' && req.url === '/api/my-files') {
     // 사용자 파일 및 폴더 목록 조회 (로그인 필요)
     (async () => {
