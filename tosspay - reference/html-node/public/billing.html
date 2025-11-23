@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="https://static.toss.im/icons/png/4x/icon-toss-logo.png" />
-    <link rel="stylesheet" type="text/css" href="style.css" />
+    <link rel="stylesheet" type="text/css" href="billing-style.css" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>토스 자동결제(빌링) 카드 등록</title>
@@ -32,16 +32,13 @@
 
         // ------ 자동결제(빌링) 결제창 초기화 ------
         // @docs https://docs.tosspayments.com/guides/v2/billing/integration#1-%EA%B5%AC%EB%A7%A4%EC%9E%90-%EC%B9%B4%EB%93%9C-%EB%93%B1%EB%A1%9D%ED%95%98%EA%B8%B0
-        const clientKey = "test_ck_vZnjEJeQVxePJdEMyexZrPmOoBN0";
+        const clientKey = "test_ck_vZnjEJeQVxePJdEMyexZrPmOoBN0"; // API 개별 연동 키의 클라이언트 키로 교체
         const customerKey = generateRandomString();
         const tossPayments = TossPayments(clientKey);
         const payment = tossPayments.payment({ customerKey });
 
         // '카드 등록하기' 버튼 클릭 시 자동결제(빌링) 카드 등록창 호출
         button.addEventListener("click", async function () {
-          // SDK(v2 standard)에서는 requestBillingAuth 옵션으로 method / successUrl / failUrl만 사용합니다.
-          // orderId, amount, orderName 등은 이후 빌링키로 결제 승인 API를 호출할 때 서버에서 사용하세요.
-
           try {
             await payment.requestBillingAuth({
               method: "CARD",
