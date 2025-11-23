@@ -42,8 +42,8 @@
           try {
             await payment.requestBillingAuth({
               method: "CARD",
-              successUrl: window.location.origin + "/billing-success.html",
-              failUrl: window.location.origin + "/billing-fail.html",
+              successUrl: window.location.origin + "/payments/billing-success.html",
+              failUrl: window.location.origin + "/payments/billing-fail.html",
             });
           } catch (error) {
             console.error(error);

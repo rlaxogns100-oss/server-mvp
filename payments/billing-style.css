@@ -78,63 +78,66 @@ body {
   --blue50: #e8f3ff;
   --blue100: #c9e2ff;
   --blue200: #90c2ff;
-  --blue300: #64a8ff;
-  --blue400: #4593fc;
-  --blue500: #3182f6;
-  --blue600: #2272eb;
-  --blue700: #1b64da;
-  --blue800: #1957c2;
-  --blue900: #194aa6;
-  --grey50: #f9fafb;
-  --grey100: #f2f4f6;
-  --grey200: #e5e8eb;
-  --grey300: #d1d6db;
-  --grey400: #b0b8c1;
-  --grey500: #8b95a1;
-  --grey600: #6b7684;
-  --grey700: #4e5968;
-  --grey800: #333d4b;
-  --grey900: #191f28;
+  --blue300: #61abff;
+  --blue400: #3182f6;
+  --blue500: #2563eb;
+  --blue600: #1d4ed8;
+  --blue700: #1e40af;
+  --blue800: #1e3a8a;
+  --blue900: #172554;
+  --tossBlue50: #e8f3ff;
+  --tossBlue100: #c9e2ff;
+  --tossBlue200: #90c2ff;
+  --tossBlue300: #61abff;
+  --tossBlue400: #3182f6;
+  --tossBlue500: #2563eb;
+  --tossBlue600: #1d4ed8;
+  --tossBlue700: #1e40af;
+  --tossBlue800: #1e3a8a;
+  --tossBlue900: #172554;
 }
-
-body,
-html {
-  font-family: Toss Product Sans, Tossface, -apple-system, BlinkMacSystemFont, Bazier Square, Noto Sans KR, Segoe UI, Apple SD Gothic Neo, Roboto, Helvetica Neue, Arial, sans-serif, Apple Color Emoji,
-    Segoe UI Emoji, Segoe UI Symbol, Noto Color Emoji;
-  -moz-osx-font-smoothing: grayscale;
-  -webkit-font-smoothing: antialiased;
-  word-break: keep-all;
-  word-wrap: break-word;
-}
-
-*,
-::after,
-::before {
-  box-sizing: border-box;
-}
-
 .button {
-  color: #f9fafb;
-  background-color: #3182f6;
-  margin: 30px 15px 0px 15px;
-  font-size: 15px;
-  font-weight: 600;
-  line-height: 18px;
-  white-space: nowrap;
-  text-align: center;
-  cursor: pointer;
-  border: 0 solid transparent;
-  user-select: none;
-  transition: background 0.2s ease, color 0.1s ease;
-  text-decoration: none;
-  border-radius: 7px;
+  border-radius: 8px;
+  border: none;
   padding: 11px 16px;
-  width: 250px;
+  background-color: #3282f6;
+  color: #f9fcff;
+  cursor: pointer;
+  box-shadow: 0 12px 24px -8px rgba(50, 130, 246, 0.36);
+  font-size: 17px;
+  font-weight: 600;
 }
-
-.button:hover {
-  color: #fff;
-  background-color: #1b64da;
+.p-grid {
+  -webkit-box-flex: 1;
+  flex-grow: 1;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-column-gap: 10px;
+  grid-row-gap: 12px;
+  align-items: center;
+}
+.p-grid-col {
+  text-align: left;
+}
+.p-grid-col5 {
+  width: 50%;
+}
+.p-button {
+  width: 100%;
+  margin-top: 10px;
+}
+.p-field-label {
+  font-size: 14px;
+  color: #4e5968;
+}
+.input {
+  border-radius: 8px;
+  border: 1px solid #d1d6db;
+  padding: 11px 16px;
+  font-size: 17px;
+  font-weight: 500;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 
