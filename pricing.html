@@ -314,7 +314,7 @@
       }
     });
     
-    // Pro 업그레이드 버튼: 참조 샘플(tosspay - reference)의 정기결제(자동결제) 페이지로 이동
+    // Pro 업그레이드 버튼: 루트의 정기결제(자동결제) 샘플 페이지로 이동
     document.getElementById('pro-upgrade-button').addEventListener('click', function () {
       const ok = confirm(
         'ZeroTyping Pro (9,900원/월) 카드 자동결제 등록 페이지로 이동합니다.\n' +
@@ -322,16 +322,15 @@
       );
       if (!ok) return;
 
-      // 신규 참조 샘플: "tosspay - reference/html-node/public/billing.html"
-      window.open('/tosspay%20-%20reference/html-node/public/billing.html', '_blank');
+      // 루트에 복사해 둔 billing.html (토스 빌링 레퍼런스 코드 그대로)
+      window.open('/billing.html', '_blank');
     });
 
-    // 단건 결제창(일반 결제 위젯) 테스트: 기존 샘플 페이지로 이동
+    // 단건 결제창(일반 결제 위젯) 테스트: 루트의 checkout.html 샘플 페이지로 이동
     const oneTimeBtn = document.getElementById('pro-onetime-button');
     if (oneTimeBtn) {
       oneTimeBtn.addEventListener('click', function () {
-        // 신규 참조 샘플: "tosspay - reference/html-node/public/checkout.html"
-        window.open('/tosspay%20-%20reference/html-node/public/checkout.html', '_blank');
+        window.open('/checkout.html', '_blank');
       });
     }
   </script>
