@@ -287,9 +287,6 @@
     </section>
   </div>
 
-  <!-- 토스페이먼츠 JS SDK v2 (표준/빌링 공통) -->
-  <script src="https://js.tosspayments.com/v2/standard"></script>
-
   <script>
     console.log('[pricing] 요금제 페이지 스크립트 로드됨');
 
@@ -316,83 +313,25 @@
         }
       }
     });
-
-    // 현재 창을 연 메인 대시보드 창에서 사용자 정보 가져오기 (동일 도메인 가정)
-    function getCustomerKey() {
-      try {
-        if (window.opener && !window.opener.closed && window.opener.currentUser) {
-          const user = window.opener.currentUser;
-          // 토스 권장: 서비스에서 사용하는 고유한 고객 식별자 사용
-          return `user_${user.id || user._id || user.email || user.username}`;
-        }
-      } catch (e) {
-        console.warn('opener에서 사용자 정보를 가져올 수 없습니다:', e);
-      }
-      // 로그인 정보가 없을 때는 테스트용 임시 키
-      return 'guest_' + Math.random().toString(36).slice(2, 12);
-    }
-
-    // 토스페이먼츠 클라이언트 키 (API 개별 연동 > 테스트 클라이언트 키)
-    // 아래 값이 토스 개발자센터의 "API 개별 연동 키 > 클라이언트 키"와 동일해야 합니다.
-    const TOSS_BILLING_CLIENT_KEY = 'test_ck_vZnjEJeQVxePJdEMyexZrPm0OoBN0';
-    console.log('[pricing] 설정된 TOSS_BILLING_CLIENT_KEY:', TOSS_BILLING_CLIENT_KEY);
-
-    // Pro 업그레이드 버튼: 카드 등록 + 빌링키 발급/정기결제 플로우 시작
-    document.getElementById('pro-upgrade-button').addEventListener('click', async function () {
+    
+    // Pro 업그레이드 버튼: 참조 샘플(tosspay - reference)의 정기결제(자동결제) 페이지로 이동
+    document.getElementById('pro-upgrade-button').addEventListener('click', function () {
       const ok = confirm(
-        'ZeroTyping Pro (9,900원/월) 카드 자동결제를 위한 등록을 진행할까요?\n' +
+        'ZeroTyping Pro (9,900원/월) 카드 자동결제 등록 페이지로 이동합니다.\n' +
         '현재는 테스트 키로 연동되어 있어 실제 결제는 이루어지지 않습니다.'
       );
       if (!ok) return;
 
-      console.log('[pricing] Pro 업그레이드 버튼 클릭');
-      console.log('[pricing] window.TossPayments 타입:', typeof window.TossPayments);
-
-      if (!window.TossPayments) {
-        alert(
-          '토스 결제 설정이 완료되지 않았습니다.\n' +
-          '브라우저에서 토스 결제 스크립트를 불러오지 못했습니다.\n' +
-          '광고 차단/추적 차단 확장 프로그램을 끄거나, 다른 브라우저에서 다시 시도해 주세요.'
-        );
-        return;
-      }
-
-      if (!TOSS_BILLING_CLIENT_KEY) {
-        alert('토스 결제 설정이 완료되지 않았습니다.\n관리자에게 문의해주세요.\n(클라이언트 키 미설정)');
-        return;
-      }
-
-      let tossPayments;
-      try {
-        // 토스 공식 v2 패턴: TossPayments(clientKey) → payment({ customerKey }) → requestBillingAuth
-        tossPayments = TossPayments(TOSS_BILLING_CLIENT_KEY);
-      } catch (e) {
-        console.error('[pricing] TossPayments 초기화 오류:', e);
-        alert('토스 결제 설정 중 오류가 발생했습니다. 콘솔 로그를 확인해 주세요.');
-        return;
-      }
-
-      const customerKey = getCustomerKey();
-      console.log('[pricing] customerKey:', customerKey);
-
-      try {
-        const payment = tossPayments.payment({ customerKey });
-        await payment.requestBillingAuth({
-          method: 'CARD',
-          successUrl: window.location.origin + '/billing-success.html',
-          failUrl: window.location.origin + '/billing-fail.html'
-        });
-      } catch (error) {
-        console.error('카드 등록 요청 중 오류:', error);
-        alert('카드 등록 요청 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-      }
+      // 신규 참조 샘플: "tosspay - reference/html-node/public/billing.html"
+      window.open('/tosspay%20-%20reference/html-node/public/billing.html', '_blank');
     });
 
     // 단건 결제창(일반 결제 위젯) 테스트: 기존 샘플 페이지로 이동
     const oneTimeBtn = document.getElementById('pro-onetime-button');
     if (oneTimeBtn) {
       oneTimeBtn.addEventListener('click', function () {
-        window.open('/tosspay/html-node/public/checkout.html', '_blank');
+        // 신규 참조 샘플: "tosspay - reference/html-node/public/checkout.html"
+        window.open('/tosspay%20-%20reference/html-node/public/checkout.html', '_blank');
       });
     }
   </script>
