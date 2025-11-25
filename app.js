@@ -332,7 +332,10 @@ function bindAuth() {
     showRegisterBtn: document.getElementById('showRegisterBtn'),
     loginBtn: document.getElementById('loginBtn'),
     registerBtn: document.getElementById('registerBtn'),
-    modalOverlay: document.getElementById('modalOverlay')
+    modalOverlay: document.getElementById('modalOverlay'),
+    // 모바일 전용 내 파일 관리 탭 CTA 버튼
+    mobileShowLoginBtn: document.getElementById('mobileShowLoginBtn'),
+    mobileShowRegisterBtn: document.getElementById('mobileShowRegisterBtn')
   };
 
   // 모든 폼 숨기고 초기 버튼 표시
@@ -441,7 +444,7 @@ function bindAuth() {
 
   // 이벤트 리스너 등록
   function setupEventListeners() {
-    // 로그인 폼 표시 버튼
+    // 로그인 폼 표시 버튼 (헤더 등)
     if (elements.showLoginFormBtn) {
       console.log('showLoginFormBtn 요소 찾음');
       elements.showLoginFormBtn.addEventListener('click', displayLoginForm);
@@ -449,7 +452,7 @@ function bindAuth() {
       console.log('showLoginFormBtn 요소를 찾을 수 없음');
     }
 
-    // 회원가입 폼 표시 버튼
+    // 회원가입 폼 표시 버튼 (헤더 등)
     if (elements.showRegisterFormBtn) {
       console.log('showRegisterFormBtn 요소 찾음');
       elements.showRegisterFormBtn.addEventListener('click', displayRegisterForm);
@@ -470,6 +473,14 @@ function bindAuth() {
       elements.showRegisterBtn.addEventListener('click', displayRegisterForm);
     } else {
       console.log('showRegisterBtn 요소를 찾을 수 없음');
+    }
+
+    // 모바일: 내 파일 관리 탭 상단 CTA 버튼
+    if (elements.mobileShowLoginBtn) {
+      elements.mobileShowLoginBtn.addEventListener('click', displayLoginForm);
+    }
+    if (elements.mobileShowRegisterBtn) {
+      elements.mobileShowRegisterBtn.addEventListener('click', displayRegisterForm);
     }
 
     // 로그인 처리

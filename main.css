@@ -387,6 +387,32 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .drop-indicator{position:absolute;inset:0;border:2px dashed #3b82f6;border-radius:12px;background:rgba(59,130,246,.08);display:none}
 .up-tile .icon{background:linear-gradient(135deg,#94a3b8,#64748b)}
 
+/* 모바일 전용 로그인/회원가입 CTA (내 파일 관리 탭 상단) */
+.mobile-auth-cta{
+  display:none;
+  padding:8px 12px 10px;
+}
+.mobile-auth-text{
+  font-size:12px;
+  color:#64748b;
+  line-height:1.5;
+  margin-bottom:6px;
+}
+.mobile-auth-actions{
+  display:flex;
+  gap:8px;
+}
+.mobile-auth-actions .btn{
+  flex:1;
+  font-size:13px;
+  padding:8px 0;
+}
+@media (max-width:768px){
+  .mobile-auth-cta{
+    display:block;
+  }
+}
+
 /* ====== Right: Exam Preview ====== */
 .exam-preview{
   background:#fff;border:1px solid #e6edf6;border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;min-height:400px;max-height:calc(100vh - 120px);
