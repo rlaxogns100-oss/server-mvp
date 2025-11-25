@@ -126,21 +126,6 @@
             <div class="files-grid" id="fileGridBody"></div>
           </div>
 
-          <!-- 인라인 회원가입 (게스트용) -->
-          <div class="inline-register" id="inlineRegisterForm" style="display:none; margin:12px 12px 0 12px;">
-            <h3>1초만에 회원가입</h3>
-            <input type="text" id="inlineRegisterUsername" placeholder="사용자명" />
-            <input type="email" id="inlineRegisterEmail" placeholder="이메일" />
-            <input type="password" id="inlineRegisterPassword" placeholder="비밀번호" />
-            <button id="inlineRegisterBtn" class="inline-register-btn">회원가입</button>
-          </div>
-
-          <!-- 게스트 잠금 중앙 안내 -->
-          <div class="guest-lock-center" id="guestLockCenter" style="display:none;">
-            <div class="login-icon">🔒</div>
-            <button type="button" class="login-overlay-btn" onclick="(function(){var lf=document.getElementById('loginForm');var rf=document.getElementById('registerForm');var mo=document.getElementById('modalOverlay');if(lf) lf.style.display='flex'; if(rf) rf.style.display='none'; if(mo) mo.style.display='block';})();">로그인하기</button>
-          </div>
-
           <!-- 툴바 -->
           <div class="ex-toolbar" style="border-top:1px solid #eef2f7">
             <span class="counter" id="selectionCounter">선택 0개</span>
