@@ -392,7 +392,10 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
   background:#fff;border:1px solid #e6edf6;border-radius:16px;box-shadow:var(--shadow-sm);overflow:hidden;min-height:400px;max-height:calc(100vh - 120px);
   display:flex;flex-direction:column;
 }
-.exam-preview.guest-disabled{filter:grayscale(100%);opacity:.85;pointer-events:none}
+.exam-preview.guest-disabled{
+  /* 기능만 비활성화하고 색상/스타일은 그대로 유지 */
+  pointer-events:none;
+}
 .exam-header{
   padding:16px 20px;border-bottom:1px solid #f1f5f9;display:flex;align-items:center;justify-content:space-between
 }
@@ -539,7 +542,10 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .preview-wrap{
   display:grid;grid-template-rows:auto 1fr auto;gap:12px;height:100%;overflow:hidden
 }
-.preview-wrap.guest-disabled{filter:grayscale(100%);opacity:.85;pointer-events:none}
+.preview-wrap.guest-disabled{
+  /* 기능만 비활성화하고 색상/스타일은 그대로 유지 */
+  pointer-events:none;
+}
 .preview-toolbar{
   background:#fff;border:1px solid #e6edf6;border-radius:16px;box-shadow:var(--shadow-sm)
 }
@@ -921,16 +927,13 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .inline-register input{width:100%;padding:7px 12px;border:1px solid var(--line);border-radius:8px;font-size:12px;margin-bottom:8px;outline:none}
 .inline-register input:focus{border-color:var(--brand)}
 .inline-register-btn{width:100%;padding:12px 16px;border:none;border-radius:8px;background:linear-gradient(135deg,#4f9aff,#2563eb);color:#fff;font-weight:800;cursor:pointer;margin-top:6px}
-/* Guest locked state: show but disable (gray) dashboard parts, keep signup active */
+/* Guest locked state: show but disable dashboard parts (색상은 그대로 유지, 클릭만 막기) */
 .ex-dashboard.guest-locked .ex-upload,
 .ex-dashboard.guest-locked .ex-usage,
 .ex-dashboard.guest-locked .grid{
-  filter:grayscale(100%);
-  opacity:.55;
   pointer-events:none;
 }
 .ex-dashboard.guest-locked .ex-toolbar{display:none}
-.ex-dashboard.guest-locked .inline-register{filter:none;opacity:1;pointer-events:auto}
 
 /* Center lock + login for guest */
 .guest-lock-center{
