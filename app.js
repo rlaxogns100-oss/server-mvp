@@ -432,15 +432,9 @@ function bindAuth() {
     if (dashboard) dashboard.classList.add('guest-locked');
     try{ document.getElementById('guestLockCenter').style.display='flex'; }catch(_){ }
     try{ if (window.setResizeMode) window.setResizeMode(true); }catch(_){ }
-    // Position lock/login slightly higher: move up by 2x first file row height
+    // 게스트 잠금 상태에서 가이드 버블 3개 표시 (중앙 잠금 박스가 없어도 항상 동작하도록 분리)
     try{
       requestAnimationFrame(()=>{
-        const lock = document.getElementById('guestLockCenter');
-        if(!lock) return;
-        const firstItem = document.querySelector('#fileGridBody > *');
-        const h = firstItem ? firstItem.getBoundingClientRect().height : 56;
-        lock.style.transform = `translate(-50%, calc(-50% - ${Math.round(h*2)}px))`;
-        // 가이드 버블 표시(3개)
         showGuestGuideBubbles();
       });
     }catch(_){ }

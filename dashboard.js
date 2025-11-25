@@ -1118,8 +1118,7 @@ function renderExamProblems() {
     if (pageIndex === 0) {
       pageElement.innerHTML = `
         <div class="exam-page-header">
-          <div class="exam-page-title">수학 시험지</div>
-          <div class="exam-page-subtitle">2024학년도 1학기 중간고사</div>
+          <div class="exam-page-title">선택한 문항</div>
         </div>
       `;
     }
