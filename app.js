@@ -667,11 +667,16 @@ function bindAuth() {
 
   // 초기화 실행
   setupEventListeners();
-  hideAllForms();
 
-  // 초기 로그인 상태 확인 - 로그인 안 되어 있으면 대시보드 비활성화
+  // 초기 진입 시: 로그인하지 않은 사용자는
+  // 1) 대시보드를 게스트 모드로 잠그고
+  // 2) 바로 로그인 모달을 띄운다.
   if (!currentUser) {
     disableDashboard();
+    displayLoginForm();
+  } else {
+    // 로그인된 상태라면 모든 폼을 감춘다.
+    hideAllForms();
   }
 
   console.log('인증 기능 초기화 완료');
