@@ -646,15 +646,19 @@ function bindAuth() {
     }
 
     // 모달 오버레이 클릭 시 폼 닫기
+    // → 로그인 전에는 절대 닫히지 않도록 currentUser 여부로 제어
     if (elements.modalOverlay) {
       elements.modalOverlay.addEventListener('click', function() {
+        if (!currentUser) return;
         hideAllForms();
       });
     }
 
     // ESC 키로 폼 닫기
+    // → 로그인 전에는 ESC로도 닫히지 않도록 currentUser 여부로 제어
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') {
+        if (!currentUser) return;
         if (elements.loginForm && elements.loginForm.style.display === 'flex') {
           hideAllForms();
         }
