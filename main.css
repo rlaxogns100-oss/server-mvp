@@ -961,7 +961,11 @@ body{margin:0;background:linear-gradient(180deg,#eef5ff 0%, var(--bg) 32%, #fff 
 .inline-register .inline-register-btn:hover{transform:translateY(-1px);box-shadow:0 10px 24px rgba(102,126,234,.45)}
 
 /* Gradient guide bubble (closable) */
-.guide-bubble{position:fixed;z-index:10000;max-width:520px;color:#fff;padding:12px 16px;border-radius:12px;
+.guide-bubble{
+  position:fixed;
+  /* 로그인 모달 오버레이(999998)보다 위에 보이도록 충분히 큰 z-index 사용 */
+  z-index:1000001;
+  max-width:520px;color:#fff;padding:12px 16px;border-radius:12px;
   background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);box-shadow:0 10px 30px rgba(102,126,234,.35)}
 .guide-bubble .close{position:absolute;top:6px;right:8px;background:transparent;border:0;color:#fff;opacity:.9;cursor:pointer;font-size:16px;line-height:1}
 .guide-bubble .close:hover{opacity:1}
