@@ -300,8 +300,14 @@ function bindMyFiles() {
   // 로그인 성공 시 파일 목록 자동 로드
   window.loadMyFiles = loadMyFiles;
   
-  // 초기 로드: 비로그인 상태에서는 서버 파일 불러오지 않음(게스트 UI 유지)
-  if (window.currentUser) loadMyFiles();
+  // 초기 로드:
+  // - 로그인 사용자는 서버에서 실제 파일 목록을 가져오고
+  // - 비로그인 게스트는 DB 호출 없이 예시 파일/폴더만 바로 렌더링한다.
+  if (window.currentUser) {
+    loadMyFiles();
+  } else {
+    displayMyFiles([], []);
+  }
 }
 
 /* ---- 인증 관련 기능 ---- */
