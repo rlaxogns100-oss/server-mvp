@@ -628,6 +628,11 @@ function bindAuth() {
         hideAllForms();
         disableDashboard();
 
+        // 로그아웃 직후에도 로그인 모달을 화면 중앙에 다시 띄운다.
+        try {
+          displayLoginForm();
+        } catch(_){}
+
         // 로그아웃 시 모든 열린 탭 닫기
         if (window.openTabs) {
           window.openTabs = [];
