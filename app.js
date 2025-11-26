@@ -12,20 +12,49 @@ let currentUser = null;
 /* ---- Boot ---- */
 document.addEventListener('DOMContentLoaded', function(){
   console.log('DOM 로드 완료');
-  if (!window.__DASH_INIT__) {
-    console.log('대시보드 초기화');
-    initDashboard();
-  } // 중복 초기화 방지
-  console.log('미리보기 바인딩');
-  bindPreview();
-  console.log('인증 바인딩');
-  bindAuth();
-  console.log('내 파일 바인딩');
-  bindMyFiles();
-  console.log('MathJax 타입셋');
-  safeTypeset();
+
+  // 인증(로그인 모달) 바인딩은 가장 먼저, 다른 초기화 오류와 무관하게 항상 실행되도록 분리
+  try{
+    console.log('인증 바인딩');
+    bindAuth();
+  }catch(e){
+    console.error('bindAuth 실행 중 오류', e);
+  }
+
+  // 나머지 초기화는 각각 개별적으로 보호
+  try{
+    if (!window.__DASH_INIT__) {
+      console.log('대시보드 초기화');
+      initDashboard();
+    } // 중복 초기화 방지
+  }catch(e){
+    console.error('initDashboard 실행 중 오류', e);
+  }
+
+  try{
+    console.log('미리보기 바인딩');
+    bindPreview();
+  }catch(e){
+    console.error('bindPreview 실행 중 오류', e);
+  }
+
+  try{
+    console.log('내 파일 바인딩');
+    bindMyFiles();
+  }catch(e){
+    console.error('bindMyFiles 실행 중 오류', e);
+  }
+
+  try{
+    console.log('MathJax 타입셋');
+    safeTypeset();
+  }catch(e){
+    console.error('safeTypeset 실행 중 오류', e);
+  }
+
   // 비로그인 초기 상태: sample8 1~4번을 JSON에서 읽어 미리보기 표시 (DB 미사용)
   setTimeout(()=>{ try{ if(!currentUser){ guestPreviewSample8First4(); } }catch(_){ } }, 150);
+
   // 섹션 버튼 노출 제거 (요구사항 변경)
   console.log('모든 초기화 완료');
 });
@@ -332,10 +361,7 @@ function bindAuth() {
     showRegisterBtn: document.getElementById('showRegisterBtn'),
     loginBtn: document.getElementById('loginBtn'),
     registerBtn: document.getElementById('registerBtn'),
-    modalOverlay: document.getElementById('modalOverlay'),
-    // 모바일 전용 내 파일 관리 탭 CTA 버튼
-    mobileShowLoginBtn: document.getElementById('mobileShowLoginBtn'),
-    mobileShowRegisterBtn: document.getElementById('mobileShowRegisterBtn')
+    modalOverlay: document.getElementById('modalOverlay')
   };
 
   // 모든 폼 숨기고 초기 버튼 표시
@@ -473,14 +499,6 @@ function bindAuth() {
       elements.showRegisterBtn.addEventListener('click', displayRegisterForm);
     } else {
       console.log('showRegisterBtn 요소를 찾을 수 없음');
-    }
-
-    // 모바일: 내 파일 관리 탭 상단 CTA 버튼
-    if (elements.mobileShowLoginBtn) {
-      elements.mobileShowLoginBtn.addEventListener('click', displayLoginForm);
-    }
-    if (elements.mobileShowRegisterBtn) {
-      elements.mobileShowRegisterBtn.addEventListener('click', displayRegisterForm);
     }
 
     // 로그인 처리
