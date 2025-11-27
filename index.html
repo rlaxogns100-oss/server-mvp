@@ -39,19 +39,6 @@
 <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <link rel="stylesheet" href="main.css?v=20251106-2">
 
-<!-- Beusable RUM Script -->
-<script type="text/javascript">
-(function(w, d, a){
-  w.__beusablerumclient__ = {
-    load : function(src){
-      var b = d.createElement("script");
-      b.src = src; b.async = true; b.type = "text/javascript";
-      d.getElementsByTagName("head")[0].appendChild(b);
-    }
-  };
-  w.__beusablerumclient__.load(a + "?url=" + encodeURIComponent(d.URL));
-})(window, document, "//rum.beusable.net/load/b25112e4131601u687");
-</script>
 </head>
 <body>
   <div class="app">
@@ -446,5 +433,19 @@
       <div class="footer-copy">© 2025 Zerotyping. All rights reserved.</div>
     </div>
   </footer>
+
+  <!-- Beusable RUM tracking script: </body> 바로 위에 추가 -->
+  <script type="text/javascript">
+    (function(w, d, a){
+        w.__beusablerumclient__ = {
+            load : function(src){
+                var b = d.createElement("script");
+                b.src = src; b.async=true; b.type = "text/javascript";
+                d.getElementsByTagName("head")[0].appendChild(b);
+            }
+        };
+        w.__beusablerumclient__.load(a + "?url=" + encodeURIComponent(d.URL));
+    })(window, document, "//rum.beusable.net/load/b251126e221533u178");
+  </script>
 </body>
 </html>
