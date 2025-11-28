@@ -520,7 +520,10 @@ function bindToolbar(){
 function setupUpload(){
   const up=$('#uploadTile'), fin=$('#fileInput'), pc=$('#progressContainer'), pf=$('#progressFill'), pt=$('#progressText');
   if(!up || !fin) return;
-  up.addEventListener('click', ()=>fin.click());
+  up.addEventListener('click', ()=>{
+    try { window.beusable?.log?.('click_pdf_upload'); } catch(_){}
+    fin.click();
+  });
   fin.addEventListener('change', e=>handleFiles(e.target.files));
   ['dragenter','dragover'].forEach(ev=>up.addEventListener(ev,e=>{e.preventDefault();up.classList.add('drag-over');}));
   ['dragleave','drop'].forEach(ev=>up.addEventListener(ev,e=>{e.preventDefault();up.classList.remove('drag-over');}));
@@ -1512,12 +1515,22 @@ function initDashboard(){
   const clearBtn = document.getElementById('clearExam');
   const settingsBtn = document.getElementById('settingsBtn');
 
-  if (generateBtn) generateBtn.addEventListener('click', generatePdf);
+  if (generateBtn) {
+    generateBtn.addEventListener('click', ()=>{
+      try { window.beusable?.log?.('click_generate_pdf'); } catch(_){}
+      generatePdf();
+    });
+  }
   if (clearBtn) clearBtn.addEventListener('click', clearExam);
   if (settingsBtn) settingsBtn.addEventListener('click', openSettingsModal);
   // HWP 버튼 바인딩
   const hwpBtn = document.getElementById('generateHwpBtn');
-  if (hwpBtn) hwpBtn.addEventListener('click', openHwpModal);
+  if (hwpBtn) {
+    hwpBtn.addEventListener('click', ()=>{
+      try { window.beusable?.log?.('click_generate_hwp'); } catch(_){}
+      openHwpModal();
+    });
+  }
 
   // DOM이 완전히 로드된 후 핸들 위치 재설정
   setTimeout(() => {

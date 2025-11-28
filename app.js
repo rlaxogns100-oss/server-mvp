@@ -9,6 +9,18 @@ function safeTypeset(){ if(window.MathJax && window.MathJax.typesetPromise){ win
 // 사용자 상태 관리
 let currentUser = null;
 
+// Beusable: 페이지 진입 기본 로깅 (로그인 여부와 UA만 간단히 전송)
+try{
+  document.addEventListener('DOMContentLoaded', function(){
+    try {
+      window.beusable?.log?.('view_index', {
+        loggedIn: !!window.currentUser,
+        userAgent: window.navigator?.userAgent || ''
+      });
+    } catch (_){}
+  });
+}catch(_){}
+
 /* ---- Boot ---- */
 document.addEventListener('DOMContentLoaded', function(){
   console.log('DOM 로드 완료');
@@ -286,6 +298,11 @@ function bindMyFiles() {
   
   // 파일 문제 보기
   window.viewFileProblems = async function(fileId, fileName) {
+    // Beusable: 파일 열기 이벤트 로깅 (기능별 전환 퍼널용)
+    try {
+      window.beusable?.log?.('open_file', { fileId, fileName });
+    } catch (_){}
+
     try {
       const response = await fetch(`/api/my-problems/${fileId}`);
       const result = await response.json();
@@ -378,6 +395,13 @@ function bindAuth() {
   function displayLoginForm(event) {
     if (event) event.preventDefault();
     console.log('로그인 폼 표시');
+    // Beusable: 로그인 모달 노출 이벤트
+    try {
+      window.beusable?.log?.('show_login_modal', {
+        from: event && event.type ? event.type : 'auto',
+        loggedIn: !!currentUser
+      });
+    } catch (_){}
     if (elements.loginForm) elements.loginForm.style.display = 'flex';
     if (elements.registerForm) elements.registerForm.style.display = 'none';
     if (elements.authButtons) elements.authButtons.style.display = 'none';
@@ -399,6 +423,14 @@ function bindAuth() {
   // 사용자 정보 표시
   function displayUserInfo(user) {
     console.log('사용자 정보 표시:', user);
+    // Beusable: 로그인 성공 이벤트
+    try {
+      window.beusable?.log?.('login_success', {
+        role: user?.role || '',
+        plan: (user?.plan || '').toLowerCase() || 'basic',
+        device: (window.innerWidth || document.documentElement.clientWidth) <= 768 ? 'mobile' : 'desktop'
+      });
+    } catch (_){}
     if (elements.userInfo) {
       elements.userInfo.style.display = 'flex';
       
