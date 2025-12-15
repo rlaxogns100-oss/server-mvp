@@ -200,7 +200,7 @@ def call_llm_for_structure(problem: Dict) -> Optional[List[Dict]]:
             "https://api.deepseek.com/v1/chat/completions",
             headers=headers,
             json=data,
-            timeout=60
+            timeout=300  # 5분
         )
 
         # UTF-8 인코딩 명시
