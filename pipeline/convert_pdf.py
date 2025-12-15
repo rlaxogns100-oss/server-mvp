@@ -52,7 +52,7 @@ def poll_until_done(pdf_id: str, headers: dict, interval=2, timeout=300):
     url = f"{API_URL}/{pdf_id}"
     t0 = time.time()
     while True:
-        s = requests.get(url, headers=headers, timeout=60).json()
+        s = requests.get(url, headers=headers, timeout=300).json()
         st = s.get("status")
         if st == "completed":
             return
